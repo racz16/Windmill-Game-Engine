@@ -7,7 +7,7 @@ target_link_libraries("${WINDMILL}" PUBLIC glfw)
 target_include_directories("${WINDMILL}" PUBLIC "${LIB_PATH_GLFW}/include")
 
 #precompile headers
-target_precompile_headers("${WINDMILL}" PRIVATE "<iostream>" "<vector>" "<string>")
+target_precompile_headers("${WINDMILL}" PRIVATE "<iostream>" "<vector>" "<string>" "<memory>")
 
 #install
 install(TARGETS "${WINDMILL}")

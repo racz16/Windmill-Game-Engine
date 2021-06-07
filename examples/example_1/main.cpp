@@ -1,4 +1,6 @@
 #include <iostream>
+#include <memory>
+
 #include "windmill/windmill.h"
 
 int main() {
