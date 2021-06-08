@@ -11,7 +11,11 @@ set(LIB_PATH_GLFW "${CMAKE_SOURCE_DIR}/lib/glfw")
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory("lib/glfw")
+add_subdirectory("${LIB_PATH_GLFW}")
+
+#GLM
+set(LIB_PATH_GLM "${CMAKE_SOURCE_DIR}/lib/glm")
+add_subdirectory("${LIB_PATH_GLM}")
 
 #windmill
 add_subdirectory("windmill")

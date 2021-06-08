@@ -6,6 +6,16 @@ target_compile_definitions("${WINDMILL}" PRIVATE "EXPORT_WINDMILL")
 target_link_libraries("${WINDMILL}" PUBLIC glfw)
 target_include_directories("${WINDMILL}" PUBLIC "${LIB_PATH_GLFW}/include")
 
+#GLM
+target_compile_definitions("${WINDMILL}" PUBLIC "GLM_FORCE_DEPTH_ZERO_TO_ONE")
+target_compile_definitions("${WINDMILL}" PUBLIC "GLM_FORCE_MESSAGES")
+target_compile_definitions("${WINDMILL}" PUBLIC "GLM_FORCE_DEFAULT_ALIGNED_GENTYPES")
+target_compile_definitions("${WINDMILL}" PUBLIC "GLM_FORCE_INTRINSICS")
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+	target_compile_definitions("${WINDMILL}" PUBLIC "GLM_FORCE_INLINE")
+endif()
+target_include_directories("${WINDMILL}" PUBLIC "${LIB_PATH_GLM}")
+
 #precompile headers
 target_precompile_headers("${WINDMILL}" PRIVATE "<iostream>" "<vector>" "<string>" "<memory>")
 
