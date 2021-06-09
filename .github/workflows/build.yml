@@ -17,3 +17,19 @@ jobs:
             submodules: recursive
       - run: cmake .
       - run: cmake --build . --config Release
+  build-linux-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+            submodules: recursive
+      - run: cmake .
+      - run: cmake --build .
+  build-linux-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+            submodules: recursive
+      - run: cmake .
+      - run: cmake --build . --config Release
