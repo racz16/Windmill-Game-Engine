@@ -4,9 +4,13 @@
 
 #include "interface/engine.h"
 
-class wm_engine : public wm::engine {
-private:
-	GLFWwindow* window;
-public:
-	void run() override;
-};
+namespace wm {
+
+	class wm_engine : public engine {
+	private:
+		GLFWwindow* window;
+	public:
+		void run() override;
+	};
+
+}

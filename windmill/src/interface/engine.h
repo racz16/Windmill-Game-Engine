@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../wm_utility.h"
+#include "../wm_defines.h"
 
 namespace wm {
 
