@@ -1,8 +1,8 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
+#include "engine.h"
 
-#include "interface/engine.h"
+#include <GLFW/glfw3.h>
 
 namespace wm {
 
@@ -10,7 +10,9 @@ namespace wm {
 	private:
 		GLFWwindow* window;
 	public:
+		void initialize() override;
 		void run() override;
+		void destroy() override;
 	};
 
 }

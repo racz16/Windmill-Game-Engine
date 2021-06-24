@@ -1,5 +1,6 @@
-﻿set(WM_WINDMILL "windmill")
-add_library("${WM_WINDMILL}" SHARED "src/wm_engine.h" "src/wm_engine.cpp" "src/wm_defines.h" "src/interface/engine.h" "src/interface/engine.cpp" )
+set(WM_WINDMILL "windmill")
+add_library("${WM_WINDMILL}" SHARED "src/interface/defines.h" "src/interface/engine.h" "src/interface/engine.cpp"  "src/interface/debug/log/log_system.h" "src/interface/debug/log/log_system.cpp" "src/interface/debug/log/log_writer.h" "src/debug/log/wm_console_log_writer.h" "src/debug/log/wm_console_log_writer.cpp" "src/debug/log/wm_log_system.h" "src/debug/log/wm_log_system.cpp" "src/debug/log/wm_base_log_writer.h" "src/debug/log/wm_base_log_writer.cpp" "src/interface/debug/log/log_level.h"    "src/interface/debug/log/log_writer.cpp" "src/wm_engine.h" "src/wm_engine.cpp" "src/interface/debug/to_string.h")
+target_include_directories("${WM_WINDMILL}" PRIVATE "${WM_SOURCE_DIR}/windmill/src/interface")
 target_compile_definitions("${WM_WINDMILL}" PRIVATE "WM_EXPORT")
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
 	target_compile_definitions("${WM_WINDMILL}" PUBLIC "WM_BUILD_RELEASE")
