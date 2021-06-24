@@ -23,7 +23,7 @@ namespace wm {
 	}
 
 	void wm_log_system::log_messaage(const log_level level, const std::string& message, const std::string& function, const uint32_t line, const std::string& log_source) {
-		for each (auto writer in log_writers) {
+		for(auto writer : log_writers) {
 			writer->log_message(level, message, function, line, log_source);
 		}
 	}

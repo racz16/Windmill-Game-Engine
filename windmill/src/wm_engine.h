@@ -6,7 +6,7 @@
 
 namespace wm {
 
-	class wm_engine : public engine {
+	class wm_engine: public engine {
 	private:
 		GLFWwindow* window;
 	public:

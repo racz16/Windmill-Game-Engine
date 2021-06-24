@@ -14,7 +14,7 @@ namespace wm {
 		virtual log_level get_max_log_level() = 0;
 		virtual void set_max_log_level(const log_level level) = 0;
 		virtual void log_message(const log_level level, const std::string& message, const std::string& function, const uint32_t line, const std::string& log_source) = 0;
-		virtual ~log_writer() {}
+		virtual ~log_writer() { }
 	};
 
 }

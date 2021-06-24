@@ -10,7 +10,7 @@ namespace wm {
 	}
 
 	void wm_engine::run() {
-		while (!glfwWindowShouldClose(window)) {
+		while(!glfwWindowShouldClose(window)) {
 			glfwPollEvents();
 		}
 	}

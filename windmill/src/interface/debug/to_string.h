@@ -41,9 +41,9 @@ namespace wm {
 	std::string to_string(const glm::mat3& matrix, const std::string& message = "") {
 		auto result = message != "" ? message + WM_NEW_LINE : "";
 		return result + "┌                              ┐" + WM_NEW_LINE +
-			"│ " + std::to_string(matrix[0][0]) + "  " + std::to_string(matrix[1][0]) + "  " + std::to_string(matrix[2][0]) +  " │" + WM_NEW_LINE +
-			"│ " + std::to_string(matrix[0][1]) + "  " + std::to_string(matrix[1][1]) + "  " + std::to_string(matrix[2][1]) +  " │" + WM_NEW_LINE +
-			"│ " + std::to_string(matrix[0][2]) + "  " + std::to_string(matrix[1][2]) + "  " + std::to_string(matrix[2][2]) +  " │" + WM_NEW_LINE +
+			"│ " + std::to_string(matrix[0][0]) + "  " + std::to_string(matrix[1][0]) + "  " + std::to_string(matrix[2][0]) + " │" + WM_NEW_LINE +
+			"│ " + std::to_string(matrix[0][1]) + "  " + std::to_string(matrix[1][1]) + "  " + std::to_string(matrix[2][1]) + " │" + WM_NEW_LINE +
+			"│ " + std::to_string(matrix[0][2]) + "  " + std::to_string(matrix[1][2]) + "  " + std::to_string(matrix[2][2]) + " │" + WM_NEW_LINE +
 			"└                              ┘";
 	}
 

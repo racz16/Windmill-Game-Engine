@@ -2,7 +2,7 @@
 
 namespace wm {
 
-	wm_base_log_writer::wm_base_log_writer(const log_level max_log_level) :max_log_level(max_log_level) {}
+	wm_base_log_writer::wm_base_log_writer(const log_level max_log_level):max_log_level(max_log_level) { }
 
 	log_level wm_base_log_writer::get_max_log_level() {
 		return this->max_log_level;

@@ -9,7 +9,7 @@
 
 namespace wm {
 
-	class wm_console_log_writer : public wm_base_log_writer {
+	class wm_console_log_writer: public wm_base_log_writer {
 	private:
 		std::string entry;
 	public:

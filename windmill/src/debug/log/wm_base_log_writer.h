@@ -5,7 +5,7 @@
 
 namespace wm {
 
-	class wm_base_log_writer : public log_writer {
+	class wm_base_log_writer: public log_writer {
 	private:
 		log_level max_log_level;
 	public:

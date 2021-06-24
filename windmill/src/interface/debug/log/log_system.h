@@ -15,7 +15,7 @@ namespace wm {
 		virtual void remove_log_writer(const uint32_t index) = 0;
 		virtual void clear_log_writers() = 0;
 		virtual	void log_messaage(const log_level level, const std::string& message, const std::string& function, const uint32_t line, const std::string& log_source) = 0;
-		virtual ~log_system() {}
+		virtual ~log_system() { }
 	};
 
 }

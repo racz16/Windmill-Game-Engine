@@ -6,9 +6,9 @@
 
 namespace wm {
 
-	class wm_log_system : public log_system {
+	class wm_log_system: public log_system {
 	private:
-		std::vector<std::shared_ptr<log_writer>> log_writers{};
+		std::vector<std::shared_ptr<log_writer>> log_writers {};
 	public:
 		void add_log_writer(std::shared_ptr<log_writer> writer) override;
 		size_t get_log_writer_count() override;

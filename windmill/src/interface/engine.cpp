@@ -9,7 +9,7 @@ namespace wm {
 
 	std::shared_ptr<log_system> engine::get_log_system() {
 		static auto global_log = log_system::create();
-		if (global_log->get_log_writer_count() == 0) {
+		if(global_log->get_log_writer_count() == 0) {
 			auto clw = log_writer::create_console_log_writer();
 			global_log->add_log_writer(clw);
 		}
