@@ -3,7 +3,9 @@
 namespace wm {
 
 	wm_console_log_writer::wm_console_log_writer(const log_level max_log_level): wm_base_log_writer(max_log_level) {
+#ifdef WM_PLATFORM_WINDOWS
 		SetConsoleOutputCP(CP_UTF8);
+#endif
 		std::ios::sync_with_stdio(false);
 		std::cin.tie(NULL);
 	}
