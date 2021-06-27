@@ -25,7 +25,7 @@
 //	WM_LOG_WARNING			for logging warning messages (only in debug mode)
 //	WM_LOG_ERROR			for logging error messages
 //
-//	WM_NEW_LINE				platform independent new line string
+//	WM_BREAKPOINT			compiler specific debugger breakpoint
 
 //PLATFORM
 #ifdef _WIN32
@@ -85,3 +85,10 @@
 	#define WM_LOG_WARNING(message)
 #endif
 #define WM_LOG_ERROR(message) wm::engine::get_log_system()->log_messaage(wm::log_level::Error, message, __FUNCTION__, __LINE__, WM_LOG_SOURCE)
+
+//DEBUG
+#ifdef WM_PLATFORM_WINDOWS
+	#define WM_BREAKPOINT __debugbreak()
+#else
+	#define WM_BREAKPOINT raise(SIGTRAP)
+#endif 
