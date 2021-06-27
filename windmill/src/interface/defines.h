@@ -85,11 +85,3 @@
 	#define WM_LOG_WARNING(message)
 #endif
 #define WM_LOG_ERROR(message) wm::engine::get_log_system()->log_messaage(wm::log_level::Error, message, __FUNCTION__, __LINE__, WM_LOG_SOURCE)
-	
-//TODO: asserts, debug break
-
-#ifdef WM_PLATFORM_WINDOWS
-	#define WM_NEW_LINE "\r\n"
-#else
-	#define WM_NEW_LINE "\n"
-#endif

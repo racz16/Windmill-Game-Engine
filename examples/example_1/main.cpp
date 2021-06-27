@@ -8,6 +8,7 @@ int main() {
 	auto engine = wm::engine::create();
 	engine->initialize();
 	engine->run();
+	engine->destroy();
 	auto translationVector = glm::vec3(1.0f, 2.0f, 3.0f);
 	WM_LOG_DEBUG(wm::to_string(glm::vec2(translationVector), "vec2:"));
 	WM_LOG_DEBUG(wm::to_string(translationVector, "translation vector:"));

@@ -2,6 +2,10 @@
 
 namespace wm {
 
+	wm_log_system::wm_log_system() {
+		std::ios::sync_with_stdio(false);
+	}
+
 	void wm_log_system::add_log_writer(std::shared_ptr<log_writer> writer) {
 		log_writers.push_back(writer);
 	}

@@ -12,4 +12,12 @@ namespace wm {
 		max_log_level = level;
 	}
 
+	bool wm_base_log_writer::is_force_flush() {
+		return this->force_flush;
+	}
+
+	void wm_base_log_writer::set_force_flush(const bool force_flush) {
+		this->force_flush = force_flush;
+	}
+
 }

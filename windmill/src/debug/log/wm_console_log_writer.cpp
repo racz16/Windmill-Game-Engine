@@ -6,7 +6,6 @@ namespace wm {
 	#ifdef WM_PLATFORM_WINDOWS
 		SetConsoleOutputCP(CP_UTF8);
 	#endif
-		std::ios::sync_with_stdio(false);
 		std::cin.tie(NULL);
 	}
 
@@ -27,8 +26,13 @@ namespace wm {
 		} else {
 			entry = "\033[35m[INFO 3]";
 		}
-		entry += "[" + log_source + "] " + function + ":" + std::to_string(line) + "\033[37m" + WM_NEW_LINE + message;
-		std::cout << entry << std::endl;
+		entry += "[" + log_source + "] " + function + ":" + std::to_string(line) + "\033[37m" + "\n" + message;
+		std::cout << entry;
+		if(is_force_flush()) {
+			std::cout << std::endl;
+		} else {
+			std::cout << "\n";
+		}
 	}
 
 }

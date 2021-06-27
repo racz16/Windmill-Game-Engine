@@ -1,6 +1,11 @@
-﻿cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.8)
 
 project("Windmill-Game-Engine")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if (MSVC)
+    add_compile_options("/EHa")
+endif()
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(WM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")

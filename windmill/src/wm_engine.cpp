@@ -10,8 +10,14 @@ namespace wm {
 	}
 
 	void wm_engine::run() {
-		while(!glfwWindowShouldClose(window)) {
-			glfwPollEvents();
+		try {
+			while(!glfwWindowShouldClose(window)) {
+				glfwPollEvents();
+			}
+		} catch(const std::exception& ex) {
+			WM_LOG_ERROR(ex.what());
+		} catch(...) {
+			WM_LOG_ERROR("Unknown exception");
 		}
 	}
 

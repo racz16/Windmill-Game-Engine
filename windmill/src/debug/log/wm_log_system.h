@@ -10,6 +10,7 @@ namespace wm {
 	private:
 		std::vector<std::shared_ptr<log_writer>> log_writers {};
 	public:
+		wm_log_system();
 		void add_log_writer(std::shared_ptr<log_writer> writer) override;
 		size_t get_log_writer_count() override;
 		std::shared_ptr<log_writer> get_log_writer(const uint32_t index) override;
