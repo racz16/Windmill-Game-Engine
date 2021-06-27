@@ -1,4 +1,5 @@
 #include "wm_engine.h"
+#include "debug/log/wm_scoped_time_logger.h"
 
 namespace wm {
 
@@ -10,6 +11,7 @@ namespace wm {
 	}
 
 	void wm_engine::run() {
+		wm_scoped_time_logger stl {"elapsed time in \"run\""};
 		try {
 			while(!glfwWindowShouldClose(window)) {
 				glfwPollEvents();

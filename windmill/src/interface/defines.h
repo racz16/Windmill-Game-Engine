@@ -95,7 +95,7 @@
 	#ifdef WM_PLATFORM_WINDOWS
 		#define WM_BREAKPOINT() __debugbreak()
 	#else
-		#define WM_BREAKPOINT() raise(SIGTRAP)
+		#define WM_BREAKPOINT() __builtin_trap()
 	#endif
 #else
 	#define WM_BREAKPOINT()
