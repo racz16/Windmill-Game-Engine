@@ -1,4 +1,5 @@
 #pragma once
+#include <stdexcept>
 
 //POSSIBLE DEFINES
 //
@@ -26,6 +27,9 @@
 //	WM_LOG_ERROR			for logging error messages
 //
 //	WM_BREAKPOINT			compiler specific debugger breakpoint
+//
+//	WM_ASSERT				throws an exception if the given expression evaluates to false
+//	WM_ASSERT_WARNING		logs a warning if the given expression evaluates to false
 
 //PLATFORM
 #ifdef _WIN32
@@ -87,8 +91,28 @@
 #define WM_LOG_ERROR(message) wm::engine::get_log_system()->log_messaage(wm::log_level::Error, message, __FUNCTION__, __LINE__, WM_LOG_SOURCE)
 
 //DEBUG
-#ifdef WM_PLATFORM_WINDOWS
-	#define WM_BREAKPOINT __debugbreak()
+#ifdef WM_BUILD_DEBUG
+	#ifdef WM_PLATFORM_WINDOWS
+		#define WM_BREAKPOINT() __debugbreak()
+	#else
+		#define WM_BREAKPOINT() raise(SIGTRAP)
+	#endif
 #else
-	#define WM_BREAKPOINT raise(SIGTRAP)
+	#define WM_BREAKPOINT()
 #endif 
+
+//ASSERT
+#ifdef WM_BUILD_DEBUG
+	#define WM_ASSERT(expression) \
+	if(!(expression)) {\
+		throw std::runtime_error(std::string("assert failed: ") + std::string(#expression));\
+	}
+
+	#define WM_ASSERT_WARNING(expression) \
+	if(!(expression)) {\
+		WM_LOG_WARNING(std::string("assert failed: ") + std::string(#expression));\
+	}
+#else
+	#define WM_ASSERT(expression)
+	#define WM_ASSERT_WARNING(expression)
+#endif

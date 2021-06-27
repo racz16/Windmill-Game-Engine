@@ -16,8 +16,10 @@ namespace wm {
 			}
 		} catch(const std::exception& ex) {
 			WM_LOG_ERROR(ex.what());
+			WM_BREAKPOINT();
 		} catch(...) {
 			WM_LOG_ERROR("Unknown exception");
+			WM_BREAKPOINT();
 		}
 	}
 

@@ -1,5 +1,6 @@
 #include "wm_file_log_writer.h"
 #include <filesystem>
+#include <ctime>
 
 namespace wm {
 
