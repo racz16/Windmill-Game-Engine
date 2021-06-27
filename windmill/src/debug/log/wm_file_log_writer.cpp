@@ -38,9 +38,8 @@ namespace wm {
 	}
 
 	std::string wm_file_log_writer::compute_file_name() {
-		time_t now = time(0);
-		tm date;
-		localtime_s(&date, &now);
+		auto now = time(nullptr);
+		auto date = *localtime(&now);
 		return std::to_string(date.tm_year + 1900) + "_" +
 			std::to_string(date.tm_mon + 1) + "_" +
 			std::to_string(date.tm_mday) + "_" +
