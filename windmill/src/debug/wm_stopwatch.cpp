@@ -8,7 +8,8 @@ namespace wm {
 
 	void wm_stopwatch::stop() {
 		auto stop_nanoseconds = std::chrono::high_resolution_clock::now();
-		elapsed_nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(stop_nanoseconds - start_nanoseconds).count();
+		auto elapsed_time = stop_nanoseconds - start_nanoseconds;
+		elapsed_nanoseconds = std::chrono::duration_cast<std::chrono::duration<float, std::nano>>(elapsed_time).count();
 	}
 
 	float wm_stopwatch::get_elapsed_nanoseconds() {

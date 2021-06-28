@@ -1,12 +1,17 @@
+#pragma warning(disable:4996) //localtime_s is an optional part of C++ and not available everywhere
+
 #include "wm_file_log_writer.h"
+#include "defines.h"
 #include <filesystem>
 #include <ctime>
+#include <regex>
 
 namespace wm {
 
 	wm_file_log_writer::wm_file_log_writer(const log_level max_log_level, const std::string& path):
 		wm_base_log_writer(max_log_level),
 		file_name(path + "/" + compute_file_name()) {
+		WM_ASSERT(regex_match(path, std::regex(".*?[^/\\\\]")));
 		std::filesystem::create_directories(path);
 		file_stream.open(file_name, std::ios::out | std::ios::app);
 	}
