@@ -1,23 +1,35 @@
-#include <glm/vec3.hpp>
-
 #include "wm_engine.h"
+#include "debug/log/wm_scoped_time_logger.h"
 
 namespace wm {
 
-	void wm_engine::run() {
+	void wm_engine::initialize() {
 		glfwInit();
-		std::cout << "GLFW initialized" << std::endl;
+		WM_LOG_INFO_1("GLFW initialized");
 		window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-		std::cout << "window created" << std::endl;
-		while (!glfwWindowShouldClose(window)) {
-			glfwPollEvents();
+		WM_LOG_INFO_1("window created");
+	}
+
+	void wm_engine::run() {
+		wm_scoped_time_logger stl {"elapsed time in \"run\""};
+		try {
+			while(!glfwWindowShouldClose(window)) {
+				glfwPollEvents();
+			}
+		} catch(const std::exception& ex) {
+			WM_LOG_ERROR(ex.what());
+			WM_BREAKPOINT();
+		} catch(...) {
+			WM_LOG_ERROR("Unknown exception");
+			WM_BREAKPOINT();
 		}
+	}
+
+	void wm_engine::destroy() {
 		glfwDestroyWindow(window);
-		std::cout << "window destroyed" << std::endl;
+		WM_LOG_INFO_1("window destroyed");
 		glfwTerminate();
-		std::cout << "GLFW terminated" << std::endl;
-		glm::vec3 vector = glm::vec3(1.0f, 0.5f, 0.0f);
-		std::cout << "vector x: " << vector.x << ", y: " << vector.y << ", z: " << vector.z << std::endl;
+		WM_LOG_INFO_1("GLFW terminated");
 	}
 
 }
