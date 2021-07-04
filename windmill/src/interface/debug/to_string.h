@@ -10,8 +10,6 @@
 
 namespace wm {
 
-	void asd(glm::vec3 v) { }
-
 	std::string get_border(const int32_t size, const std::string& start, const std::string& stop) {
 		std::string result = "";
 		for(int32_t i = 0; i < size; i++) {
