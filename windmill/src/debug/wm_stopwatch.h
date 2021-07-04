@@ -13,9 +13,9 @@ namespace wm {
 	public:
 		void start() override;
 		void stop() override;
-		float get_elapsed_nanoseconds() override;
-		float get_elapsed_milliseconds() override;
-		float get_elapsed_seconds() override;
+		float get_elapsed_nanoseconds() const override;
+		float get_elapsed_milliseconds() const override;
+		float get_elapsed_seconds() const override;
 	};
 
 }

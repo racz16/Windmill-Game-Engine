@@ -4,7 +4,7 @@ namespace wm {
 
 	wm_base_log_writer::wm_base_log_writer(const log_level max_log_level):max_log_level(max_log_level) { }
 
-	log_level wm_base_log_writer::get_max_log_level() {
+	log_level wm_base_log_writer::get_max_log_level() const {
 		return this->max_log_level;
 	}
 
@@ -12,7 +12,7 @@ namespace wm {
 		max_log_level = level;
 	}
 
-	bool wm_base_log_writer::is_force_flush() {
+	bool wm_base_log_writer::is_force_flush() const {
 		return this->force_flush;
 	}
 
