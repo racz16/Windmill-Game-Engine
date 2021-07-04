@@ -5,15 +5,15 @@
 
 int main() {
 	WM_LOG_INFO_1("application started");
-	auto engine = wm::engine::create();
+	auto engine = wm::engine::get_instance();
 	engine->initialize();
 	engine->run();
-	engine->destroy();
 	auto translationVector = glm::vec3(1.0f, 2.0f, 3.0f);
 	WM_LOG_DEBUG(wm::to_string(glm::vec2(translationVector), "vec2:"));
 	WM_LOG_DEBUG(wm::to_string(translationVector, "translation vector:"));
 	WM_LOG_DEBUG(wm::to_string(glm::vec4(translationVector, 1.0f), "vec4:"));
 	auto translationMatrix = glm::translate(glm::mat4(1), translationVector);
 	WM_LOG_DEBUG(wm::to_string(translationMatrix, "translation matrix:"));
+	WM_LOG_DEBUG(wm::to_string(glm::quat(), "quaternion:"));
 	WM_LOG_INFO_1("application stopped");
 }

@@ -12,3 +12,6 @@
 #include "../windmill/src/interface/debug/log/log_level.h"
 #include "../windmill/src/interface/debug/log/log_system.h"
 #include "../windmill/src/interface/debug/log/log_writer.h"
+
+#include "../windmill/src/interface/window/window_system.h"
+#include "../windmill/src/interface/window/window_system_init.h"

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <stdexcept>
 
 //POSSIBLE DEFINES
@@ -81,12 +82,17 @@
 	#define WM_LOG_INFO_1(message) wm::engine::get_log_system()->log_messaage(wm::log_level::Info_1, message, __FUNCTION__, __LINE__, WM_LOG_SOURCE)
 	#define WM_LOG_DEBUG(message) wm::engine::get_log_system()->log_messaage(wm::log_level::Debug, message, __FUNCTION__, __LINE__, WM_LOG_SOURCE)
 	#define WM_LOG_WARNING(message) wm::engine::get_log_system()->log_messaage(wm::log_level::Warning, message, __FUNCTION__, __LINE__, WM_LOG_SOURCE)
+	#define WM_LOG_WARNING_IF(condition, message) \
+	if(condition) { \
+		WM_LOG_WARNING(message); \
+	}
 #else
 	#define WM_LOG_INFO_3(message)
 	#define WM_LOG_INFO_2(message)
 	#define WM_LOG_INFO_1(message)
 	#define WM_LOG_DEBUG(message)
 	#define WM_LOG_WARNING(message)
+	#define WM_LOG_WARNING_IF(condition, message)
 #endif
 #define WM_LOG_ERROR(message) wm::engine::get_log_system()->log_messaage(wm::log_level::Error, message, __FUNCTION__, __LINE__, WM_LOG_SOURCE)
 

@@ -1,60 +1,69 @@
 #pragma once
 
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/matrix.hpp>
+#include <glm/gtx/quaternion.hpp>
+
+#include "../defines.h"
+
 namespace wm {
 
-	std::string to_string(const glm::vec2& vector, const std::string& message = "") {
-		auto result = message != "" ? message + "\n" : "";
-		return result + "┌                    ┐" + "\n" +
-			"│ " + std::to_string(vector[0]) + "  " + std::to_string(vector[1]) + " │" + "\n" +
-			"└                    ┘";
+	void asd(glm::vec3 v) { }
+
+	std::string get_border(const int32_t size, const std::string& start, const std::string& stop) {
+		std::string result = "";
+		for(int32_t i = 0; i < size; i++) {
+			result += "          ";
+		}
+		return start + result + stop;
 	}
 
-	std::string to_string(const glm::vec3& vector, const std::string& message = "") {
+	template<int32_t S, class T>
+	std::string to_string(const glm::vec<S, T, glm::defaultp>& vector, const std::string& message = "") {
 		auto result = message != "" ? message + "\n" : "";
-		return result + "┌                              ┐" + "\n" +
-			"│ " + std::to_string(vector[0]) + "  " + std::to_string(vector[1]) + "  " + std::to_string(vector[2]) + " │" + "\n" +
-			"└                              ┘";
+		result += get_border(S, "┌", "┐") + "\n│ ";
+		for(int32_t i = 0; i < S; i++) {
+			result += std::to_string(vector[i]);
+			if(i != S - 1) {
+				result += "  ";
+			}
+		}
+		result += " │\n" + get_border(S, "└", "┘");
+		return result;
 	}
 
-	std::string to_string(const glm::vec4& vector, const std::string& message = "") {
+	template<int32_t S1, int32_t S2, class T>
+	std::string to_string(const glm::mat<S1, S2, T, glm::defaultp>& matrix, const std::string& message = "") {
 		auto result = message != "" ? message + "\n" : "";
-		return result + "┌                                        ┐" + "\n" +
-			"│ " + std::to_string(vector[0]) + "  " + std::to_string(vector[1]) + "  " + std::to_string(vector[2]) + "  " + std::to_string(vector[3]) + " │" + "\n" +
-			"└                                        ┘";
+		result += get_border(S2, "┌", "┐") + "\n";
+		for(int32_t y = 0; y < S1; y++) {
+			result += "│ ";
+			for(int32_t x = 0; x < S2; x++) {
+				result += std::to_string(matrix[x][y]);
+				if(x != S1 - 1) {
+					result += "  ";
+				}
+			}
+			result += " │\n";
+		}
+		result += get_border(S2, "└", "┘");
+		return result;
 	}
 
-	std::string to_string(const glm::quat& quaternion, const std::string& message = "") {
+	template<class T>
+	std::string to_string(const glm::qua<T, glm::defaultp>& quaternion, const std::string& message = "") {
 		auto result = message != "" ? message + "\n" : "";
-		return result + "┌                                        ┐" + "\n" +
-			"│ " + std::to_string(quaternion[0]) + "  " + std::to_string(quaternion[1]) + "  " + std::to_string(quaternion[2]) + "  " + std::to_string(quaternion[3]) + " │" + "\n" +
-			"└                                        ┘";
-	}
-
-	std::string to_string(const glm::mat2& matrix, const std::string& message = "") {
-		auto result = message != "" ? message + "\n" : "";
-		return result + "┌                    ┐" + "\n" +
-			"│ " + std::to_string(matrix[0][0]) + "  " + std::to_string(matrix[1][0]) + "  " + " │" + "\n" +
-			"│ " + std::to_string(matrix[0][1]) + "  " + std::to_string(matrix[1][1]) + "  " + " │" + "\n" +
-			"└                    ┘";
-	}
-
-	std::string to_string(const glm::mat3& matrix, const std::string& message = "") {
-		auto result = message != "" ? message + "\n" : "";
-		return result + "┌                              ┐" + "\n" +
-			"│ " + std::to_string(matrix[0][0]) + "  " + std::to_string(matrix[1][0]) + "  " + std::to_string(matrix[2][0]) + " │" + "\n" +
-			"│ " + std::to_string(matrix[0][1]) + "  " + std::to_string(matrix[1][1]) + "  " + std::to_string(matrix[2][1]) + " │" + "\n" +
-			"│ " + std::to_string(matrix[0][2]) + "  " + std::to_string(matrix[1][2]) + "  " + std::to_string(matrix[2][2]) + " │" + "\n" +
-			"└                              ┘";
-	}
-
-	std::string to_string(const glm::mat4& matrix, const std::string& message = "") {
-		auto result = message != "" ? message + "\n" : "";
-		return result + "┌                                        ┐" + "\n" +
-			"│ " + std::to_string(matrix[0][0]) + "  " + std::to_string(matrix[1][0]) + "  " + std::to_string(matrix[2][0]) + "  " + std::to_string(matrix[3][0]) + " │" + "\n" +
-			"│ " + std::to_string(matrix[0][1]) + "  " + std::to_string(matrix[1][1]) + "  " + std::to_string(matrix[2][1]) + "  " + std::to_string(matrix[3][1]) + " │" + "\n" +
-			"│ " + std::to_string(matrix[0][2]) + "  " + std::to_string(matrix[1][2]) + "  " + std::to_string(matrix[2][2]) + "  " + std::to_string(matrix[3][2]) + " │" + "\n" +
-			"│ " + std::to_string(matrix[0][3]) + "  " + std::to_string(matrix[1][3]) + "  " + std::to_string(matrix[2][3]) + "  " + std::to_string(matrix[3][3]) + " │" + "\n" +
-			"└                                        ┘";
+		result += get_border(4, "┌", "┐") + "\n│ ";
+		for(int32_t i = 0; i < 4; i++) {
+			result += std::to_string(quaternion[i]);
+			if(i != 3) {
+				result += "  ";
+			}
+		}
+		result += " │\n" + get_border(4, "└", "┘");
+		return result;
 	}
 
 }

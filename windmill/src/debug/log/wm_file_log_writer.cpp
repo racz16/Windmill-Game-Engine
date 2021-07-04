@@ -8,9 +8,8 @@
 
 namespace wm {
 
-	wm_file_log_writer::wm_file_log_writer(const log_level max_log_level, const std::string& path):
-		wm_base_log_writer(max_log_level),
-		file_name(path + "/" + compute_file_name()) {
+	wm_file_log_writer::wm_file_log_writer(const log_level max_log_level, const std::string& path)
+		: wm_base_log_writer(max_log_level), file_name(path + "/" + compute_file_name()) {
 		WM_ASSERT(regex_match(path, std::regex(".*?[^/\\\\]")));
 		std::filesystem::create_directories(path);
 		file_stream.open(file_name, std::ios::out | std::ios::app);
@@ -42,7 +41,7 @@ namespace wm {
 		}
 	}
 
-	std::string wm_file_log_writer::compute_file_name() {
+	std::string wm_file_log_writer::compute_file_name() const {
 		auto now = time(nullptr);
 		auto date = *localtime(&now);
 		return std::to_string(date.tm_year + 1900) + "_" +

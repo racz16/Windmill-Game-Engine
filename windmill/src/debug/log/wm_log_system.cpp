@@ -10,11 +10,11 @@ namespace wm {
 		log_writers.push_back(writer);
 	}
 
-	size_t wm_log_system::get_log_writer_count() {
+	size_t wm_log_system::get_log_writer_count() const {
 		return log_writers.size();
 	}
 
-	std::shared_ptr<log_writer> wm_log_system::get_log_writer(const uint32_t index) {
+	std::shared_ptr<log_writer> wm_log_system::get_log_writer(const uint32_t index) const {
 		return log_writers[index];
 	}
 
