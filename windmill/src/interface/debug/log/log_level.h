@@ -1,10 +1,8 @@
 #pragma once
 
-#include "../../defines.h"
-
 namespace wm {
 
-	enum class WM_PUBLIC log_level {
+	enum class log_level {
 		Info_3 = 5,
 		Info_2 = 4,
 		Info_1 = 3,

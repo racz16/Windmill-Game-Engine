@@ -1,14 +1,14 @@
 #pragma once
 
-#include "../../defines.h"
+#include "../../core/defines.h"
 
 namespace wm {
 
 	class WM_PUBLIC scoped_time_logger {
 	public:
-		static std::shared_ptr<scoped_time_logger> create();
+		static std::unique_ptr<scoped_time_logger> create();
 
-		virtual ~scoped_time_logger() { };
+		virtual ~scoped_time_logger() = 0 { }
 	};
 
 }

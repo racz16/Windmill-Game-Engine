@@ -1,8 +1,9 @@
 #pragma once
 
+#include <fstream>
+
 #include "wm_base_log_writer.h"
 #include "../../interface/debug/log/log_level.h"
-#include <fstream>
 
 namespace wm {
 

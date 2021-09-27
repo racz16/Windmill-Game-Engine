@@ -1,4 +1,9 @@
 #include "wm_console_log_writer.h"
+#include "core/defines.h"
+
+#ifdef WM_PLATFORM_WINDOWS
+	#include "windows.h"
+#endif
 
 namespace wm {
 
@@ -6,6 +11,7 @@ namespace wm {
 	#ifdef WM_PLATFORM_WINDOWS
 		SetConsoleOutputCP(CP_UTF8);
 	#endif
+		std::ios::sync_with_stdio(false);
 		std::cin.tie(NULL);
 	}
 

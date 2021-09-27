@@ -1,9 +1,5 @@
 #pragma once
 
-#include "defines.h"
-#ifdef WM_PLATFORM_WINDOWS
-	#include "windows.h"
-#endif
 #include "debug/log/log_level.h"
 #include "wm_base_log_writer.h"
 

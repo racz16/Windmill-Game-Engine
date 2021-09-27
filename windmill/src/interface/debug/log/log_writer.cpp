@@ -4,12 +4,12 @@
 
 namespace wm {
 
-	std::shared_ptr<log_writer> log_writer::create_console_log_writer(const log_level max_log_level) {
-		return std::make_shared<wm_console_log_writer>(max_log_level);
+	ptr<log_writer> log_writer::create_console_log_writer(const log_level max_log_level) {
+		return ptr<log_writer>(new wm_console_log_writer(max_log_level));
 	}
 
-	std::shared_ptr<log_writer> log_writer::create_file_log_writer(const log_level max_log_level, const std::string& path) {
-		return std::make_shared<wm_file_log_writer>(max_log_level, path);
+	ptr<log_writer> log_writer::create_file_log_writer(const log_level max_log_level, const std::string& path) {
+		return ptr<log_writer>(new wm_file_log_writer(max_log_level, path));
 	}
 
 }

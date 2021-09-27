@@ -3,9 +3,13 @@
 
 namespace wm {
 
-	std::shared_ptr<log_system> log_system::get_instance() {
-		static auto instance = std::make_shared<wm_log_system>();
-		return instance;
+	ptr<log_system> log_system::create() {
+		return ptr<log_system>(new wm_log_system());
+	}
+
+	key<log_system> log_system::get_key() {
+		static const auto key("WM_LOG_SYSTEM");
+		return key;
 	}
 
 }

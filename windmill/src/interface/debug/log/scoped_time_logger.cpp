@@ -3,8 +3,8 @@
 
 namespace wm {
 
-	std::shared_ptr<scoped_time_logger> scoped_time_logger::create() {
-		return std::make_shared<wm_scoped_time_logger>();
+	std::unique_ptr<scoped_time_logger> scoped_time_logger::create() {
+		return std::make_unique<wm_scoped_time_logger>();
 	}
 
 }
