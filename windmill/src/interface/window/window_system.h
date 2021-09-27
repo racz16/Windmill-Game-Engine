@@ -23,7 +23,7 @@ namespace wm {
 		virtual void destroy_window(ptr<window> window) = 0;
 		virtual video_mode get_current_video_mode() const = 0;
 		virtual std::vector<video_mode> get_all_video_modes() const = 0;
-		virtual ~window_system() = 0 {}
+		virtual ~window_system() { }
 	};
 
 }

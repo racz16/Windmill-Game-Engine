@@ -8,7 +8,7 @@ namespace wm {
 	}
 
 	key<log_system> log_system::get_key() {
-		static const auto key("WM_LOG_SYSTEM");
+		static const key<log_system> key("WM_LOG_SYSTEM");
 		return key;
 	}
 

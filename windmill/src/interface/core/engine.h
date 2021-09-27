@@ -30,7 +30,7 @@ namespace wm {
 		template<class T>
 		static ptr<T> get_system(const key<T> key) {
 			WM_ASSERT(has_system<T>(key));
-			return systems.at(key.get_hash()).convert<T>();
+			return systems.at(key.get_hash()).template convert<T>();
 		}
 
 		template<class T>
@@ -39,7 +39,7 @@ namespace wm {
 			if(index_of_order(key.get_hash()) == -1) {
 				order.push_back(std::pair<int32_t, std::string>(key.get_hash(), key.get_name()));
 			}
-			systems.insert_or_assign(key.get_hash(), system.convert<wm::system>());
+			systems.insert_or_assign(key.get_hash(), system.template convert<wm::system>());
 		}
 
 		template<class T>

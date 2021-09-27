@@ -45,7 +45,7 @@ namespace wm {
 		virtual void focus() = 0;
 		virtual void request_attention() = 0;
 		virtual bool is_hovered() const = 0;
-		virtual ~window() = 0 { }
+		virtual ~window() { }
 	};
 
 }

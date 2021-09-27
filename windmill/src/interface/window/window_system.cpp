@@ -8,7 +8,7 @@ namespace wm {
 	}
 
 	key<window_system> window_system::get_key() {
-		static const auto key("WM_WINDOW_SYSTEM");
+		static const key<window_system> key("WM_WINDOW_SYSTEM");
 		return key;
 	}
 
