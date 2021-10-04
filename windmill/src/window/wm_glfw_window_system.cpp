@@ -83,7 +83,7 @@ namespace wm {
 
 	video_mode wm_glfw_window_system::get_current_video_mode() const {
 		const auto vm = glfwGetVideoMode(glfwGetPrimaryMonitor());
-		return wm::video_mode(
+		return video_mode(
 			glm::ivec2(vm->width, vm->height),
 			glm::ivec3(vm->redBits, vm->greenBits, vm->blueBits),
 			vm->refreshRate
@@ -96,7 +96,7 @@ namespace wm {
 		std::vector<video_mode> video_modes;
 		for(int32_t i = 0; i < vm_count; i++) {
 			const auto vm = vms[i];
-			video_modes.push_back(wm::video_mode(
+			video_modes.push_back(video_mode(
 				glm::ivec2(vm.width, vm.height),
 				glm::ivec3(vm.redBits, vm.greenBits, vm.blueBits),
 				vm.refreshRate

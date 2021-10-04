@@ -2,6 +2,7 @@
 
 #include "application.h"
 #include "engine.h"
+#include "time_system.h"
 
 namespace wm {
 
@@ -25,6 +26,7 @@ namespace wm {
 
 	void application::initialize() {
 		add_log_system();
+		add_time_system();
 		add_window_system();
 	}
 
@@ -39,14 +41,20 @@ namespace wm {
 		const auto flw = log_writer::create_file_log_writer(log_level::Error);
 		log_system->add_log_writer(flw);
 	#endif
-		wm::engine::set_system(log_system::get_key(), log_system);
+		engine::set_system(log_system::get_key(), log_system);
 		WM_LOG_INFO_1("log system added");
+	}
+
+	void application::add_time_system() {
+		const auto time_system = time_system::create();
+		engine::set_system(time_system::get_key(), time_system);
+		WM_LOG_INFO_1("time system added");
 	}
 
 	void application::add_window_system() {
 		const auto window_system = window_system::get_instance();
 		window_system->create_window(glm::ivec2(640, 480), name, false);
-		wm::engine::set_system(window_system::get_key(), window_system);
+		engine::set_system(window_system::get_key(), window_system);
 		WM_LOG_INFO_1("window system added");
 	}
 

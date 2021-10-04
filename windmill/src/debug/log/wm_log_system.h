@@ -20,7 +20,7 @@ namespace wm {
 
 		void update() override { wm_base_system::update(); }
 		bool is_active() const override { return wm_base_system::is_active(); }
-		void set_active(const bool active) { wm_base_system::set_active(active); }
+		void set_active(const bool active) override { wm_base_system::set_active(active); }
 	};
 
 }

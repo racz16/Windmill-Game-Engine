@@ -13,8 +13,8 @@ namespace wm {
 		WM_LOG_DEBUG(
 			name +
 			std::string(": ") +
-			std::to_string(stopwatch.get_elapsed_milliseconds()) +
-			std::string(" ms")
+			std::to_string(stopwatch.get_elapsed_time()) +
+			std::string(" ns")
 		);
 	}
 

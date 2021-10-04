@@ -60,7 +60,7 @@ namespace wm {
 
 	void wm_glfw_window::set_position(const glm::ivec2& position) {
 		glfwSetWindowPos(window_handler, position.x, position.y);
-		WM_LOG_INFO_2("GLFW window position changed to " + wm::utility::to_string(position));
+		WM_LOG_INFO_2("GLFW window position changed to " + utility::to_string(position));
 	}
 
 	std::string wm_glfw_window::get_title() const {
@@ -116,7 +116,7 @@ namespace wm {
 	void wm_glfw_window::set_minimum_size(const glm::ivec2& minimum_size) {
 		this->minimum_size = minimum_size;
 		glfwSetWindowSizeLimits(window_handler, minimum_size.x, minimum_size.y, maximum_size.x, maximum_size.y);
-		WM_LOG_INFO_2("GLFW window min size changed to " + wm::utility::to_string(minimum_size));
+		WM_LOG_INFO_2("GLFW window min size changed to " + utility::to_string(minimum_size));
 	}
 
 	glm::ivec2 wm_glfw_window::get_maximum_size() const {
@@ -126,7 +126,7 @@ namespace wm {
 	void wm_glfw_window::set_maximum_size(const glm::ivec2& maximum_size) {
 		this->maximum_size = maximum_size;
 		glfwSetWindowSizeLimits(window_handler, minimum_size.x, minimum_size.y, maximum_size.x, maximum_size.y);
-		WM_LOG_INFO_2("GLFW window max size changed to " + wm::utility::to_string(maximum_size));
+		WM_LOG_INFO_2("GLFW window max size changed to " + utility::to_string(maximum_size));
 	}
 
 	glm::ivec2 wm_glfw_window::get_size() const {
@@ -137,7 +137,7 @@ namespace wm {
 
 	void wm_glfw_window::set_size(const glm::ivec2& size) {
 		glfwSetWindowSize(window_handler, size.x, size.y);
-		WM_LOG_INFO_2("GLFW window size changed to " + wm::utility::to_string(size));
+		WM_LOG_INFO_2("GLFW window size changed to " + utility::to_string(size));
 	}
 
 	glm::ivec2 wm_glfw_window::get_framebuffer_size() const {

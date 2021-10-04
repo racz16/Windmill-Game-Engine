@@ -35,6 +35,10 @@ namespace wm {
 		return get_system<window_system>(window_system::get_key());
 	}
 
+	ptr<time_system> engine::get_time_system() {
+		return get_system<time_system>(time_system::get_key());
+	}
+
 	void engine::destroy() {
 		for(int32_t i = order.size() - 1; i >= 0; i--) {
 			const auto key = order.at(i).first;

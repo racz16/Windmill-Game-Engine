@@ -12,6 +12,7 @@
 #include "../windmill/src/interface/core/ptr.h"
 #include "../windmill/src/interface/core/ptr_meta.h"
 #include "../windmill/src/interface/core/system.h"
+#include "../windmill/src/interface/core/time_system.h"
 #include "../windmill/src/interface/core/utility.h"
 
 #include "../windmill/src/interface/debug/log/log_level.h"

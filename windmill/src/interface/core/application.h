@@ -10,6 +10,7 @@ namespace wm {
 	protected:
 		virtual void initialize();
 		virtual void add_log_system();
+		virtual void add_time_system();
 		virtual void add_window_system();
 		virtual void loop();
 		virtual void destroy();

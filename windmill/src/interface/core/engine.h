@@ -9,6 +9,7 @@
 #include "system.h"
 #include "../debug/log/log_system.h"
 #include "../window/window_system.h"
+#include "../core/time_system.h"
 
 namespace wm {
 
@@ -55,10 +56,9 @@ namespace wm {
 
 		static void destroy();
 
-		// TODO: time_system
-
 		static ptr<log_system> get_log_system();
 		static ptr<window_system> get_window_system();
+		static ptr<time_system> get_time_system();
 
 	};
 
