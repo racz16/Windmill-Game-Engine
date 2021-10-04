@@ -4,6 +4,7 @@ namespace wm {
 
 	std::unordered_map<int32_t, ptr<system>> engine::systems;
 	std::vector<std::pair<int32_t, std::string>> engine::order;
+	parameter_container engine::parameters;
 
 	engine::engine() { }
 
@@ -47,6 +48,19 @@ namespace wm {
 		}
 		systems.clear();
 		order.clear();
+	}
+
+	parameter_container& engine::get_parameters() {
+		return parameters;
+	}
+
+	key<std::string> engine::get_app_name_key() {
+		static const key<std::string> key("WM_APP_NAME");
+		return key;
+	}
+
+	std::string engine::get_app_name() {
+		return engine::get_parameters().get<std::string>(engine::get_app_name_key());
 	}
 
 }

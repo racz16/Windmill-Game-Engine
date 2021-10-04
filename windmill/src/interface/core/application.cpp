@@ -6,11 +6,14 @@
 
 namespace wm {
 
-	application::application(const std::string& name): name(name) { }
+	application::application(const std::string& name) {
+		engine::get_parameters().set(engine::get_app_name_key(), name);
+	}
 
 	void application::run() {
 		try {
 			initialize();
+			const auto name = engine::get_app_name();
 			WM_LOG_INFO_1(name + " started");
 			loop();
 			WM_LOG_INFO_1(name + " stopped");
@@ -52,6 +55,7 @@ namespace wm {
 	}
 
 	void application::add_window_system() {
+		const auto name = engine::get_app_name();
 		const auto window_system = window_system::get_instance();
 		window_system->create_window(glm::ivec2(640, 480), name, false);
 		engine::set_system(window_system::get_key(), window_system);

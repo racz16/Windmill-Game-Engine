@@ -5,8 +5,6 @@
 namespace wm {
 
 	class WM_PUBLIC application {
-	private:
-		std::string name;
 	protected:
 		virtual void initialize();
 		virtual void add_log_system();

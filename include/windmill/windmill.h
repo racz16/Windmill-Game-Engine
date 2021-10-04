@@ -9,6 +9,7 @@
 #include "../windmill/src/interface/core/defines.h"
 #include "../windmill/src/interface/core/engine.h"
 #include "../windmill/src/interface/core/key.h"
+#include "../windmill/src/interface/core/parameter_container.h"
 #include "../windmill/src/interface/core/ptr.h"
 #include "../windmill/src/interface/core/ptr_meta.h"
 #include "../windmill/src/interface/core/system.h"

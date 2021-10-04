@@ -7,6 +7,7 @@
 #include "key.h"
 #include "ptr.h"
 #include "system.h"
+#include "parameter_container.h"
 #include "../debug/log/log_system.h"
 #include "../window/window_system.h"
 #include "../core/time_system.h"
@@ -17,6 +18,7 @@ namespace wm {
 	private:
 		static std::unordered_map<int32_t, ptr<system>> systems;
 		static std::vector<std::pair<int32_t, std::string>> order;
+		static parameter_container parameters;
 
 		static int32_t index_of_order(const int32_t hash);
 
@@ -53,12 +55,17 @@ namespace wm {
 		}
 
 		static void update_systems();
-
 		static void destroy();
 
 		static ptr<log_system> get_log_system();
 		static ptr<window_system> get_window_system();
 		static ptr<time_system> get_time_system();
+
+		static parameter_container& get_parameters();
+
+		static key<std::string> get_app_name_key();
+
+		static std::string get_app_name();
 
 	};
 
