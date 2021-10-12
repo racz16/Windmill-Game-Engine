@@ -6,12 +6,14 @@
 #include <glm/ext.hpp>
 
 #include "../windmill/src/interface/core/application.h"
+#include "../windmill/src/interface/core/base_ptr.h"
 #include "../windmill/src/interface/core/defines.h"
 #include "../windmill/src/interface/core/engine.h"
 #include "../windmill/src/interface/core/key.h"
 #include "../windmill/src/interface/core/parameter_container.h"
 #include "../windmill/src/interface/core/ptr.h"
 #include "../windmill/src/interface/core/ptr_meta.h"
+#include "../windmill/src/interface/core/ptr_view.h"
 #include "../windmill/src/interface/core/system.h"
 #include "../windmill/src/interface/core/time_system.h"
 #include "../windmill/src/interface/core/utility.h"
