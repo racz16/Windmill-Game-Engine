@@ -1,7 +1,6 @@
 #pragma once
 
 #include <chrono>
-#include <deque>
 
 #include "wm_base_system.h"
 #include "core/time_system.h"
@@ -21,7 +20,8 @@ namespace wm {
 		int32_t frame_count = 0;
 		double fps = 0.0;
 		double average_frame_time = 0.0;
-		std::deque<double> delta_time_history;
+		std::vector<double> delta_time_history;
+		int32_t oldest_delta_time_index = 0;
 		double delta_time = 0.0;
 
 		void every_frame_update();

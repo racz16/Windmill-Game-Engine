@@ -6,10 +6,7 @@ namespace wm {
 
 	const double wm_chrono_time_system::DEFAULT_FRAME_TIME = 1000.0 / 30.0;
 
-	wm_chrono_time_system::wm_chrono_time_system(const int32_t delta_time_histroy_size) {
-		for(int32_t i = 0; i < delta_time_histroy_size; i++) {
-			delta_time_history.push_back(DEFAULT_FRAME_TIME);
-		}
+	wm_chrono_time_system::wm_chrono_time_system(const int32_t delta_time_histroy_size): delta_time_history(delta_time_histroy_size, DEFAULT_FRAME_TIME) {
 		WM_LOG_INFO_1("chrono time system constructed");
 	}
 
@@ -24,9 +21,9 @@ namespace wm {
 		const auto current_time_point = std::chrono::steady_clock::now();
 		frame_time = current_time_point - last_time_point;
 		frame_time_sum += frame_time;
-		delta_time_history.pop_front();
-		delta_time_history.push_back(frame_time > 1s ? DEFAULT_FRAME_TIME : get_frame_time());
+		delta_time_history[oldest_delta_time_index] = frame_time > 1s ? DEFAULT_FRAME_TIME : get_frame_time();
 		delta_time = std::accumulate(delta_time_history.begin(), delta_time_history.end(), 0.0) / delta_time_history.size();
+		oldest_delta_time_index = (oldest_delta_time_index + 1) % static_cast<int32_t>(delta_time_history.size());
 		frame_count++;
 		last_time_point = current_time_point;
 	}
