@@ -62,8 +62,12 @@ namespace wm {
 		WM_LOG_INFO_1("window system added");
 	}
 
+	bool application::loop_condition() {
+		return engine::get_window_system()->get_window_count() > 0;
+	}
+
 	void application::loop() {
-		while(engine::get_window_system()->get_window_count() > 0) {
+		while(loop_condition()) {
 			engine::update_systems();
 		}
 	}
