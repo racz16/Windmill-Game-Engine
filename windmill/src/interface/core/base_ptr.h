@@ -20,22 +20,22 @@ namespace wm {
 
 	public:
 
-		base_ptr(T* const raw_pointer): raw_pointer(raw_pointer), id(ptr_meta::get_next_id()) {
+		base_ptr<T>(T* const raw_pointer): raw_pointer(raw_pointer), id(ptr_meta::get_next_id()) {
 			const ptr_meta pm;
 			ptr_meta::add_meta(id, pm);
 		}
 
-		base_ptr(T* const raw_pointer, const int32_t id): raw_pointer(raw_pointer), id(id) {
+		base_ptr<T>(T* const raw_pointer, const int32_t id) : raw_pointer(raw_pointer), id(id) {
 			ptr_meta::get_meta(id).increase_reference_count();
 		}
 
-		base_ptr(const base_ptr& other_ptr) {
+		base_ptr<T>(const base_ptr<T>& other_ptr) {
 			raw_pointer = other_ptr.raw_pointer;
 			id = other_ptr.id;
 			ptr_meta::get_meta(id).increase_reference_count();
 		}
 
-		base_ptr& operator=(const base_ptr& other_ptr) {
+		base_ptr<T>& operator=(const base_ptr<T>& other_ptr) {
 			auto& pm = ptr_meta::get_meta(id);
 			pm.decrease_reference_count();
 			if(pm.get_reference_count() <= 0 && id != other_ptr.id) {
@@ -69,7 +69,7 @@ namespace wm {
 			return ptr_meta::get_meta(id).is_valid();
 		}
 
-		~base_ptr() {
+		~base_ptr<T>() {
 			auto& pm = ptr_meta::get_meta(id);
 			pm.decrease_reference_count();
 			if(pm.get_reference_count() <= 0) {

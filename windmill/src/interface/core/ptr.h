@@ -9,7 +9,7 @@ namespace wm {
 	class ptr: public base_ptr<T> {
 	public:
 
-		using base_ptr::base_ptr;
+		using base_ptr<T>::base_ptr;
 
 		ptr_view<T> to_ptr_view() const {
 			*this;
@@ -25,7 +25,7 @@ namespace wm {
 		}
 
 		void destroy() {
-			base_ptr::destroy();
+			base_ptr<T>::destroy();
 		}
 
 	};

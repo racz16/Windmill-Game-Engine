@@ -9,7 +9,7 @@ namespace wm {
 	class ptr_view: public base_ptr<T> {
 	public:
 
-		using base_ptr::base_ptr;
+		using base_ptr<T>::base_ptr;
 
 		template<class X>
 		ptr_view<X> convert() const {
