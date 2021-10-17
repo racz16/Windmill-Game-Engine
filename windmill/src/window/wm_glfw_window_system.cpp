@@ -61,7 +61,7 @@ namespace wm {
 	}
 
 	int32_t wm_glfw_window_system::get_window_count() const {
-		return windows.size();
+		return static_cast<int32_t>(windows.size());
 	}
 
 	ptr<window> wm_glfw_window_system::get_window(const int32_t index) const {
@@ -107,7 +107,7 @@ namespace wm {
 
 	void wm_glfw_window_system::update() {
 		glfwPollEvents();
-		for(int32_t i = windows.size() - 1; i >= 0; i--) {
+		for(int32_t i = get_window_count() - 1; i >= 0; i--) {
 			auto window = windows.at(i);
 			if(window->is_closing()) {
 				window.destroy();

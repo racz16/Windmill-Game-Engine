@@ -42,8 +42,8 @@ namespace wm {
 		void set_minimization(const bool minimization) override;
 		bool is_maximized() const override;
 		void set_maximization(const bool maximization) override;
-		glm::vec2 get_aspect_ratio() const override;
-		void set_aspect_ratio(const glm::vec2 aspect_ratio) override;
+		glm::ivec2 get_aspect_ratio() const override;
+		void set_aspect_ratio(const glm::ivec2& aspect_ratio) override;
 		glm::ivec2 get_minimum_size() const override;
 		void set_minimum_size(const glm::ivec2& minimum_size) override;
 		glm::ivec2 get_maximum_size() const override;

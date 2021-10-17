@@ -18,8 +18,8 @@ namespace wm {
 		virtual void set_minimization(const bool minimization) = 0;
 		virtual bool is_maximized() const = 0;
 		virtual void set_maximization(const bool maximization) = 0;
-		virtual glm::vec2 get_aspect_ratio() const = 0;
-		virtual void set_aspect_ratio(const glm::vec2 aspect_ratio) = 0;
+		virtual glm::ivec2 get_aspect_ratio() const = 0;
+		virtual void set_aspect_ratio(const glm::ivec2& aspect_ratio) = 0;
 		virtual glm::ivec2 get_minimum_size() const = 0;
 		virtual void set_minimum_size(const glm::ivec2& minimum_size) = 0;
 		virtual glm::ivec2 get_maximum_size() const = 0;

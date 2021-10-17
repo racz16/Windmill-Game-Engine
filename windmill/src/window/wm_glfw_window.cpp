@@ -99,11 +99,11 @@ namespace wm {
 		WM_LOG_INFO_2("GLFW window maximization state changed to " + std::to_string(maximization));
 	}
 
-	glm::vec2 wm_glfw_window::get_aspect_ratio() const {
+	glm::ivec2 wm_glfw_window::get_aspect_ratio() const {
 		return aspect_ratio;
 	}
 
-	void wm_glfw_window::set_aspect_ratio(const glm::vec2 aspect_ratio) {
+	void wm_glfw_window::set_aspect_ratio(const glm::ivec2& aspect_ratio) {
 		this->aspect_ratio = aspect_ratio;
 		glfwSetWindowAspectRatio(window_handler, aspect_ratio.x, aspect_ratio.y);
 		WM_LOG_INFO_2("GLFW window aspect ratio changed to " + std::to_string(aspect_ratio.x) + ":" + std::to_string(aspect_ratio.y));

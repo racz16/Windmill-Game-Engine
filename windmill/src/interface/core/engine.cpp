@@ -41,7 +41,7 @@ namespace wm {
 	}
 
 	void engine::destroy() {
-		for(int32_t i = order.size() - 1; i >= 0; i--) {
+		for(int32_t i = static_cast<int32_t>(order.size()) - 1; i >= 0; i--) {
 			const auto key = order.at(i).first;
 			auto system = systems.at(key);
 			system.destroy();

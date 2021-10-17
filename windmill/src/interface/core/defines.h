@@ -117,3 +117,8 @@
 #else
 #	define WM_ASSERT(expression)
 #endif
+
+//https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-1-c4251
+//C4251 can be ignored if your class is derived from a type in the C++ Standard Library, you're compiling a
+//debug release (/MTd), and where the compiler error message refers to _Container_base.
+#pragma warning(disable: 4251)

@@ -1,8 +1,10 @@
 #pragma once
 
+#include "defines.h"
+
 namespace wm {
 
-	class system {
+	class WM_PUBLIC system {
 	public:
 		virtual void update() = 0;
 		virtual bool is_active() const = 0;
