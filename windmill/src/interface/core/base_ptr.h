@@ -57,6 +57,16 @@ namespace wm {
 			return raw_pointer;
 		}
 
+		template<class X>
+		bool operator==(const base_ptr<X>& other_ptr) const {
+			return get_id() == other_ptr.get_id();
+		}
+
+		template<class X>
+		bool operator!=(const base_ptr<X>& other_ptr) const {
+			return !(*this == other_ptr);
+		}
+
 		int32_t get_id() const {
 			return id;
 		}

@@ -1,8 +1,6 @@
-#include "wm_glfw_window_system.h"
 #include "core/engine.h"
-#include "core/utility.h"
 
-#include <glm/vec2.hpp>
+#include "wm_glfw_window_system.h"
 
 namespace wm {
 
@@ -72,9 +70,9 @@ namespace wm {
 		window.destroy();
 	}
 
-	void wm_glfw_window_system::remove_window(const int32_t id) {
+	void wm_glfw_window_system::remove_window(const GLFWwindow* id) {
 		for(int32_t i = 0; i < windows.size(); i++) {
-			if(id == windows.at(i)->get_id()) {
+			if(id == windows.at(i)->get_handler()) {
 				windows.erase(windows.begin() + i);
 				return;
 			}

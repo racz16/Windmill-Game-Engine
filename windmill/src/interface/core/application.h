@@ -8,6 +8,7 @@ namespace wm {
 	protected:
 		virtual void initialize();
 		virtual void add_log_system();
+		virtual void add_event_system();
 		virtual void add_time_system();
 		virtual void add_window_system();
 		virtual bool loop_condition();

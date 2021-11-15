@@ -1,10 +1,12 @@
 #pragma warning(disable:4996) //localtime_s is an optional part of C++ and not available everywhere
 
-#include "wm_file_log_writer.h"
-#include "core/defines.h"
 #include <filesystem>
 #include <ctime>
 #include <regex>
+
+#include "core/defines.h"
+
+#include "wm_file_log_writer.h"
 
 namespace wm {
 
@@ -15,7 +17,7 @@ namespace wm {
 		file_stream.open(file_name, std::ios::out | std::ios::app);
 	}
 
-	void wm_file_log_writer::log_message(const log_level level, const std::string& message, const std::string& function, const uint32_t line, const std::string& log_source) {
+	void wm_file_log_writer::log_message(const log_level level, const std::string& message, const std::string& function, const int32_t line, const std::string& log_source) {
 		if(level > get_max_log_level()) {
 			return;
 		}

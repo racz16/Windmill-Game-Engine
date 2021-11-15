@@ -1,5 +1,6 @@
-#include "wm_scoped_time_logger.h"
 #include "core/engine.h"
+
+#include "wm_scoped_time_logger.h"
 
 namespace wm {
 
@@ -14,7 +15,7 @@ namespace wm {
 			name +
 			std::string(": ") +
 			std::to_string(stopwatch.get_elapsed_time()) +
-			std::string(" ns")
+			std::string(" ms")
 		);
 	}
 

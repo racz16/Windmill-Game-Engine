@@ -2,11 +2,8 @@
 
 #define GLFW_INCLUDE_NONE
 
-#include <GLFW/glfw3.h>
-#include <glm/vec2.hpp>
-#include <glm/vec4.hpp>
-
 #include "window/window_system.h"
+
 #include "wm_glfw_window.h"
 #include "../core/wm_base_system.h"
 
@@ -26,11 +23,11 @@ namespace wm {
 		int32_t get_window_count() const override;
 		ptr<window> get_window(const int32_t index) const override;
 		void destroy_window(ptr<window> window) override;
-		void remove_window(const int32_t id);
+		void remove_window(const GLFWwindow* id);
 		void update() override;
 		video_mode get_current_video_mode() const override;
 		std::vector<video_mode> get_all_video_modes() const override;
-		~wm_glfw_window_system();
+		~wm_glfw_window_system() override;
 
 		bool is_active() const override { return wm_base_system::is_active(); }
 		void set_active(const bool active) override { wm_base_system::set_active(active); }

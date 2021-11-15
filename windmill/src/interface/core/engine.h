@@ -1,8 +1,5 @@
 #pragma once
 
-#include <unordered_map>
-#include <utility>
-
 #include "defines.h"
 #include "key.h"
 #include "ptr.h"
@@ -11,6 +8,7 @@
 #include "../debug/log/log_system.h"
 #include "../window/window_system.h"
 #include "../core/time_system.h"
+#include "../event/event_system.h"
 
 namespace wm {
 
@@ -58,6 +56,7 @@ namespace wm {
 		static void destroy();
 
 		static ptr<log_system> get_log_system();
+		static ptr<event_system> get_event_system();
 		static ptr<window_system> get_window_system();
 		static ptr<time_system> get_time_system();
 

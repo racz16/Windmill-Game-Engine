@@ -1,18 +1,152 @@
-#include "wm_glfw_window.h"
 #include "debug/log/log_level.h"
 #include "core/engine.h"
 #include "core/utility.h"
 #include "core/defines.h"
+#include "window/event/window_position_event.h"
+#include "window/event/mouse_position_event.h"
+#include "window/event/window_closed_event.h"
+#include "window/event/window_size_event.h"
+#include "window/event/window_framebuffer_size_event.h"
+#include "window/event/window_content_scale_event.h"
+#include "window/event/window_minimization_event.h"
+#include "window/event/window_maximization_event.h"
+#include "window/event/window_focus_event.h"
+#include "window/event/window_refresh_required_event.h"
+#include "window/event/keyboard_button_event.h"
+#include "window/event/keyboard_character_event.h"
+#include "window/event/mouse_button_event.h"
+#include "window/event/mouse_scroll_event.h"
+#include "window/event/window_drag_and_drop_event.h"
+#include "window/event/mouse_enter_leave_event.h"
+
+#include "wm_glfw_window.h"
 #include "wm_glfw_window_system.h"
 
 namespace wm {
 
-	int32_t wm_glfw_window::last_id = 0;
+	ptr<window> get_window(const GLFWwindow* window_handler) {
+		const auto window_system = engine::get_window_system();
+		for(int32_t i = 0; i < window_system->get_window_count(); i++) {
+			const auto window = window_system->get_window(i);
+			if(window.convert<wm_glfw_window>()->get_handler() == window_handler) {
+				return window;
+			}
+		}
+		throw std::runtime_error("Destroyed window");
+	}
 
-	wm_glfw_window::wm_glfw_window(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible): title(title), fullscreen(fullscreen), id(++last_id) {
+	wm_glfw_window::wm_glfw_window(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible): title(title), fullscreen(fullscreen)/*, id(++last_id)*/ {
 		set_window_hints(visible);
 		create_window(size);
+		add_window_event_handlers();
+		add_input_event_handlers();
 		WM_LOG_INFO_1("GLFW window constructed");
+	}
+
+	void wm_glfw_window::add_window_event_handlers() {
+		glfwSetWindowCloseCallback(window_handler, [](GLFWwindow* window) {
+			const auto window_ptr = get_window(window);
+			const auto event = window_closed_event(window_ptr);
+			engine::get_event_system()->emit_event<window_closed_event>(window_closed_event::get_key(), event);
+		});
+		glfwSetWindowSizeCallback(window_handler, [](GLFWwindow* window, int width, int height) {
+			const auto window_ptr = get_window(window);
+			const auto event = window_size_event(window_ptr, glm::ivec2(width, height));
+			engine::get_event_system()->emit_event<window_size_event>(window_size_event::get_key(), event);
+		});
+		glfwSetFramebufferSizeCallback(window_handler, [](GLFWwindow* window, int width, int height) {
+			const auto window_ptr = get_window(window);
+			const auto event = window_framebuffer_size_event(window_ptr, glm::ivec2(width, height));
+			engine::get_event_system()->emit_event<window_framebuffer_size_event>(window_framebuffer_size_event::get_key(), event);
+		});
+		glfwSetWindowContentScaleCallback(window_handler, [](GLFWwindow* window, float x_scale, float y_scale) {
+			const auto window_ptr = get_window(window);
+			const auto event = window_content_scale_event(window_ptr, glm::vec2(x_scale, y_scale));
+			engine::get_event_system()->emit_event<window_content_scale_event>(window_content_scale_event::get_key(), event);
+		});
+		glfwSetWindowPosCallback(window_handler, [](GLFWwindow* window, int x_pos, int y_pos) {
+			const auto window_ptr = get_window(window);
+			const auto event = window_position_event(window_ptr, glm::ivec2(x_pos, y_pos));
+			engine::get_event_system()->emit_event<window_position_event>(window_position_event::get_key(), event);
+		});
+		glfwSetWindowIconifyCallback(window_handler, [](GLFWwindow* window, int iconified) {
+			const auto window_ptr = get_window(window);
+			const auto event = window_minimization_event(window_ptr, iconified == GLFW_TRUE);
+			engine::get_event_system()->emit_event<window_minimization_event>(window_minimization_event::get_key(), event);
+		});
+		glfwSetWindowMaximizeCallback(window_handler, [](GLFWwindow* window, int maximized) {
+			const auto window_ptr = get_window(window);
+			const auto event = window_maximization_event(window_ptr, maximized == GLFW_TRUE);
+			engine::get_event_system()->emit_event<window_maximization_event>(window_maximization_event::get_key(), event);
+		});
+		glfwSetWindowFocusCallback(window_handler, [](GLFWwindow* window, int focused) {
+			const auto window_ptr = get_window(window);
+			const auto event = window_focus_event(window_ptr, focused == GLFW_TRUE);
+			engine::get_event_system()->emit_event<window_focus_event>(window_focus_event::get_key(), event);
+		});
+		glfwSetWindowRefreshCallback(window_handler, [](GLFWwindow* window) {
+			const auto window_ptr = get_window(window);
+			const auto event = window_refresh_required_event(window_ptr);
+			engine::get_event_system()->emit_event<window_refresh_required_event>(window_refresh_required_event::get_key(), event);
+		});
+	}
+
+	void wm_glfw_window::add_input_event_handlers() {
+		glfwSetKeyCallback(window_handler, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+			const auto window_ptr = get_window(window);
+			const auto keyboard_button = static_cast<wm::keyboard_button>(key);
+			const auto button_action = static_cast<wm::keyboard_button_action>(action);
+			const bool shift = mods & GLFW_MOD_SHIFT;
+			const bool ctrl = mods & GLFW_MOD_CONTROL;
+			const bool alt = mods & GLFW_MOD_ALT;
+			const bool super = mods & GLFW_MOD_SUPER;
+			const bool caps_lock = mods & GLFW_MOD_CAPS_LOCK;
+			const bool num_lock = mods & GLFW_MOD_NUM_LOCK;
+			const auto event = keyboard_button_event(window_ptr, keyboard_button, button_action, scancode, shift, ctrl, alt, super, caps_lock, num_lock);
+			engine::get_event_system()->emit_event<keyboard_button_event>(keyboard_button_event::get_key(), event);
+		});
+		glfwSetCharCallback(window_handler, [](GLFWwindow* window, unsigned int code_point) {
+			const auto window_ptr = get_window(window);
+			const auto event = keyboard_character_event(window_ptr, code_point);
+			engine::get_event_system()->emit_event<keyboard_character_event>(keyboard_character_event::get_key(), event);
+		});
+		glfwSetCursorPosCallback(window_handler, [](GLFWwindow* window, double x_pos, double y_pos) {
+			const auto window_ptr = get_window(window);
+			const auto event = mouse_position_event(window_ptr, glm::vec2(x_pos, y_pos));
+			engine::get_event_system()->emit_event<mouse_position_event>(mouse_position_event::get_key(), event);
+		});
+		glfwSetCursorEnterCallback(window_handler, [](GLFWwindow* window, int entered) {
+			const auto window_ptr = get_window(window);
+			const auto event = mouse_enter_leave_event(window_ptr, entered);
+			engine::get_event_system()->emit_event<mouse_enter_leave_event>(mouse_enter_leave_event::get_key(), event);
+		});
+		glfwSetMouseButtonCallback(window_handler, [](GLFWwindow* window, int button, int action, int mods) {
+			const auto window_ptr = get_window(window);
+			const auto keyboard_button = static_cast<wm::mouse_button>(button);
+			const auto button_action = static_cast<wm::button_action>(action);
+			const bool shift = mods & GLFW_MOD_SHIFT;
+			const bool ctrl = mods & GLFW_MOD_CONTROL;
+			const bool alt = mods & GLFW_MOD_ALT;
+			const bool super = mods & GLFW_MOD_SUPER;
+			const bool caps_lock = mods & GLFW_MOD_CAPS_LOCK;
+			const bool num_lock = mods & GLFW_MOD_NUM_LOCK;
+			const auto event = mouse_button_event(window_ptr, keyboard_button, button_action, shift, ctrl, alt, super, caps_lock, num_lock);
+			engine::get_event_system()->emit_event<mouse_button_event>(mouse_button_event::get_key(), event);
+		});
+		glfwSetScrollCallback(window_handler, [](GLFWwindow* window, double x_offset, double y_offset) {
+			const auto window_ptr = get_window(window);
+			const auto event = mouse_scroll_event(window_ptr, glm::dvec2(x_offset, y_offset));
+			engine::get_event_system()->emit_event<mouse_scroll_event>(mouse_scroll_event::get_key(), event);
+		});
+		glfwSetDropCallback(window_handler, [](GLFWwindow* window, int count, const char** paths) {
+			const auto window_ptr = get_window(window);
+			std::vector<std::string> file_paths;
+			for(int32_t i = 0; i < count; i++) {
+				file_paths.push_back(paths[i]);
+			}
+			const auto event = window_drag_and_drop_event(window_ptr, file_paths);
+			engine::get_event_system()->emit_event<window_drag_and_drop_event>(window_drag_and_drop_event::get_key(), event);
+		});
 	}
 
 	void wm_glfw_window::set_window_hints(const bool visible) {
@@ -26,8 +160,8 @@ namespace wm {
 		WM_ASSERT(window_handler != nullptr);
 	}
 
-	int32_t wm_glfw_window::get_id() const {
-		return id;
+	GLFWwindow* wm_glfw_window::get_handler() const {
+		return window_handler;
 	}
 
 	bool wm_glfw_window::is_closing() const {
@@ -240,7 +374,7 @@ namespace wm {
 	}
 
 	wm_glfw_window::~wm_glfw_window() {
-		wm_glfw_window_system::get_instance()->remove_window(id);
+		wm_glfw_window_system::get_instance()->remove_window(window_handler);
 		glfwDestroyWindow(window_handler);
 		window_handler = nullptr;
 		WM_LOG_INFO_1("GLFW window destructed");

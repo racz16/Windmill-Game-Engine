@@ -2,7 +2,8 @@
 
 namespace wm {
 
-	void wm_log_system::add_log_writer(const ptr<log_writer> writer) {
+	void wm_log_system::add_log_writer(const ptr_view<log_writer> writer) {
+		WM_ASSERT(writer.is_valid());
 		log_writers.push_back(writer);
 	}
 
@@ -10,13 +11,13 @@ namespace wm {
 		return log_writers.size();
 	}
 
-	ptr<log_writer> wm_log_system::get_log_writer(const int32_t index) const {
+	ptr_view<log_writer> wm_log_system::get_log_writer(const int32_t index) const {
 		return log_writers.at(index);
 	}
 
-	void wm_log_system::remove_log_writer(const ptr<log_writer> log_writer) {
+	void wm_log_system::remove_log_writer(const ptr_view<log_writer> log_writer) {
 		for(int32_t i = 0; i < log_writers.size(); i++) {
-			if(log_writers.at(i).get_id() == log_writer.get_id()) {
+			if(log_writers.at(i) == log_writer) {
 				log_writers.erase(log_writers.begin() + i);
 				return;
 			}
@@ -29,6 +30,7 @@ namespace wm {
 
 	void wm_log_system::log_messaage(const log_level level, const std::string& message, const std::string& function, const int32_t line, const std::string& log_source) {
 		for(auto writer : log_writers) {
+			WM_ASSERT(writer.is_valid());
 			writer->log_message(level, message, function, line, log_source);
 		}
 	}

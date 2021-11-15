@@ -1,10 +1,8 @@
 #pragma once
 
-#include <chrono>
+#include "core/time_system.h"
 
 #include "wm_base_system.h"
-#include "core/time_system.h"
-#include "core/engine.h"
 
 using namespace std::chrono_literals;
 
@@ -34,7 +32,7 @@ namespace wm {
 		double get_fps() const override;
 		double get_frame_time() const override;
 		double get_average_frame_time() const override;
-		~wm_chrono_time_system();
+		~wm_chrono_time_system() override;
 
 		bool is_active() const override { return wm_base_system::is_active(); }
 		void set_active(const bool active) override { wm_base_system::set_active(active); }

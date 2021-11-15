@@ -1,8 +1,5 @@
 #pragma once
 
-#include <glm/vec2.hpp>
-#include <glm/vec4.hpp>
-
 #include "window.h"
 #include "video_mode.h"
 #include "../core/defines.h"

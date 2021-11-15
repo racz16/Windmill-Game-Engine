@@ -1,8 +1,7 @@
-#include <glm/vec2.hpp>
-
 #include "application.h"
 #include "engine.h"
 #include "time_system.h"
+#include "../event/event_system.h"
 
 namespace wm {
 
@@ -29,6 +28,7 @@ namespace wm {
 
 	void application::initialize() {
 		add_log_system();
+		add_event_system();
 		add_time_system();
 		add_window_system();
 	}
@@ -46,6 +46,12 @@ namespace wm {
 	#endif
 		engine::set_system(log_system::get_key(), log_system);
 		WM_LOG_INFO_1("log system added");
+	}
+
+	void application::add_event_system() {
+		const auto event_system = event_system::create();
+		engine::set_system(event_system::get_key(), event_system);
+		WM_LOG_INFO_1("event system added");
 	}
 
 	void application::add_time_system() {

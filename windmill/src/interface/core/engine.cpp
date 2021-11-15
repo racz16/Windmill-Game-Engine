@@ -32,6 +32,10 @@ namespace wm {
 		return get_system<log_system>(log_system::get_key());
 	}
 
+	ptr<event_system> engine::get_event_system() {
+		return get_system<event_system>(event_system::get_key());
+	}
+
 	ptr<window_system> engine::get_window_system() {
 		return get_system<window_system>(window_system::get_key());
 	}

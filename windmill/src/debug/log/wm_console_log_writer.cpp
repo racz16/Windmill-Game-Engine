@@ -1,5 +1,6 @@
-#include "wm_console_log_writer.h"
 #include "core/defines.h"
+
+#include "wm_console_log_writer.h"
 
 #ifdef WM_PLATFORM_WINDOWS
 	#include "windows.h"
@@ -15,7 +16,7 @@ namespace wm {
 		std::cin.tie(NULL);
 	}
 
-	void wm_console_log_writer::log_message(const log_level level, const std::string& message, const std::string& function, const uint32_t line, const std::string& log_source) {
+	void wm_console_log_writer::log_message(const log_level level, const std::string& message, const std::string& function, const int32_t line, const std::string& log_source) {
 		if(level > get_max_log_level()) {
 			return;
 		}

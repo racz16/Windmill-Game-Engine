@@ -1,4 +1,5 @@
 #include "stopwatch.h"
+
 #include "../../debug/wm_stopwatch.h"
 
 namespace wm {

@@ -15,7 +15,7 @@ namespace wm {
 		virtual void set_max_log_level(const log_level level) = 0;
 		virtual bool is_force_flush() const = 0;
 		virtual void set_force_flush(const bool force_flush) = 0;
-		virtual void log_message(const log_level level, const std::string& message, const std::string& function, const uint32_t line, const std::string& log_source) = 0;
+		virtual void log_message(const log_level level, const std::string& message, const std::string& function, const int32_t line, const std::string& log_source) = 0;
 		virtual ~log_writer() { }
 	};
 

@@ -1,4 +1,5 @@
 #include "scoped_time_logger.h"
+
 #include "../../../debug/log/wm_scoped_time_logger.h"
 
 namespace wm {

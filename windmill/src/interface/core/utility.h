@@ -1,72 +1,96 @@
 #pragma once
 
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
-#include <glm/matrix.hpp>
-#include <glm/gtx/quaternion.hpp>
-
 #include "defines.h"
+#include "../window/input/keyboard_button.h"
+#include "../window/input/button_action.h"
+#include "../window/input/keyboard_button_action.h"
 
 namespace wm {
 
 	class WM_PUBLIC utility {
 	private:
 
+		static const int32_t COLUMN_DISTANCE;
+
 		utility();
-
-		static std::string get_border(const int32_t size, const std::string& start, const std::string& stop);
-
-		template<int32_t H, int32_t W, class T>
-		static void add_matrix_row(const glm::mat<H, W, T, glm::defaultp>& matrix, const int32_t y, std::string& result) {
-			result += "│ ";
-			for(int32_t x = 0; x < W; x++) {
-				result += std::to_string(matrix[x][y]);
-				if(x != W - 1) {
-					result += "  ";
-				}
-			}
-			result += " │\n";
-		}
+		static std::string repeat_character(const int32_t size, const std::string& character = " ");
+		static void add_matrix_row(const std::vector<::std::vector<std::string>>& numbers, const std::vector<int32_t>& max_columns_widths, const int32_t y, std::string& result);
 
 	public:
 
+		static std::string to_string(const button_action action);
+		static std::string to_string(const keyboard_button_action action);
+
 		template<int32_t S, class T>
 		static std::string to_string(const glm::vec<S, T, glm::defaultp>& vector, const std::string& message = "") {
-			auto result = message != "" ? message + "\n" : "";
-			result += get_border(S, "┌", "┐") + "\n│ ";
+			std::vector<std::string> numbers;
+			int32_t character_width = (S - 1) * COLUMN_DISTANCE + 2;
+
 			for(int32_t i = 0; i < S; i++) {
-				result += std::to_string(vector[i]);
+				const std::string number = std::to_string(vector[i]);
+				numbers.push_back(number);
+				character_width += number.length();
+			}
+
+			auto result = message != "" ? message + "\n" : "";
+			result += "┌" + repeat_character(character_width) + "┐\n│ ";
+			for(int32_t i = 0; i < S; i++) {
+				result += numbers[i];
 				if(i != S - 1) {
-					result += "  ";
+					result += repeat_character(COLUMN_DISTANCE);
 				}
 			}
-			result += " │\n" + get_border(S, "└", "┘");
+			result += " │\n└" + repeat_character(character_width) + "┘";
 			return result;
 		}
 
 		template<int32_t H, int32_t W, class T>
 		static std::string to_string(const glm::mat<H, W, T, glm::defaultp>& matrix, const std::string& message = "") {
-			auto result = message != "" ? message + "\n" : "";
-			result += get_border(W, "┌", "┐") + "\n";
-			for(int32_t y = 0; y < H; y++) {
-				add_matrix_row(matrix, y, result);
+			std::vector<std::vector<std::string>> numbers;
+			std::vector<int32_t> max_column_widths(H, 0);
+			int32_t max_character_width = (W - 1) * COLUMN_DISTANCE + 2;
+
+			for(int32_t x = 0; x < W; x++) {
+				numbers.push_back(std::vector<std::string>());
+				for(int32_t y = 0; y < H; y++) {
+					const std::string number = std::to_string(matrix[x][y]);
+					numbers[x].push_back(number);
+					max_column_widths[x] = std::max(max_column_widths[x], (int32_t)number.length());
+				}
+				max_character_width += max_column_widths[x];
 			}
-			result += get_border(W, "└", "┘");
+
+			auto result = message != "" ? message + "\n" : "";
+			result += "┌" + repeat_character(max_character_width) + "┐\n";
+			for(int32_t y = 0; y < H; y++) {
+				add_matrix_row(numbers, max_column_widths, y, result);
+			}
+			result += "└" + repeat_character(max_character_width) + "┘";
 			return result;
 		}
 
 		template<class T>
 		static std::string to_string(const glm::qua<T, glm::defaultp>& quaternion, const std::string& message = "") {
+			const int32_t S = 4;
+			std::vector<std::string> numbers;
+			int32_t character_width = (S - 1) * COLUMN_DISTANCE + 2;
+
+			for(int32_t i = 0; i < S; i++) {
+				const std::string number = std::to_string(quaternion[i]);
+				numbers.push_back(number);
+				character_width += number.length();
+			}
+
 			auto result = message != "" ? message + "\n" : "";
-			result += get_border(4, "┌", "┐") + "\n│ ";
-			for(int32_t i = 0; i < 4; i++) {
-				result += std::to_string(quaternion[i]);
-				if(i != 3) {
-					result += "  ";
+			result += "┌" + repeat_character(character_width) + "┐\n│ ";
+			result += numbers[S - 1] + repeat_character(COLUMN_DISTANCE);
+			for(int32_t i = 0; i < S - 1; i++) {
+				result += numbers[i];
+				if(i != S - 2) {
+					result += repeat_character(COLUMN_DISTANCE);
 				}
 			}
-			result += " │\n" + get_border(4, "└", "┘");
+			result += " │\n└" + repeat_character(character_width) + "┘";
 			return result;
 		}
 

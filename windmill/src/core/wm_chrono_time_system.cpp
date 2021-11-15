@@ -1,5 +1,7 @@
 #include <numeric>
 
+#include "core/engine.h"
+
 #include "wm_chrono_time_system.h"
 
 namespace wm {

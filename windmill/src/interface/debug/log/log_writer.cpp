@@ -1,4 +1,5 @@
 #include "log_writer.h"
+
 #include "../../../debug/log/wm_console_log_writer.h"
 #include "../../../debug/log/wm_file_log_writer.h"
 

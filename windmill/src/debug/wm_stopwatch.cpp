@@ -12,7 +12,7 @@ namespace wm {
 	}
 
 	double wm_stopwatch::get_elapsed_time() const {
-		return std::chrono::duration_cast<std::chrono::duration<double, std::nano>>(elapsed_duration).count();
+		return std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(elapsed_duration).count();
 	}
 
 }

@@ -2,20 +2,14 @@
 
 #define GLFW_INCLUDE_NONE
 
-#include <GLFW/glfw3.h>
-#include <glm/vec2.hpp>
-#include <glm/vec4.hpp>
-
-#include "../interface/window/window.h"
+#include "window/window.h"
 
 namespace wm {
 
 	class wm_glfw_window: public window {
 	private:
 		static const int32_t DONT_CARE = -1;
-		static int32_t last_id;
 
-		int32_t id;
 		GLFWwindow* window_handler;
 		std::string title;
 		glm::vec2 aspect_ratio {DONT_CARE};
@@ -27,9 +21,11 @@ namespace wm {
 		void set_window_hints(const bool visible);
 		void create_window(const glm::ivec2& size);
 		void set_window_monitor();
+		void add_window_event_handlers();
+		void add_input_event_handlers();
 	public:
 		wm_glfw_window(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible);
-		int32_t get_id() const;
+		GLFWwindow* get_handler() const;
 		bool is_closing() const override;
 		void set_closing(const bool closing) override;
 		bool is_visible() const override;
@@ -69,7 +65,7 @@ namespace wm {
 		void focus() override;
 		void request_attention() override;
 		bool is_hovered() const override;
-		~wm_glfw_window();
+		~wm_glfw_window() override;
 	};
 
 }
