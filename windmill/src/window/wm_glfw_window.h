@@ -18,7 +18,7 @@ namespace wm {
 		glm::ivec2 maximum_size = glm::ivec2(DONT_CARE);
 		bool fullscreen;
 		int32_t refresh_rate = DONT_CARE;
-		cursor_shape cursor_shape = cursor_shape::normal;
+		wm::cursor_shape cursor_shape = cursor_shape::normal;
 
 		void set_window_hints(const bool visible);
 		void create_window(const glm::ivec2& size);
