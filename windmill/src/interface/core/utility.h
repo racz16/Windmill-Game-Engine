@@ -27,7 +27,7 @@ namespace wm {
 			for(int32_t i = 0; i < S; i++) {
 				const std::string number = std::to_string(vector[i]);
 				numbers.push_back(number);
-				character_width += number.length();
+				character_width += static_cast<int32_t>(number.length());
 			}
 
 			auto result = message != "" ? message + "\n" : "";
@@ -76,7 +76,7 @@ namespace wm {
 			for(int32_t i = 0; i < S; i++) {
 				const std::string number = std::to_string(quaternion[i]);
 				numbers.push_back(number);
-				character_width += number.length();
+				character_width += static_cast<int32_t>(number.length());
 			}
 
 			auto result = message != "" ? message + "\n" : "";

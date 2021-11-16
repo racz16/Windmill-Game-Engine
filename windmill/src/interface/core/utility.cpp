@@ -27,7 +27,7 @@ namespace wm {
 		result += "│ ";
 		for(int32_t x = 0; x < max_columns_widths.size(); x++) {
 			const auto number = numbers[x][y];
-			result += repeat_character(max_columns_widths[x] - number.length()) + number;
+			result += repeat_character(max_columns_widths[x] - static_cast<int32_t>(number.length())) + number;
 			if(x != max_columns_widths.size() - 1) {
 				result += repeat_character(COLUMN_DISTANCE);
 			}
