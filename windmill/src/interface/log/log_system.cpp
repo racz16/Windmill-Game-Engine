@@ -1,6 +1,6 @@
 #include "log_system.h"
 
-#include "../../../debug/log/wm_log_system.h"
+#include "../../implementation/log/wm_log_system.h"
 
 namespace wm {
 

@@ -1,6 +1,6 @@
 #include "stopwatch.h"
 
-#include "../../debug/wm_stopwatch.h"
+#include "../../implementation/debug/wm_stopwatch.h"
 
 namespace wm {
 

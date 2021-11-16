@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../core/defines.h"
-#include "../core/ptr.h"
+#include "../ptr/ptr.h"
 
 namespace wm {
 

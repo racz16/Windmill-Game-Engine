@@ -5,7 +5,7 @@
 #include "../core/defines.h"
 #include "../core/system.h"
 #include "../core/key.h"
-#include "../core/ptr.h"
+#include "../ptr/ptr.h"
 
 namespace wm {
 

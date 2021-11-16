@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../core/ptr.h"
+#include "../../ptr/ptr.h"
 #include "../../event/event.h"
 #include "../../window/window.h"
 

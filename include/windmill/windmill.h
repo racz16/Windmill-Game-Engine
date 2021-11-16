@@ -11,32 +11,40 @@
 //CORE
 //
 #include "../windmill/src/interface/core/application.h"
-#include "../windmill/src/interface/core/base_ptr.h"
 #include "../windmill/src/interface/core/defines.h"
 #include "../windmill/src/interface/core/engine.h"
 #include "../windmill/src/interface/core/key.h"
 #include "../windmill/src/interface/core/parameter_container.h"
-#include "../windmill/src/interface/core/ptr.h"
-#include "../windmill/src/interface/core/ptr_meta.h"
-#include "../windmill/src/interface/core/ptr_view.h"
 #include "../windmill/src/interface/core/system.h"
-#include "../windmill/src/interface/core/time_system.h"
 #include "../windmill/src/interface/core/utility.h"
 //
 //DEBUG
 //
+#include "../windmill/src/interface/debug/scoped_time_logger.h"
 #include "../windmill/src/interface/debug/stopwatch.h"
-//log
-#include "../windmill/src/interface/debug/log/log_level.h"
-#include "../windmill/src/interface/debug/log/log_system.h"
-#include "../windmill/src/interface/debug/log/log_writer.h"
-#include "../windmill/src/interface/debug/log/scoped_time_logger.h"
 //
 //EVENT
 //
 #include "../windmill/src/interface/event/event_listener.h"
 #include "../windmill/src/interface/event/event_system.h"
 #include "../windmill/src/interface/event/event.h"
+//
+//LOG
+//
+#include "../windmill/src/interface/log/log_level.h"
+#include "../windmill/src/interface/log/log_system.h"
+#include "../windmill/src/interface/log/log_writer.h"
+//
+//PTR
+//
+#include "../windmill/src/interface/ptr/base_ptr.h"
+#include "../windmill/src/interface/ptr/ptr.h"
+#include "../windmill/src/interface/ptr/ptr_meta.h"
+#include "../windmill/src/interface/ptr/ptr_view.h"
+//
+//TIME
+//
+#include "../windmill/src/interface/time/time_system.h"
 //
 //WINDOW
 //

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "core/time_system.h"
+#include "time/time_system.h"
 
-#include "wm_base_system.h"
+#include "../core/wm_base_system.h"
 
 using namespace std::chrono_literals;
 

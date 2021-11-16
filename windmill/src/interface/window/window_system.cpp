@@ -1,6 +1,6 @@
 #include "window/window_system.h"
 
-#include "../../window/wm_glfw_window_system.h"
+#include "../../implementation/window/wm_glfw_window_system.h"
 
 namespace wm {
 

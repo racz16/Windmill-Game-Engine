@@ -2,12 +2,12 @@
 
 #include "defines.h"
 #include "key.h"
-#include "ptr.h"
+#include "../ptr/ptr.h"
 #include "system.h"
 #include "parameter_container.h"
-#include "../debug/log/log_system.h"
+#include "../log/log_system.h"
 #include "../window/window_system.h"
-#include "../core/time_system.h"
+#include "../time/time_system.h"
 #include "../event/event_system.h"
 
 namespace wm {

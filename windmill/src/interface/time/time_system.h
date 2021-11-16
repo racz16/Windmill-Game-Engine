@@ -1,9 +1,9 @@
 #pragma once
 
-#include "defines.h"
-#include "system.h"
-#include "ptr.h"
-#include "key.h"
+#include "../core/defines.h"
+#include "../core/system.h"
+#include "../ptr/ptr.h"
+#include "../core/key.h"
 
 namespace wm {
 

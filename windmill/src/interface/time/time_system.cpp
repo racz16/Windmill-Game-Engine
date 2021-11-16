@@ -1,6 +1,6 @@
 #include "time_system.h"
 
-#include "../../core/wm_chrono_time_system.h"
+#include "../../implementation/time/wm_chrono_time_system.h"
 
 namespace wm {
 

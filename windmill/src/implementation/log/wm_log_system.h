@@ -1,10 +1,10 @@
 #pragma once
 
-#include "debug/log/log_system.h"
-#include "debug/log/log_level.h"
-#include "debug/log/log_writer.h"
+#include "log/log_system.h"
+#include "log/log_level.h"
+#include "log/log_writer.h"
 
-#include "../../core/wm_base_system.h"
+#include "../core/wm_base_system.h"
 
 namespace wm {
 

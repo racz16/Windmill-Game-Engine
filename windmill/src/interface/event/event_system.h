@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../core/key.h"
-#include "../core/ptr_view.h"
-#include "../core/ptr.h"
+#include "../ptr/ptr_view.h"
+#include "../ptr/ptr.h"
 #include "../core/system.h"
 #include "event_listener.h"
 #include "event.h"

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "debug/log/scoped_time_logger.h"
+#include "debug/scoped_time_logger.h"
 
-#include "../wm_stopwatch.h"
+#include "wm_stopwatch.h"
 
 namespace wm {
 
