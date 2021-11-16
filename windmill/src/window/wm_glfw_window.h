@@ -11,12 +11,14 @@ namespace wm {
 		static const int32_t DONT_CARE = -1;
 
 		GLFWwindow* window_handler;
+		GLFWcursor* cursor = nullptr;
 		std::string title;
 		glm::vec2 aspect_ratio {DONT_CARE};
 		glm::ivec2 minimum_size = glm::ivec2(DONT_CARE);
 		glm::ivec2 maximum_size = glm::ivec2(DONT_CARE);
 		bool fullscreen;
 		int32_t refresh_rate = DONT_CARE;
+		cursor_shape cursor_shape = cursor_shape::normal;
 
 		void set_window_hints(const bool visible);
 		void create_window(const glm::ivec2& size);
@@ -65,6 +67,11 @@ namespace wm {
 		void focus() override;
 		void request_attention() override;
 		bool is_hovered() const override;
+		cursor_mode get_cursor_mode() const override;
+		void set_cursor_mode(const cursor_mode mode) override;
+		wm::cursor_shape get_cursor_shape() const override;
+		void set_cursor_shape(const wm::cursor_shape cursor_shape) override;
+		void destroy_cursor();
 		~wm_glfw_window() override;
 	};
 

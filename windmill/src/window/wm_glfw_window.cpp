@@ -32,7 +32,7 @@ namespace wm {
 				return window;
 			}
 		}
-		throw std::runtime_error("Destroyed window");
+		throw std::runtime_error("destroyed window");
 	}
 
 	wm_glfw_window::wm_glfw_window(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible): title(title), fullscreen(fullscreen)/*, id(++last_id)*/ {
@@ -123,14 +123,14 @@ namespace wm {
 		glfwSetMouseButtonCallback(window_handler, [](GLFWwindow* window, int button, int action, int mods) {
 			const auto window_ptr = get_window(window);
 			const auto keyboard_button = static_cast<wm::mouse_button>(button);
-			const auto button_action = static_cast<wm::button_action>(action);
+			const auto press = action == GLFW_PRESS;
 			const bool shift = mods & GLFW_MOD_SHIFT;
 			const bool ctrl = mods & GLFW_MOD_CONTROL;
 			const bool alt = mods & GLFW_MOD_ALT;
 			const bool super = mods & GLFW_MOD_SUPER;
 			const bool caps_lock = mods & GLFW_MOD_CAPS_LOCK;
 			const bool num_lock = mods & GLFW_MOD_NUM_LOCK;
-			const auto event = mouse_button_event(window_ptr, keyboard_button, button_action, shift, ctrl, alt, super, caps_lock, num_lock);
+			const auto event = mouse_button_event(window_ptr, keyboard_button, press, shift, ctrl, alt, super, caps_lock, num_lock);
 			engine::get_event_system()->emit_event<mouse_button_event>(mouse_button_event::get_key(), event);
 		});
 		glfwSetScrollCallback(window_handler, [](GLFWwindow* window, double x_offset, double y_offset) {
@@ -373,7 +373,72 @@ namespace wm {
 		return glfwGetWindowAttrib(window_handler, GLFW_HOVERED);
 	}
 
+	cursor_mode wm_glfw_window::get_cursor_mode() const {
+		const auto mode = glfwGetInputMode(window_handler, GLFW_CURSOR);
+		switch(mode) {
+			case GLFW_CURSOR_NORMAL: return cursor_mode::normal;
+			case GLFW_CURSOR_HIDDEN: return cursor_mode::hidden;
+			case GLFW_CURSOR_DISABLED: return cursor_mode::disabled;
+			default: throw std::runtime_error("invalid cursor mode");
+		}
+	}
+
+	void wm_glfw_window::set_cursor_mode(const cursor_mode mode) {
+		switch(mode) {
+			case cursor_mode::normal:
+				glfwSetInputMode(window_handler, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				break;
+			case cursor_mode::hidden:
+				glfwSetInputMode(window_handler, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+				break;
+			case cursor_mode::disabled:
+				glfwSetInputMode(window_handler, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				break;
+			default: throw std::runtime_error("invalid cursor mode");
+		}
+		WM_LOG_INFO_2("GLFW window cursor mode changed");
+	}
+
+	cursor_shape  wm_glfw_window::get_cursor_shape() const {
+		return cursor_shape;
+	}
+
+	void wm_glfw_window::set_cursor_shape(const wm::cursor_shape cursor_shape) {
+		destroy_cursor();
+		this->cursor_shape = cursor_shape;
+		switch(cursor_shape) {
+			case cursor_shape::normal:
+				cursor = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+				break;
+			case cursor_shape::text:
+				cursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+				break;
+			case cursor_shape::crosshair:
+				cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
+				break;
+			case cursor_shape::hand:
+				cursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+				break;
+			case cursor_shape::horizontal_resize:
+				cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+				break;
+			case cursor_shape::vertical_resize:
+				cursor = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+				break;
+		}
+		glfwSetCursor(window_handler, cursor);
+		WM_LOG_INFO_2("GLFW window cursor shape changed");
+	}
+
+	void wm_glfw_window::destroy_cursor() {
+		if(cursor != nullptr) {
+			glfwDestroyCursor(cursor);
+			cursor = nullptr;
+		}
+	}
+
 	wm_glfw_window::~wm_glfw_window() {
+		destroy_cursor();
 		wm_glfw_window_system::get_instance()->remove_window(window_handler);
 		glfwDestroyWindow(window_handler);
 		window_handler = nullptr;

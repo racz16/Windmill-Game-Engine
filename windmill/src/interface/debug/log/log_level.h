@@ -3,12 +3,12 @@
 namespace wm {
 
 	enum class log_level {
-		Info_3 = 5,
-		Info_2 = 4,
-		Info_1 = 3,
-		Debug = 2,
-		Warning = 1,
-		Error = 0
+		info_3 = 5,
+		info_2 = 4,
+		info_1 = 3,
+		debug = 2,
+		warning = 1,
+		error = 0
 	};
 
 }

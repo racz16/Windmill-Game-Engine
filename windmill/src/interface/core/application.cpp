@@ -38,10 +38,10 @@ namespace wm {
 	#ifdef WM_BUILD_DEBUG
 		const auto clw = log_writer::create_console_log_writer();
 		log_system->add_log_writer(clw);
-		const auto flw = log_writer::create_file_log_writer(log_level::Info_3);
+		const auto flw = log_writer::create_file_log_writer(log_level::info_3);
 		log_system->add_log_writer(flw);
 	#else
-		const auto flw = log_writer::create_file_log_writer(log_level::Error);
+		const auto flw = log_writer::create_file_log_writer(log_level::error);
 		log_system->add_log_writer(flw);
 	#endif
 		engine::set_system(log_system::get_key(), log_system);

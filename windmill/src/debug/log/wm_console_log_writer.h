@@ -10,7 +10,7 @@ namespace wm {
 	private:
 		std::string entry;
 	public:
-		wm_console_log_writer(const log_level max_log_level = log_level::Debug);
+		wm_console_log_writer(const log_level max_log_level = log_level::debug);
 		void log_message(const log_level level, const std::string& message, const std::string& function, const int32_t line, const std::string& log_source) override;
 	};
 

@@ -2,7 +2,6 @@
 
 #include "defines.h"
 #include "../window/input/keyboard_button.h"
-#include "../window/input/button_action.h"
 #include "../window/input/keyboard_button_action.h"
 
 namespace wm {
@@ -18,7 +17,6 @@ namespace wm {
 
 	public:
 
-		static std::string to_string(const button_action action);
 		static std::string to_string(const keyboard_button_action action);
 
 		template<int32_t S, class T>

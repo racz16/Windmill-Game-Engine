@@ -10,7 +10,7 @@ class example_1_application: public wm::application {
 
 	void add_log_system() override {
 		const auto ls = wm::log_system::create();
-		const auto clw = wm::log_writer::create_console_log_writer(wm::log_level::Info_1);
+		const auto clw = wm::log_writer::create_console_log_writer(wm::log_level::info_1);
 		ls->add_log_writer(clw);
 		wm::engine::set_system(wm::log_system::get_key(), ls);
 	}
@@ -26,7 +26,7 @@ class example_1_application: public wm::application {
 		wm::application::initialize();
 
 		add_event_listener<wm::mouse_button_event>(wm::mouse_button_event::get_key(), [](const wm::mouse_button_event event) {
-			WM_LOG_DEBUG(event.get_button_name() + " " + wm::utility::to_string(event.get_action()));
+			WM_LOG_DEBUG(event.get_button_name() + " " + std::to_string(event.is_press()));
 		});
 
 		WM_LOG_DEBUG("test log messages");

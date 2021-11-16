@@ -3,14 +3,14 @@
 namespace wm {
 
 	enum class mouse_button {
-		BUTTON_LEFT = 0,
-		BUTTON_RIGHT = 1,
-		BUTTON_MIDDLE = 2,
-		BUTTON_4 = 3,
-		BUTTON_5 = 4,
-		BUTTON_6 = 5,
-		BUTTON_7 = 6,
-		BUTTON_8 = 7,
+		button_left = 0,
+		button_right = 1,
+		button_middle = 2,
+		button_4 = 3,
+		button_5 = 4,
+		button_6 = 5,
+		button_7 = 6,
+		button_8 = 7,
 	};
 
 }

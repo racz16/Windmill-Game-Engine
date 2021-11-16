@@ -40,6 +40,8 @@
 //
 //WINDOW
 //
+#include "../windmill/src/interface/window/cursor_mode.h"
+#include "../windmill/src/interface/window/cursor_shape.h"
 #include "../windmill/src/interface/window/video_mode.h"
 #include "../windmill/src/interface/window/window_system.h"
 #include "../windmill/src/interface/window/window.h"
@@ -62,7 +64,6 @@
 #include "../windmill/src/interface/window/event/window_refresh_required_event.h"
 #include "../windmill/src/interface/window/event/window_size_event.h"
 //input
-#include "../windmill/src/interface/window/input/button_action.h"
 #include "../windmill/src/interface/window/input/keyboard_button_action.h"
 #include "../windmill/src/interface/window/input/keyboard_button.h"
 #include "../windmill/src/interface/window/input/mouse_button.h"

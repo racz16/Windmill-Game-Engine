@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../core/defines.h"
+#include "cursor_mode.h"
+#include "cursor_shape.h"
 
 namespace wm {
 
@@ -45,6 +47,10 @@ namespace wm {
 		virtual void focus() = 0;
 		virtual void request_attention() = 0;
 		virtual bool is_hovered() const = 0;
+		virtual cursor_mode get_cursor_mode() const = 0;
+		virtual void set_cursor_mode(const cursor_mode mode) = 0;
+		virtual wm::cursor_shape get_cursor_shape() const = 0;
+		virtual void set_cursor_shape(const wm::cursor_shape cursor_shape) = 0;
 		virtual ~window() { }
 	};
 

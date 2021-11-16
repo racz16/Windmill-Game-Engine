@@ -8,8 +8,8 @@ namespace wm {
 
 	class WM_PUBLIC log_writer {
 	public:
-		static ptr<log_writer> create_console_log_writer(const log_level max_log_level = log_level::Debug);
-		static ptr<log_writer> create_file_log_writer(const log_level max_log_level = log_level::Debug, const std::string& path = "log");
+		static ptr<log_writer> create_console_log_writer(const log_level max_log_level = log_level::debug);
+		static ptr<log_writer> create_file_log_writer(const log_level max_log_level = log_level::debug, const std::string& path = "log");
 
 		virtual log_level get_max_log_level() const = 0;
 		virtual void set_max_log_level(const log_level level) = 0;

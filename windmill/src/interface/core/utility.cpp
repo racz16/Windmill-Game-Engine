@@ -6,19 +6,11 @@ namespace wm {
 
 	utility::utility() { }
 
-	std::string utility::to_string(const button_action action) {
-		switch(action) {
-			case button_action::PRESS: return "press";
-			case button_action::RELEASE: return "release";
-			default: return "UNKNOWN BUTTON ACTION";
-		}
-	}
-
 	std::string utility::to_string(const keyboard_button_action action) {
 		switch(action) {
-			case keyboard_button_action::PRESS: return "press";
-			case keyboard_button_action::HOLD: return "hold";
-			case keyboard_button_action::RELEASE: return "release";
+			case keyboard_button_action::press: return "press";
+			case keyboard_button_action::hold: return "hold";
+			case keyboard_button_action::release: return "release";
 			default: return "UNKNOWN KEYBOARD BUTTON ACTION";
 		}
 	}

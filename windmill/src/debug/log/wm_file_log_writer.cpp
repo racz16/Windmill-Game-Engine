@@ -21,15 +21,15 @@ namespace wm {
 		if(level > get_max_log_level()) {
 			return;
 		}
-		if(level == log_level::Error) {
+		if(level == log_level::error) {
 			entry = "[ERROR]";
-		} else if(level == log_level::Warning) {
+		} else if(level == log_level::warning) {
 			entry = "[WARNING]";
-		} else if(level == log_level::Debug) {
+		} else if(level == log_level::debug) {
 			entry = "[DEBUG]";
-		} else if(level == log_level::Info_1) {
+		} else if(level == log_level::info_1) {
 			entry = "[INFO 1]";
-		} else if(level == log_level::Info_2) {
+		} else if(level == log_level::info_2) {
 			entry = "[INFO 2]";
 		} else {
 			entry = "[INFO 3]";
