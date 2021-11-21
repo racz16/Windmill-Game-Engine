@@ -1,10 +1,11 @@
 #include "stopwatch.h"
-#include "../../debug/wm_stopwatch.h"
+
+#include "../../implementation/debug/wm_stopwatch.h"
 
 namespace wm {
 
-	std::shared_ptr<stopwatch> stopwatch::create() {
-		return std::make_shared<wm_stopwatch>();
+	ptr<stopwatch> stopwatch::create() {
+		return ptr<stopwatch>(new wm_stopwatch());
 	}
 
 }
