@@ -16,6 +16,7 @@ namespace wm {
 		std::chrono::nanoseconds frame_time = 0ns;
 		std::chrono::nanoseconds frame_time_sum = 0ns;
 		int32_t frame_count = 0;
+		int32_t frame_count_in_this_second = 0;
 		double fps = 0.0;
 		double average_frame_time = 0.0;
 		std::vector<double> delta_time_history;
@@ -32,6 +33,7 @@ namespace wm {
 		double get_fps() const override;
 		double get_frame_time() const override;
 		double get_average_frame_time() const override;
+		int32_t get_frame_count() const override;
 		~wm_chrono_time_system() override;
 
 		bool is_active() const override { return wm_base_system::is_active(); }

@@ -25,8 +25,10 @@ class example_1_application: public wm::application {
 	void initialize() override {
 		wm::application::initialize();
 
-		add_event_listener<wm::mouse_button_event>(wm::mouse_button_event::get_key(), [](const wm::mouse_button_event event) {
-			WM_LOG_DEBUG(event.get_button_name() + " " + std::to_string(event.is_press()));
+		add_event_listener<wm::keyboard_button_event>(wm::keyboard_button_event::get_key(), [](const wm::keyboard_button_event event) {
+			if(event.get_button() == wm::keyboard_button::button_escape) {
+				wm::engine::get_window_system()->get_window(0)->set_closing(true);
+			}
 		});
 
 		WM_LOG_DEBUG("test log messages");

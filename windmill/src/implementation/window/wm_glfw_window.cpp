@@ -21,6 +21,7 @@
 
 #include "wm_glfw_window.h"
 #include "wm_glfw_window_system.h"
+#include "input/wm_glfw_window_input_handler.h"
 
 namespace wm {
 
@@ -35,12 +36,21 @@ namespace wm {
 		throw std::runtime_error("destroyed window");
 	}
 
-	wm_glfw_window::wm_glfw_window(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible): title(title), fullscreen(fullscreen)/*, id(++last_id)*/ {
+	wm_glfw_window::wm_glfw_window(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible): title(title), fullscreen(fullscreen), input_handler(nullptr) {
 		set_window_hints(visible);
 		create_window(size);
+		initialize_input();
 		add_window_event_handlers();
 		add_input_event_handlers();
 		WM_LOG_INFO_1("GLFW window constructed");
+	}
+
+	void wm_glfw_window::initialize_input() {
+		glfwSetInputMode(window_handler, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
+		if(glfwRawMouseMotionSupported()) {
+			glfwSetInputMode(window_handler, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+		}
+		input_handler = ptr<wm_glfw_window_input_handler>(new wm_glfw_window_input_handler(window_handler));
 	}
 
 	void wm_glfw_window::add_window_event_handlers() {
@@ -95,14 +105,14 @@ namespace wm {
 		glfwSetKeyCallback(window_handler, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 			const auto window_ptr = get_window(window);
 			const auto keyboard_button = static_cast<wm::keyboard_button>(key);
-			const auto button_action = static_cast<wm::keyboard_button_action>(action);
+			const auto state = button_state(static_cast<button_action>(action));
 			const bool shift = mods & GLFW_MOD_SHIFT;
 			const bool ctrl = mods & GLFW_MOD_CONTROL;
 			const bool alt = mods & GLFW_MOD_ALT;
 			const bool super = mods & GLFW_MOD_SUPER;
 			const bool caps_lock = mods & GLFW_MOD_CAPS_LOCK;
 			const bool num_lock = mods & GLFW_MOD_NUM_LOCK;
-			const auto event = keyboard_button_event(window_ptr, keyboard_button, button_action, scancode, shift, ctrl, alt, super, caps_lock, num_lock);
+			const auto event = keyboard_button_event(window_ptr, keyboard_button, state, scancode, shift, ctrl, alt, super, caps_lock, num_lock);
 			engine::get_event_system()->emit_event<keyboard_button_event>(keyboard_button_event::get_key(), event);
 		});
 		glfwSetCharCallback(window_handler, [](GLFWwindow* window, unsigned int code_point) {
@@ -112,7 +122,7 @@ namespace wm {
 		});
 		glfwSetCursorPosCallback(window_handler, [](GLFWwindow* window, double x_pos, double y_pos) {
 			const auto window_ptr = get_window(window);
-			const auto event = mouse_position_event(window_ptr, glm::vec2(x_pos, y_pos));
+			const auto event = mouse_position_event(window_ptr, glm::dvec2(x_pos, y_pos));
 			engine::get_event_system()->emit_event<mouse_position_event>(mouse_position_event::get_key(), event);
 		});
 		glfwSetCursorEnterCallback(window_handler, [](GLFWwindow* window, int entered) {
@@ -158,6 +168,10 @@ namespace wm {
 		const auto monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
 		window_handler = glfwCreateWindow(size.x, size.y, title.c_str(), monitor, nullptr);
 		WM_ASSERT(window_handler != nullptr);
+	}
+
+	void wm_glfw_window::update() {
+		input_handler->update();
 	}
 
 	GLFWwindow* wm_glfw_window::get_handler() const {
@@ -437,7 +451,12 @@ namespace wm {
 		}
 	}
 
+	ptr_view<window_input_handler> wm_glfw_window::get_input_handler() {
+		return input_handler.convert<window_input_handler>();
+	}
+
 	wm_glfw_window::~wm_glfw_window() {
+		input_handler.destroy();
 		destroy_cursor();
 		wm_glfw_window_system::get_instance()->remove_window(window_handler);
 		glfwDestroyWindow(window_handler);

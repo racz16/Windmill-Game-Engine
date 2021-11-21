@@ -2,7 +2,10 @@
 
 #include "defines.h"
 #include "../window/input/keyboard_button.h"
-#include "../window/input/keyboard_button_action.h"
+#include "../window/input/button_action.h"
+#include "../window/input/mouse_button.h"
+#include "../window/input/gamepad_axis.h"
+#include "../window/input/gamepad_button.h"
 
 namespace wm {
 
@@ -10,14 +13,17 @@ namespace wm {
 	private:
 
 		static const int32_t COLUMN_DISTANCE;
+		static std::vector<keyboard_button> keyboard_buttons;
+		static std::vector<mouse_button> mouse_buttons;
+		static std::vector<gamepad_axis> gamepad_axes;
+		static std::vector<gamepad_button> gamepad_buttons;
 
 		utility();
 		static std::string repeat_character(const int32_t size, const std::string& character = " ");
 		static void add_matrix_row(const std::vector<::std::vector<std::string>>& numbers, const std::vector<int32_t>& max_columns_widths, const int32_t y, std::string& result);
-
 	public:
 
-		static std::string to_string(const keyboard_button_action action);
+		static std::string to_string(const button_action action);
 
 		template<int32_t S, class T>
 		static std::string to_string(const glm::vec<S, T, glm::defaultp>& vector, const std::string& message = "") {
@@ -91,6 +97,11 @@ namespace wm {
 			result += " │\n└" + repeat_character(character_width) + "┘";
 			return result;
 		}
+
+		static std::vector<keyboard_button>& get_keyboard_buttons();
+		static std::vector<mouse_button>& get_mouse_buttons();
+		static std::vector<gamepad_axis>& get_gamepad_axes();
+		static std::vector<gamepad_button>& get_gamepad_buttons();
 
 	};
 

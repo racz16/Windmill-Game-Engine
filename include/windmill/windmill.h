@@ -54,6 +54,7 @@
 #include "../windmill/src/interface/window/window_system.h"
 #include "../windmill/src/interface/window/window.h"
 //event
+#include "../windmill/src/interface/window/event/gamepad_connection_event.h"
 #include "../windmill/src/interface/window/event/keyboard_button_event.h"
 #include "../windmill/src/interface/window/event/keyboard_character_event.h"
 #include "../windmill/src/interface/window/event/mouse_button_event.h"
@@ -72,6 +73,12 @@
 #include "../windmill/src/interface/window/event/window_refresh_required_event.h"
 #include "../windmill/src/interface/window/event/window_size_event.h"
 //input
-#include "../windmill/src/interface/window/input/keyboard_button_action.h"
+#include "../windmill/src/interface/window/input/axis_state.h"
+#include "../windmill/src/interface/window/input/button_action.h"
+#include "../windmill/src/interface/window/input/button_state.h"
+#include "../windmill/src/interface/window/input/gamepad_axis.h"
+#include "../windmill/src/interface/window/input/gamepad_button.h"
 #include "../windmill/src/interface/window/input/keyboard_button.h"
 #include "../windmill/src/interface/window/input/mouse_button.h"
+#include "../windmill/src/interface/window/input/position_state.h"
+#include "../windmill/src/interface/window/input/window_input_handler.h"

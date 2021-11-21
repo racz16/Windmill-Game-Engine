@@ -2,10 +2,11 @@
 
 namespace wm {
 
-	enum class keyboard_button_action {
+	enum class button_action {
 		release = 0,
 		press = 1,
-		hold = 2
+		keep_down = 2,
+		keep_up = 3,
 	};
 
 }

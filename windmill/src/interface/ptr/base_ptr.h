@@ -12,7 +12,7 @@ namespace wm {
 
 		void destroy() {
 			auto& meta = ptr_meta::get_meta(id);
-			if(meta.is_valid()) {
+			if(raw_pointer != nullptr && meta.is_valid()) {
 				delete raw_pointer;
 				meta.invalidate();
 			}
@@ -46,14 +46,14 @@ namespace wm {
 			raw_pointer = other_ptr.raw_pointer;
 			id = other_ptr.id;
 
-			pm = ptr_meta::get_meta(id);
-			pm.increase_reference_count();
+			auto& pm2 = ptr_meta::get_meta(id);
+			pm2.increase_reference_count();
 
 			return *this;
 		}
 
 		T* operator->() const {
-			WM_ASSERT(ptr_meta::get_meta(id).is_valid());
+			WM_ASSERT(raw_pointer != nullptr && ptr_meta::get_meta(id).is_valid());
 			return raw_pointer;
 		}
 

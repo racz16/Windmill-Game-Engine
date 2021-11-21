@@ -4,6 +4,8 @@
 
 #include "window/window.h"
 
+#include "../../implementation/window/input/wm_glfw_window_input_handler.h"
+
 namespace wm {
 
 	class wm_glfw_window: public window {
@@ -19,14 +21,17 @@ namespace wm {
 		bool fullscreen;
 		int32_t refresh_rate = DONT_CARE;
 		wm::cursor_shape cursor_shape = cursor_shape::normal;
+		ptr<wm_glfw_window_input_handler> input_handler;
 
 		void set_window_hints(const bool visible);
 		void create_window(const glm::ivec2& size);
+		void initialize_input();
 		void set_window_monitor();
 		void add_window_event_handlers();
 		void add_input_event_handlers();
 	public:
 		wm_glfw_window(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible);
+		void update() override;
 		GLFWwindow* get_handler() const;
 		bool is_closing() const override;
 		void set_closing(const bool closing) override;
@@ -72,6 +77,7 @@ namespace wm {
 		wm::cursor_shape get_cursor_shape() const override;
 		void set_cursor_shape(const wm::cursor_shape cursor_shape) override;
 		void destroy_cursor();
+		ptr_view<window_input_handler> get_input_handler() override;
 		~wm_glfw_window() override;
 	};
 

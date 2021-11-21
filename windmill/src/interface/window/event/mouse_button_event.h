@@ -31,8 +31,8 @@ namespace wm {
 		bool is_ctrl_down() const;
 		bool is_alt_down() const;
 		bool is_super_down() const;
-		bool is_caps_lock_down() const;
-		bool is_num_lock_down() const;
+		bool is_caps_lock_active() const;
+		bool is_num_lock_active() const;
 	};
 
 }

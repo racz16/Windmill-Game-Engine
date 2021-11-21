@@ -1,4 +1,5 @@
 #include "core/engine.h"
+#include "window/event/gamepad_connection_event.h"
 
 #include "wm_glfw_window_system.h"
 
@@ -43,13 +44,16 @@ namespace wm {
 				message += "NO_WINDOW_CONTEXT";
 			}
 			message += std::string(", ") + std::string(description);
-			throw std::runtime_error(message);
+			WM_LOG_WARNING(message);
 		});
 	}
 
 	void wm_glfw_window_system::initialize_glfw() const {
 		const auto glfw_init = glfwInit();
 		WM_ASSERT(glfw_init == GLFW_TRUE);
+		glfwSetJoystickCallback([](int jid, int event) {
+			engine::get_event_system()->emit_event(gamepad_connection_event::get_key(), gamepad_connection_event(event == GLFW_CONNECTED, jid));
+		});
 	}
 
 	ptr<window> wm_glfw_window_system::create_window(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible) {
@@ -109,6 +113,8 @@ namespace wm {
 			auto window = windows.at(i);
 			if(window->is_closing()) {
 				window.destroy();
+			} else {
+				window->update();
 			}
 		}
 		WM_LOG_INFO_3("GLFW window system updated");

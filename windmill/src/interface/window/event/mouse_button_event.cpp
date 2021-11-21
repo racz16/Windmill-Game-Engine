@@ -56,11 +56,11 @@ namespace wm {
 		return super;
 	}
 
-	bool mouse_button_event::is_caps_lock_down() const {
+	bool mouse_button_event::is_caps_lock_active() const {
 		return caps_lock;
 	}
 
-	bool mouse_button_event::is_num_lock_down() const {
+	bool mouse_button_event::is_num_lock_active() const {
 		return num_lock;
 	}
 

@@ -3,11 +3,14 @@
 #include "../core/defines.h"
 #include "cursor_mode.h"
 #include "cursor_shape.h"
+#include "input/window_input_handler.h"
+#include "../ptr/ptr_view.h"
 
 namespace wm {
 
 	class WM_PUBLIC window {
 	public:
+		virtual void update() = 0;
 		virtual bool is_closing() const = 0;
 		virtual void set_closing(const bool closing) = 0;
 		virtual bool is_visible() const = 0;
@@ -51,6 +54,7 @@ namespace wm {
 		virtual void set_cursor_mode(const cursor_mode mode) = 0;
 		virtual wm::cursor_shape get_cursor_shape() const = 0;
 		virtual void set_cursor_shape(const wm::cursor_shape cursor_shape) = 0;
+		virtual ptr_view<window_input_handler> get_input_handler() = 0;
 		virtual ~window() { }
 	};
 

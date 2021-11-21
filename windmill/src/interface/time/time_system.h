@@ -17,6 +17,7 @@ namespace wm {
 		virtual double get_fps() const = 0;
 		virtual double get_frame_time() const = 0;
 		virtual double get_average_frame_time() const = 0;
+		virtual int32_t get_frame_count() const = 0;
 	};
 
 }

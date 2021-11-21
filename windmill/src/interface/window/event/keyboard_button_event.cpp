@@ -10,8 +10,8 @@ namespace wm {
 		return key;
 	}
 
-	keyboard_button_event::keyboard_button_event(const ptr<wm::window> window, const keyboard_button button, const keyboard_button_action action, const int32_t scancode, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock):
-		window_event(window), button(button), action(action), scancode(scancode), shift(shift), ctrl(ctrl), alt(alt), super(super), caps_lock(caps_lock), num_lock(num_lock), button_name(get_button_name(button, scancode)) { }
+	keyboard_button_event::keyboard_button_event(const ptr<wm::window> window, const keyboard_button button, const button_state state, const int32_t scancode, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock):
+		window_event(window), button(button), state(state), scancode(scancode), shift(shift), ctrl(ctrl), alt(alt), super(super), caps_lock(caps_lock), num_lock(num_lock), button_name(get_button_name(button, scancode)) { }
 
 	std::string keyboard_button_event::get_button_name(const keyboard_button button, const int32_t scancode) const {
 		switch(button) {
@@ -84,8 +84,8 @@ namespace wm {
 		return button_name;
 	}
 
-	keyboard_button_action keyboard_button_event::get_action() const {
-		return action;
+	button_state keyboard_button_event::get_state() const {
+		return state;
 	}
 
 	int32_t keyboard_button_event::get_scancode() const {
@@ -108,13 +108,12 @@ namespace wm {
 		return super;
 	}
 
-	bool keyboard_button_event::is_caps_lock_down() const {
+	bool keyboard_button_event::is_caps_lock_active() const {
 		return caps_lock;
 	}
 
-	bool keyboard_button_event::is_num_lock_down() const {
+	bool keyboard_button_event::is_num_lock_active() const {
 		return num_lock;
 	}
-
 
 }
