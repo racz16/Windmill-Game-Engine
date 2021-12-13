@@ -21,7 +21,6 @@ namespace wm {
 		for(int32_t i = 0; i < order.size(); i++) {
 			const auto key = order.at(i).first;
 			const auto system = systems.at(key);
-			WM_ASSERT(system.is_valid());
 			if(system->is_active()) {
 				system->update();
 			}
@@ -42,6 +41,10 @@ namespace wm {
 
 	ptr<time_system> engine::get_time_system() {
 		return get_system<time_system>(time_system::get_key());
+	}
+
+	ptr<rendering_system> engine::get_rendering_system() {
+		return get_system<rendering_system>(rendering_system::get_key());
 	}
 
 	void engine::destroy() {

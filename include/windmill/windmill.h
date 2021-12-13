@@ -11,17 +11,23 @@
 //CORE
 //
 #include "../windmill/src/interface/core/application.h"
-#include "../windmill/src/interface/core/defines.h"
 #include "../windmill/src/interface/core/engine.h"
 #include "../windmill/src/interface/core/key.h"
 #include "../windmill/src/interface/core/parameter_container.h"
 #include "../windmill/src/interface/core/system.h"
 #include "../windmill/src/interface/core/utility.h"
+#include "../windmill/src/interface/core/windmill_error.h"
 //
 //DEBUG
 //
 #include "../windmill/src/interface/debug/scoped_time_logger.h"
 #include "../windmill/src/interface/debug/stopwatch.h"
+//
+//DEFINES
+//
+#include "../windmill/src/interface/defines/debug_defines.h"
+#include "../windmill/src/interface/defines/general_defines.h"
+#include "../windmill/src/interface/defines/log_defines.h"
 //
 //EVENT
 //
@@ -41,6 +47,10 @@
 #include "../windmill/src/interface/ptr/ptr.h"
 #include "../windmill/src/interface/ptr/ptr_meta.h"
 #include "../windmill/src/interface/ptr/ptr_view.h"
+//
+//RENDERING
+//
+#include "../windmill/src/interface/rendering/rendering_system.h"
 //
 //TIME
 //

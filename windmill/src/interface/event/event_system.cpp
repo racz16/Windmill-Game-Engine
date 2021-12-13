@@ -1,4 +1,5 @@
 #include "event_system.h"
+
 #include "../implementation/event/wm_event_system.h"
 
 namespace wm {

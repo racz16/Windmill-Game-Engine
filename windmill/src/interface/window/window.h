@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../core/defines.h"
 #include "cursor_mode.h"
 #include "cursor_shape.h"
 #include "input/window_input_handler.h"

@@ -1,7 +1,6 @@
-#include "log/log_level.h"
 #include "core/engine.h"
 #include "core/utility.h"
-#include "core/defines.h"
+#include "defines/log_defines.h"
 #include "window/event/window_position_event.h"
 #include "window/event/mouse_position_event.h"
 #include "window/event/window_closed_event.h"
@@ -21,7 +20,6 @@
 
 #include "wm_glfw_window.h"
 #include "wm_glfw_window_system.h"
-#include "input/wm_glfw_window_input_handler.h"
 
 namespace wm {
 

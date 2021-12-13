@@ -1,3 +1,5 @@
+#include "defines/debug_defines.h"
+
 #include "wm_log_system.h"
 
 namespace wm {
@@ -30,7 +32,6 @@ namespace wm {
 
 	void wm_log_system::log_messaage(const log_level level, const std::string& message, const std::string& function, const int32_t line, const std::string& log_source) {
 		for(auto writer : log_writers) {
-			WM_ASSERT(writer.is_valid());
 			writer->log_message(level, message, function, line, log_source);
 		}
 	}

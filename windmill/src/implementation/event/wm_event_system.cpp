@@ -1,4 +1,4 @@
-#include "core/engine.h"
+#include "defines/log_defines.h"
 
 #include "wm_event_system.h"
 
@@ -9,8 +9,8 @@ namespace wm {
 	}
 
 	void wm_event_system::add_event_listener(const int32_t key, const int32_t event_listener_id, const std::any event_listener) {
-		if(!has_event_listener(key, event_listener_id)) {
-			if(!has_key(key)) {
+		if(!contains_event_listener(key, event_listener_id)) {
+			if(!contains_key(key)) {
 				std::vector<std::pair<int32_t, std::any>> event_listeners_vector;
 				event_listeners.insert_or_assign(key, event_listeners_vector);
 			}
@@ -20,8 +20,8 @@ namespace wm {
 		}
 	}
 
-	bool wm_event_system::has_event_listener(const int32_t key, const int32_t event_listener_id) {
-		if(has_key(key)) {
+	bool wm_event_system::contains_event_listener(const int32_t key, const int32_t event_listener_id) {
+		if(contains_key(key)) {
 			for(auto el : get_event_listeners(key)) {
 				if(el.first == event_listener_id) {
 					return true;
@@ -31,12 +31,12 @@ namespace wm {
 		return false;
 	}
 
-	bool wm_event_system::has_key(const int32_t key) {
+	bool wm_event_system::contains_key(const int32_t key) {
 		return event_listeners.find(key) != event_listeners.end();
 	}
 
 	void wm_event_system::remove_event_listener(const int32_t key, const int32_t event_listener_id) {
-		if(has_event_listener(key, event_listener_id)) {
+		if(contains_event_listener(key, event_listener_id)) {
 			auto& event_listeners_vector = event_listeners.at(key);
 			for(int32_t i = 0; i < event_listeners_vector.size(); i++) {
 				if(event_listeners_vector.at(i).first == event_listener_id) {

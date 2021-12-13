@@ -1,6 +1,5 @@
 #pragma once
 
-#include "base_ptr.h"
 #include "ptr_view.h"
 
 namespace wm {
@@ -12,7 +11,7 @@ namespace wm {
 		using base_ptr<T>::base_ptr;
 
 		ptr_view<T> to_ptr_view() const {
-			*this;
+			return *this;
 		}
 
 		operator ptr_view<T>() const {

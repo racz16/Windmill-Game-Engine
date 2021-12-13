@@ -2,7 +2,6 @@
 
 #include "window.h"
 #include "video_mode.h"
-#include "../core/defines.h"
 #include "../core/system.h"
 #include "../core/key.h"
 #include "../ptr/ptr.h"
@@ -20,7 +19,6 @@ namespace wm {
 		virtual void destroy_window(ptr<window> window) = 0;
 		virtual video_mode get_current_video_mode() const = 0;
 		virtual std::vector<video_mode> get_all_video_modes() const = 0;
-		virtual ~window_system() { }
 	};
 
 }

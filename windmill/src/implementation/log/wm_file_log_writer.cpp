@@ -1,10 +1,8 @@
-#pragma warning(disable:4996) //localtime_s is an optional part of C++ and not available everywhere
-
 #include <filesystem>
 #include <ctime>
 #include <regex>
 
-#include "core/defines.h"
+#include "defines/debug_defines.h"
 
 #include "wm_file_log_writer.h"
 
@@ -45,6 +43,8 @@ namespace wm {
 
 	std::string wm_file_log_writer::compute_file_name() const {
 		const auto now = time(nullptr);
+	//localtime_s is an optional part of C++ and not available everywhere
+	#pragma warning(suppress:4996) 
 		const auto date = *localtime(&now);
 		return std::to_string(date.tm_year + 1900) + "_" +
 			std::to_string(date.tm_mon + 1) + "_" +

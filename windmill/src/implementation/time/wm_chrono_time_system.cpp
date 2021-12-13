@@ -1,6 +1,6 @@
 #include <numeric>
 
-#include "core/engine.h"
+#include "defines/log_defines.h"
 
 #include "wm_chrono_time_system.h"
 
@@ -17,6 +17,7 @@ namespace wm {
 		if(frame_time_sum >= 1s) {
 			every_second_update();
 		}
+		WM_LOG_INFO_3("chrono time system updated");
 	}
 
 	void wm_chrono_time_system::every_frame_update() {

@@ -1,7 +1,5 @@
 #pragma once
 
-#define GLFW_INCLUDE_NONE
-
 #include "window/window_system.h"
 
 #include "wm_glfw_window.h"

@@ -1,5 +1,6 @@
 #include "core/engine.h"
 #include "window/event/gamepad_connection_event.h"
+#include "defines/log_defines.h"
 
 #include "wm_glfw_window_system.h"
 
@@ -14,7 +15,9 @@ namespace wm {
 	}
 
 	wm_glfw_window_system::wm_glfw_window_system() {
+	#ifdef WM_BUILD_DEBUG
 		set_error_callback();
+	#endif
 		initialize_glfw();
 		WM_LOG_INFO_1("GLFW window system constructed");
 	}
@@ -44,7 +47,7 @@ namespace wm {
 				message += "NO_WINDOW_CONTEXT";
 			}
 			message += std::string(", ") + std::string(description);
-			WM_LOG_WARNING(message);
+			WM_LOG_ERROR(message, __FUNCTION__, __LINE__);
 		});
 	}
 

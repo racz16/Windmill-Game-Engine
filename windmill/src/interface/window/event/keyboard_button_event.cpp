@@ -1,8 +1,5 @@
 #include "keyboard_button_event.h"
 
-#include "../../core/defines.h"
-#include "../../core/engine.h"
-
 namespace wm {
 
 	key<keyboard_button_event> keyboard_button_event::get_key() {

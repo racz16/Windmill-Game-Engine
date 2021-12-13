@@ -193,19 +193,19 @@ namespace wm {
 		result += " │\n";
 	}
 
-	std::vector<keyboard_button>& utility::get_keyboard_buttons() {
+	const std::vector<keyboard_button>& utility::get_keyboard_buttons() {
 		return keyboard_buttons;
 	}
 
-	std::vector<mouse_button>& utility::get_mouse_buttons() {
+	const std::vector<mouse_button>& utility::get_mouse_buttons() {
 		return mouse_buttons;
 	}
 
-	std::vector<gamepad_axis>& utility::get_gamepad_axes() {
+	const std::vector<gamepad_axis>& utility::get_gamepad_axes() {
 		return gamepad_axes;
 	}
 
-	std::vector<gamepad_button>& utility::get_gamepad_buttons() {
+	const std::vector<gamepad_button>& utility::get_gamepad_buttons() {
 		return gamepad_buttons;
 	}
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../../core/defines.h"
 #include "button_state.h"
 #include "keyboard_button.h"
 #include "mouse_button.h"

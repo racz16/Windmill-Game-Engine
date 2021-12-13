@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../core/defines.h"
 #include "../core/system.h"
 #include "../ptr/ptr.h"
 #include "../core/key.h"

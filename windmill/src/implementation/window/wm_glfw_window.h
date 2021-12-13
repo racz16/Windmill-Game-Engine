@@ -1,7 +1,5 @@
 #pragma once
 
-#define GLFW_INCLUDE_NONE
-
 #include "window/window.h"
 
 #include "../../implementation/window/input/wm_glfw_window_input_handler.h"

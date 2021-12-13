@@ -15,7 +15,7 @@ namespace wm {
 		std::chrono::time_point<std::chrono::steady_clock> last_time_point = std::chrono::steady_clock::now();
 		std::chrono::nanoseconds frame_time = 0ns;
 		std::chrono::nanoseconds frame_time_sum = 0ns;
-		int32_t frame_count = 0;
+		int32_t frame_count = -1;
 		int32_t frame_count_in_this_second = 0;
 		double fps = 0.0;
 		double average_frame_time = 0.0;

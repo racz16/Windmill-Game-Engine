@@ -36,8 +36,8 @@ namespace wm {
 		gamepad_axis_state = std::vector<std::unordered_map<gamepad_axis, axis_state>>(GAMEPAD_COUNT);
 		for(int32_t i = 0; i < GAMEPAD_COUNT; i++) {
 			for(const auto axis : utility::get_gamepad_axes()) {
-				gamepad_axis_value.at(i).insert_or_assign(axis, 0.0);
-				gamepad_axis_state.at(i).insert_or_assign(axis, axis_state(0.0, 0.0));
+				gamepad_axis_value.at(i).insert_or_assign(axis, 0.0f);
+				gamepad_axis_state.at(i).insert_or_assign(axis, axis_state(0.0f, 0.0f));
 			}
 			for(const auto button : utility::get_gamepad_buttons()) {
 				gamepad_button_down.at(i).insert_or_assign(button, false);
@@ -126,7 +126,7 @@ namespace wm {
 		if(is_gamepad_available(gamepad_index)) {
 			return gamepad_axis_state.at(gamepad_index).at(axis);
 		} else {
-			return axis_state(0.0, 0.0);
+			return axis_state(0.0f, 0.0f);
 		}
 	}
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "defines.h"
+#include "../defines/general_defines.h"
 #include "../window/input/keyboard_button.h"
 #include "../window/input/button_action.h"
 #include "../window/input/mouse_button.h"
@@ -98,10 +98,10 @@ namespace wm {
 			return result;
 		}
 
-		static std::vector<keyboard_button>& get_keyboard_buttons();
-		static std::vector<mouse_button>& get_mouse_buttons();
-		static std::vector<gamepad_axis>& get_gamepad_axes();
-		static std::vector<gamepad_button>& get_gamepad_buttons();
+		static const std::vector<keyboard_button>& get_keyboard_buttons();
+		static const std::vector<mouse_button>& get_mouse_buttons();
+		static const std::vector<gamepad_axis>& get_gamepad_axes();
+		static const std::vector<gamepad_button>& get_gamepad_buttons();
 
 	};
 

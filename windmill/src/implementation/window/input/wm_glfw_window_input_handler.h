@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../interface/window/input/window_input_handler.h"
+#include "window/input/window_input_handler.h"
 
 namespace wm {
 
