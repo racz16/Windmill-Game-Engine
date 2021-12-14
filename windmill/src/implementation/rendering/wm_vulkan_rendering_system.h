@@ -120,7 +120,7 @@ namespace wm {
 		void create_surface();
 		//device
 		void create_device();
-		void wm_vulkan_rendering_system::get_physical_device();
+		void get_physical_device();
 		//device extensions
 		std::vector<const char*> get_required_device_extensions() const;
 		std::vector<VkExtensionProperties> get_available_device_extensions(const VkPhysicalDevice physical_device) const;
