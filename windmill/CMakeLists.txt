@@ -9,6 +9,7 @@ else()
 endif()
 
 #GLFW
+target_compile_definitions("${WM_WINDMILL}" PUBLIC "GLFW_INCLUDE_NONE")
 target_link_libraries("${WM_WINDMILL}" PRIVATE glfw)
 target_include_directories("${WM_WINDMILL}" PRIVATE "${WM_LIB_PATH_GLFW}/include")
 

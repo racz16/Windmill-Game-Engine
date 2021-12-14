@@ -685,7 +685,7 @@ namespace wm {
 		pipeline_rasterization_state_create_info.polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
 		pipeline_rasterization_state_create_info.lineWidth = 1.0f;
 		pipeline_rasterization_state_create_info.cullMode = VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT;
-		pipeline_rasterization_state_create_info.frontFace = VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		pipeline_rasterization_state_create_info.frontFace = VkFrontFace::VK_FRONT_FACE_CLOCKWISE;
 		pipeline_rasterization_state_create_info.depthBiasEnable = VK_FALSE;
 
 		VkPipelineMultisampleStateCreateInfo pipeline_multisample_state_create_info {};
@@ -968,16 +968,16 @@ namespace wm {
 		}
 	}
 
-	float x = 0.0;
-
 	void wm_vulkan_rendering_system::update_uniform_buffer(const uint32_t image_index) const {
+		static const float ROTATION_SPEED = 0.001f;
+		static float rotation = 0.0f;
+		const float delta_time = engine::get_time_system()->get_delta_time();
+		rotation += delta_time * ROTATION_SPEED;
+
 		uniform_buffer_object ubo {};
-		const float time = engine::get_time_system()->get_delta_time();
-		ubo.model = glm::rotate(glm::mat4(1.0f), 0.000001f * time * glm::radians(x) , glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.projection = glm::perspective(glm::radians(45.0f), swap_chain_extent.width / static_cast<float>(swap_chain_extent.height), 0.1f, 10.0f);
-		ubo.projection[1][1] *= -1;
-		x++;
+		ubo.model = glm::rotate(glm::mat4(1.0f), rotation * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.projection = glm::perspectiveRH(glm::radians(45.0f), static_cast<float>(swap_chain_extent.width) / static_cast<float>(swap_chain_extent.height), 0.1f, 10.0f);
 
 		void* data;
 		vkMapMemory(device, uniform_buffers_device_memory.at(image_index), 0, sizeof(ubo), 0, &data);
