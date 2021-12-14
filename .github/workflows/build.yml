@@ -9,7 +9,7 @@ jobs:
             submodules: recursive
       - uses: humbletim/setup-vulkan-sdk@v1.0.3
         with:
-          vulkan-version: 1.2.189
+          vulkan-version: 1.2.189.0
       - run: cmake .
       - run: cmake --build .
   build-windows-release:
@@ -20,7 +20,7 @@ jobs:
             submodules: recursive
       - uses: humbletim/setup-vulkan-sdk@v1.0.3
         with:
-          vulkan-version: 1.2.189
+          vulkan-version: 1.2.189.0
       - run: cmake .
       - run: cmake --build . --config Release
   build-linux-debug:
@@ -33,7 +33,7 @@ jobs:
       - run: sudo apt-get install xorg-dev
       - uses: humbletim/setup-vulkan-sdk@v1.0.3
         with:
-          vulkan-version: 1.2.189
+          vulkan-version: 1.2.189.0
       - run: cmake .
       - run: cmake --build .
   build-linux-release:
@@ -46,6 +46,6 @@ jobs:
       - run: sudo apt-get install xorg-dev
       - uses: humbletim/setup-vulkan-sdk@v1.0.3
         with:
-          vulkan-version: 1.2.189
+          vulkan-version: 1.2.189.0
       - run: cmake .
       - run: cmake --build . --config Release
