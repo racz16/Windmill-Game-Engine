@@ -623,8 +623,8 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::create_pipeline() {
-		auto verteex_shader_code = read_file("res/shader/vert.spv");
-		auto fragment_shader_code = read_file("res/shader/frag.spv");
+		auto verteex_shader_code = read_file("res/shader/shader.vert.spv");
+		auto fragment_shader_code = read_file("res/shader/shader.frag.spv");
 		WM_LOG_INFO_2(std::string("Vertex shader size: ") + std::to_string(verteex_shader_code.size()));
 		WM_LOG_INFO_2(std::string("Fragment shader size: ") + std::to_string(fragment_shader_code.size()));
 		auto vertex_shader_module = create_shader_module(verteex_shader_code);
