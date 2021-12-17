@@ -38,16 +38,7 @@ target_precompile_headers("${WM_WINDMILL}" PRIVATE "<string>" "<vector>" "<unord
 #resources
 add_custom_command(TARGET "${WM_WINDMILL}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink "${WM_SOURCE_DIR}/windmill/res" "${CMAKE_BINARY_DIR}/res" VERBATIM)
 
-if(Vulkan_GLSLC_EXECUTABLE)
-	file(GLOB SHADERS "${WM_SOURCE_DIR}/windmill/res/shader/*.vert" "${WM_SOURCE_DIR}/windmill/res/shader/*.frag")
-	foreach(shader ${SHADERS})
-		add_custom_command(TARGET "${WM_WINDMILL}" PRE_BUILD COMMAND Vulkan::glslc "\"${shader}\" -o \"${shader}.spv\"")
-	endforeach()
-else()
-	message(WARNING "Couldn't find glslc")
-endif()
-
 #install
 install(TARGETS glfw)
 install(TARGETS "${WM_WINDMILL}")
-install(DIRECTORY "${WM_SOURCE_DIR}/windmill/res" DESTINATION "bin" PATTERN "*.vert" EXCLUDE PATTERN "*.frag" EXCLUDE PATTERN "*.ps1" EXCLUDE)
+install(DIRECTORY "${WM_SOURCE_DIR}/windmill/res" DESTINATION "bin" PATTERN "*.vert" EXCLUDE PATTERN "*.frag" EXCLUDE PATTERN "*.ps1" EXCLUDE PATTERN "*.sh" EXCLUDE)

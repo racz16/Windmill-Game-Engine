@@ -1125,6 +1125,11 @@ namespace wm {
 
 	//drawing
 	void wm_vulkan_rendering_system::update() {
+		#ifdef WM_PLATFORM_LINUX
+			//TODO
+			vkDeviceWaitIdle(device);
+		#endif
+
 		if(engine::get_window_system()->get_window_count() == 0 || minimized) {
 			return;
 		}

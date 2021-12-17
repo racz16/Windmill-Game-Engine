@@ -49,3 +49,11 @@ jobs:
           vulkan-version: 1.2.189.0
       - run: cmake .
       - run: cmake --build . --config Release
+  build-shaders:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt-get update
+      - run: sudo apt-get install glslang-tools
+      - run: ./compile.sh
+        working-directory: ./windmill/res/shader
