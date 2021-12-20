@@ -34,4 +34,4 @@
 #	define WM_LOG_WARNING(message)
 #	define WM_LOG_WARNING_IF(condition, message)
 #endif
-#define WM_LOG_ERROR(message, function, line) wm::engine::get_log_system()->log_messaage(wm::log_level::error, message,  function, line, WM_LOG_SOURCE)
+#define WM_LOG_ERROR(message, function, line) wm::engine::get_log_system()->log_messaage(wm::log_level::error, message, function, line, WM_LOG_SOURCE)

@@ -33,7 +33,7 @@ else()
 endif()
 
 #precompile headers
-target_precompile_headers("${WM_WINDMILL}" PRIVATE "<string>" "<vector>" "<unordered_map>" "<iostream>" "<memory>" "<chrono>" "<any>" "<utility>" "<fstream>" "<glm/glm.hpp>" "<glm/ext.hpp>" "<vulkan/vulkan.h>" "<GLFW/glfw3.h>")
+target_precompile_headers("${WM_WINDMILL}" PRIVATE "<string>" "<vector>" "<array>" "<unordered_map>" "<iostream>" "<memory>" "<chrono>" "<any>" "<utility>" "<fstream>" "<glm/glm.hpp>" "<glm/ext.hpp>" "<vulkan/vulkan.h>" "<GLFW/glfw3.h>")
 
 #resources
 add_custom_command(TARGET "${WM_WINDMILL}" POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink "${WM_SOURCE_DIR}/windmill/res" "${CMAKE_BINARY_DIR}/res" VERBATIM)

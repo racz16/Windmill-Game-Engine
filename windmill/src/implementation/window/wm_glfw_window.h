@@ -69,7 +69,6 @@ namespace wm {
 		bool is_focused() const override;
 		void focus() override;
 		void request_attention() override;
-		bool is_hovered() const override;
 		cursor_mode get_cursor_mode() const override;
 		void set_cursor_mode(const cursor_mode mode) override;
 		wm::cursor_shape get_cursor_shape() const override;

@@ -30,10 +30,6 @@ namespace wm {
 	}
 
 	void wm_glfw_window_input_handler::initialize_gamepad() {
-		gamepad_button_down = std::vector<std::unordered_map<gamepad_button, bool>>(GAMEPAD_COUNT);
-		gamepad_button_state = std::vector<std::unordered_map<gamepad_button, button_state>>(GAMEPAD_COUNT);
-		gamepad_axis_value = std::vector<std::unordered_map<gamepad_axis, float>>(GAMEPAD_COUNT);
-		gamepad_axis_state = std::vector<std::unordered_map<gamepad_axis, axis_state>>(GAMEPAD_COUNT);
 		for(int32_t i = 0; i < GAMEPAD_COUNT; i++) {
 			for(const auto axis : utility::get_gamepad_axes()) {
 				gamepad_axis_value.at(i).insert_or_assign(axis, 0.0f);
@@ -100,6 +96,10 @@ namespace wm {
 
 	button_state wm_glfw_window_input_handler::get_keyboard_button_state(const keyboard_button button) const {
 		return keyboard_button_state.at(button);
+	}
+
+	bool wm_glfw_window_input_handler::is_mouse_over_window() const {
+		return glfwGetWindowAttrib(window_handler, GLFW_HOVERED);
 	}
 
 	button_state wm_glfw_window_input_handler::get_mouse_button_state(const mouse_button button) const {

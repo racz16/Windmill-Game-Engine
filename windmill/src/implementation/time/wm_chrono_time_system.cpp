@@ -24,12 +24,20 @@ namespace wm {
 		const auto current_time_point = std::chrono::steady_clock::now();
 		frame_time = current_time_point - last_time_point;
 		frame_time_sum += frame_time;
-		delta_time_history[oldest_delta_time_index] = frame_time > 1s ? DEFAULT_FRAME_TIME : get_frame_time();
-		delta_time = std::accumulate(delta_time_history.begin(), delta_time_history.end(), 0.0) / delta_time_history.size();
-		oldest_delta_time_index = (oldest_delta_time_index + 1) % static_cast<int32_t>(delta_time_history.size());
-		frame_count++;
+		update_delta_time();
+		frame_index++;
 		frame_count_in_this_second++;
 		last_time_point = current_time_point;
+	}
+
+	void wm_chrono_time_system::update_delta_time() {
+		delta_time_history.at(oldest_delta_time_index) = frame_time > 1s ? DEFAULT_FRAME_TIME : get_frame_time();
+		delta_time = 0.0;
+		for(const auto delta_time_element : delta_time_history) {
+			delta_time += delta_time_element;
+		}
+		delta_time /= delta_time_history.size();
+		oldest_delta_time_index = (oldest_delta_time_index + 1) % static_cast<int32_t>(delta_time_history.size());
 	}
 
 	void wm_chrono_time_system::every_second_update() {
@@ -61,8 +69,8 @@ namespace wm {
 		return average_frame_time;
 	}
 
-	int32_t wm_chrono_time_system::get_frame_count() const {
-		return frame_count;
+	int32_t wm_chrono_time_system::get_frame_index() const {
+		return frame_index;
 	}
 
 	wm_chrono_time_system::~wm_chrono_time_system() {

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <array>
-
 #include "rendering/rendering_system.h"
 
 #include "../core/wm_base_system.h"
@@ -50,8 +48,8 @@ namespace wm {
 	private:
 		static const int32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-		static const std::vector<vertex> vertices;
-		static const std::vector<uint16_t> indices;
+		static const std::array<vertex, 4> vertices;
+		static const std::array<uint16_t, 6> indices;
 
 		VkInstance instance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT debug_utils_messenger = VK_NULL_HANDLE;

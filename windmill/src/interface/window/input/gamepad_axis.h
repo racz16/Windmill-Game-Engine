@@ -2,6 +2,8 @@
 
 namespace wm {
 
+	static const int32_t GAMEPAD_AXIS_COUNT = 6;
+
 	enum class gamepad_axis {
 		axis_left_x = 0,
 		axis_left_y = 1,

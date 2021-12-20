@@ -13,10 +13,10 @@ namespace wm {
 	private:
 
 		static const int32_t COLUMN_DISTANCE;
-		static std::vector<keyboard_button> keyboard_buttons;
-		static std::vector<mouse_button> mouse_buttons;
-		static std::vector<gamepad_axis> gamepad_axes;
-		static std::vector<gamepad_button> gamepad_buttons;
+		static std::array<keyboard_button, KEYBOARD_BUTTON_COUNT> keyboard_buttons;
+		static std::array<mouse_button, MOUSE_BUTTON_COUNT> mouse_buttons;
+		static std::array<gamepad_axis, GAMEPAD_AXIS_COUNT> gamepad_axes;
+		static std::array<gamepad_button, GAMEPAD_BUTTON_COUNT> gamepad_buttons;
 
 		utility();
 		static std::string repeat_character(const int32_t size, const std::string& character = " ");
@@ -39,7 +39,7 @@ namespace wm {
 			auto result = message != "" ? message + "\n" : "";
 			result += "┌" + repeat_character(character_width) + "┐\n│ ";
 			for(int32_t i = 0; i < S; i++) {
-				result += numbers[i];
+				result += numbers.at(i);
 				if(i != S - 1) {
 					result += repeat_character(COLUMN_DISTANCE);
 				}
@@ -58,10 +58,10 @@ namespace wm {
 				numbers.push_back(std::vector<std::string>());
 				for(int32_t y = 0; y < H; y++) {
 					const std::string number = std::to_string(matrix[x][y]);
-					numbers[x].push_back(number);
-					max_column_widths[x] = std::max(max_column_widths[x], (int32_t)number.length());
+					numbers.at(x).push_back(number);
+					max_column_widths.at(x) = std::max(max_column_widths.at(x), (int32_t) number.length());
 				}
-				max_character_width += max_column_widths[x];
+				max_character_width += max_column_widths.at(x);
 			}
 
 			auto result = message != "" ? message + "\n" : "";
@@ -87,9 +87,9 @@ namespace wm {
 
 			auto result = message != "" ? message + "\n" : "";
 			result += "┌" + repeat_character(character_width) + "┐\n│ ";
-			result += numbers[S - 1] + repeat_character(COLUMN_DISTANCE);
+			result += numbers.at(S - 1) + repeat_character(COLUMN_DISTANCE);
 			for(int32_t i = 0; i < S - 1; i++) {
-				result += numbers[i];
+				result += numbers.at(i);
 				if(i != S - 2) {
 					result += repeat_character(COLUMN_DISTANCE);
 				}
@@ -98,10 +98,10 @@ namespace wm {
 			return result;
 		}
 
-		static const std::vector<keyboard_button>& get_keyboard_buttons();
-		static const std::vector<mouse_button>& get_mouse_buttons();
-		static const std::vector<gamepad_axis>& get_gamepad_axes();
-		static const std::vector<gamepad_button>& get_gamepad_buttons();
+		static const std::array<keyboard_button, KEYBOARD_BUTTON_COUNT>& get_keyboard_buttons();
+		static const std::array<mouse_button, MOUSE_BUTTON_COUNT>& get_mouse_buttons();
+		static const std::array<gamepad_axis, GAMEPAD_AXIS_COUNT>& get_gamepad_axes();
+		static const std::array<gamepad_button, GAMEPAD_BUTTON_COUNT>& get_gamepad_buttons();
 
 	};
 

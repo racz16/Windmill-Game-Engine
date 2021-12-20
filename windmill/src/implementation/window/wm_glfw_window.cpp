@@ -381,10 +381,6 @@ namespace wm {
 		WM_LOG_INFO_2("GLFW window requested attention");
 	}
 
-	bool wm_glfw_window::is_hovered() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_HOVERED);
-	}
-
 	cursor_mode wm_glfw_window::get_cursor_mode() const {
 		const auto mode = glfwGetInputMode(window_handler, GLFW_CURSOR);
 		switch(mode) {

@@ -10,14 +10,14 @@
 
 namespace wm {
 
-	const std::vector<vertex> wm_vulkan_rendering_system::vertices = {
+	const std::array<vertex, 4> wm_vulkan_rendering_system::vertices = {{
 		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
 		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
 		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
 		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-	};
+	}};
 
-	const std::vector<uint16_t> wm_vulkan_rendering_system::indices = {
+	const std::array<uint16_t, 6> wm_vulkan_rendering_system::indices = {
 		0, 1, 2, 2, 3, 0
 	};
 
@@ -43,12 +43,6 @@ namespace wm {
 		create_descriptor_sets();
 		create_command_buffers();
 		create_semaphores();
-
-		auto el = ptr<event_listener<window_framebuffer_size_event>>(new event_listener<window_framebuffer_size_event>([this](const window_framebuffer_size_event event) {
-			this->framebuffer_resized = true;
-			this->minimized = event.get_new_size().x == 0 || event.get_new_size().y == 0;
-		})).to_ptr_view();
-		engine::get_event_system()->add_event_listener(window_framebuffer_size_event::get_key(), el);
 
 		WM_LOG_INFO_1("vulkan rendering system constructed");
 	}
@@ -81,8 +75,7 @@ namespace wm {
 		// https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/chap4.html#VkValidationFeaturesEXT
 	#endif
 
-		auto result = vkCreateInstance(&instance_create_info, nullptr, &instance);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateInstance(&instance_create_info, nullptr, &instance));
 		WM_LOG_INFO_2("Vulkan instance created");
 	}
 
@@ -108,18 +101,16 @@ namespace wm {
 
 	std::vector<VkLayerProperties> wm_vulkan_rendering_system::get_available_layers() const {
 		uint32_t layer_count;
-		auto result = vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkEnumerateInstanceLayerProperties(&layer_count, nullptr));
 		std::vector<VkLayerProperties> available_layers(layer_count);
-		result = vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data()));
 		return available_layers;
 	}
 
 	void wm_vulkan_rendering_system::log_available_layers(const std::vector<VkLayerProperties>& available_layers) const {
 		std::string result_string = "Available Vulkan layers:\r\n";
 		for(uint32_t i = 0; i < available_layers.size(); i++) {
-			result_string += std::string("\t") + available_layers[i].layerName;
+			result_string += std::string("\t") + available_layers.at(i).layerName;
 			if(i != available_layers.size() - 1) {
 				result_string += "\r\n";
 			}
@@ -166,18 +157,16 @@ namespace wm {
 
 	std::vector<VkExtensionProperties> wm_vulkan_rendering_system::get_available_extensions() const {
 		uint32_t extension_count;
-		auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr));
 		std::vector<VkExtensionProperties> available_extensions(extension_count);
-		result = vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, available_extensions.data());
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, available_extensions.data()));
 		return available_extensions;
 	}
 
 	void wm_vulkan_rendering_system::log_available_extensions(const std::vector<VkExtensionProperties>& available_extensions) const {
 		std::string result_string = "Available Vulkan instance extensions:\r\n";
 		for(uint32_t i = 0; i < available_extensions.size(); i++) {
-			result_string += std::string("\t") + available_extensions[i].extensionName;
+			result_string += std::string("\t") + available_extensions.at(i).extensionName;
 			if(i != available_extensions.size() - 1) {
 				result_string += "\r\n";
 			}
@@ -255,8 +244,7 @@ namespace wm {
 		const auto debug_utils_messenger_create_info = create_debug_utils_messenger_create_info();
 		auto vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 		WM_ASSERT(vkCreateDebugUtilsMessengerEXT != nullptr);
-		const auto result = vkCreateDebugUtilsMessengerEXT(instance, &debug_utils_messenger_create_info, nullptr, &debug_utils_messenger);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateDebugUtilsMessengerEXT(instance, &debug_utils_messenger_create_info, nullptr, &debug_utils_messenger));
 		WM_LOG_INFO_2("Vulkan debug messenger created");
 	}
 
@@ -271,8 +259,7 @@ namespace wm {
 
 	//surface
 	void wm_vulkan_rendering_system::create_surface() {
-		auto result = glfwCreateWindowSurface(instance, engine::get_window_system()->get_window(0).convert<wm_glfw_window>()->get_handler(), nullptr, &surface); // TODO
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(glfwCreateWindowSurface(instance, engine::get_window_system()->get_window(0).convert<wm_glfw_window>()->get_handler(), nullptr, &surface)); // TODO
 		WM_LOG_INFO_2("Vulkan surface created");
 	}
 
@@ -286,7 +273,7 @@ namespace wm {
 		if(graphics_queue_family_index != presentation_queue_family_index) {
 			queue_family_indices.push_back(presentation_queue_family_index);
 		}
-		std::vector<float> queue_priorities = {1.0};
+		std::array<float, 1> queue_priorities = {1.0};
 		for(int32_t queue_fmaily_index : queue_family_indices) {
 			VkDeviceQueueCreateInfo device_graphics_queue_create_info {};
 			device_graphics_queue_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -311,8 +298,7 @@ namespace wm {
 		device_create_info.ppEnabledExtensionNames = device_extensions.data();
 		//device_create_info.pEnabledFeatures = &physical_device_features;
 
-		auto result = vkCreateDevice(physical_device, &device_create_info, nullptr, &device);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateDevice(physical_device, &device_create_info, nullptr, &device));
 		WM_LOG_INFO_2("Vulkan device created");
 
 		vkGetDeviceQueue(device, graphics_queue_family_index, 0, &graphics_queue);
@@ -322,12 +308,10 @@ namespace wm {
 	void wm_vulkan_rendering_system::get_physical_device() {
 		const auto required_device_extensions = get_required_device_extensions();
 		uint32_t physical_device_count;
-		auto result = vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr));
 		WM_ASSERT(physical_device_count > 0);
 		std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
-		result = vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data());
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data()));
 		std::string physical_device_name = "";
 		//TODO: egyedi kiválasztási lehetőség
 		//vagy preferencia, pl. dedikált vs. integrált
@@ -341,12 +325,10 @@ namespace wm {
 			vkGetPhysicalDeviceMemoryProperties(pd, &physical_device_memory_properties);
 
 			uint32_t surface_format_count;
-			result = vkGetPhysicalDeviceSurfaceFormatsKHR(pd, surface, &surface_format_count, nullptr);
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
+			WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceFormatsKHR(pd, surface, &surface_format_count, nullptr));
 
 			uint32_t surface_presentation_mode_count;
-			result = vkGetPhysicalDeviceSurfacePresentModesKHR(pd, surface, &surface_presentation_mode_count, nullptr);
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
+			WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfacePresentModesKHR(pd, surface, &surface_presentation_mode_count, nullptr));
 
 			const auto available_device_extensions = get_available_device_extensions(pd);
 			if(!are_device_extensions_supported(required_device_extensions, available_device_extensions)) {
@@ -367,7 +349,7 @@ namespace wm {
 			vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, queue_family_properties.data());
 			for(const auto& qfp : queue_family_properties) {
 				if(qfp.queueCount > 0) {
-					vkGetPhysicalDeviceSurfaceSupportKHR(pd, i, surface, &presentation_supported);
+					WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceSupportKHR(pd, i, surface, &presentation_supported));
 					if(qfp.queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT && presentation_supported) {
 						graphics_queue_family_index = i;
 						presentation_queue_family_index = i;
@@ -407,11 +389,9 @@ namespace wm {
 
 	std::vector<VkExtensionProperties> wm_vulkan_rendering_system::get_available_device_extensions(const VkPhysicalDevice physical_device) const {
 		uint32_t device_extension_count;
-		auto result = vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, nullptr);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, nullptr));
 		std::vector<VkExtensionProperties> available_device_extensions(device_extension_count);
-		result = vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, available_device_extensions.data());
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, available_device_extensions.data()));
 		return available_device_extensions;
 	}
 
@@ -434,6 +414,11 @@ namespace wm {
 
 	//swap chain
 	void wm_vulkan_rendering_system::create_swap_chain() {
+		engine::get_event_system()->add_event_listener(window_framebuffer_size_event::get_key(), ptr<event_listener<window_framebuffer_size_event>>(new event_listener<window_framebuffer_size_event>([this](const window_framebuffer_size_event event) {
+			this->framebuffer_resized = true;
+			this->minimized = event.get_new_size().x == 0 || event.get_new_size().y == 0;
+		})).to_ptr_view());
+
 		surface_format = get_surface_format();
 		auto surface_presentation_mode = get_surface_presentation_mode();
 		auto surface_capabilities = get_surface_capabilities();
@@ -459,7 +444,7 @@ namespace wm {
 		swap_chain_create_info.clipped = VK_TRUE;
 		swap_chain_create_info.oldSwapchain = VK_NULL_HANDLE;
 		if(graphics_queue_family_index != presentation_queue_family_index) {
-			std::vector<uint32_t> queue_family_indices = {static_cast<uint32_t>(graphics_queue_family_index), static_cast<uint32_t>(presentation_queue_family_index)};
+			std::array<uint32_t, 2> queue_family_indices = {static_cast<uint32_t>(graphics_queue_family_index), static_cast<uint32_t>(presentation_queue_family_index)};
 
 			swap_chain_create_info.imageSharingMode = VkSharingMode::VK_SHARING_MODE_CONCURRENT;
 			swap_chain_create_info.queueFamilyIndexCount = static_cast<uint32_t>(queue_family_indices.size());
@@ -468,22 +453,18 @@ namespace wm {
 			swap_chain_create_info.imageSharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 		}
 
-		auto result = vkCreateSwapchainKHR(device, &swap_chain_create_info, nullptr, &swap_chain);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateSwapchainKHR(device, &swap_chain_create_info, nullptr, &swap_chain));
 
-		result = vkGetSwapchainImagesKHR(device, swap_chain, &image_count, nullptr);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkGetSwapchainImagesKHR(device, swap_chain, &image_count, nullptr));
 		swap_chain_images.resize(image_count);
-		result = vkGetSwapchainImagesKHR(device, swap_chain, &image_count, swap_chain_images.data());
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkGetSwapchainImagesKHR(device, swap_chain, &image_count, swap_chain_images.data()));
 
 		WM_LOG_INFO_2("Vulkan swap chain created");
 	}
 
 	void wm_vulkan_rendering_system::recreate_swap_chain() {
 		framebuffer_resized = false;
-		auto result = vkDeviceWaitIdle(device);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkDeviceWaitIdle(device));
 
 		cleanup_swap_chain();
 
@@ -500,11 +481,9 @@ namespace wm {
 
 	VkSurfaceFormatKHR wm_vulkan_rendering_system::get_surface_format() const {
 		uint32_t surface_format_count;
-		auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr));
 		std::vector<VkSurfaceFormatKHR> surface_formats(surface_format_count);
-		result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, surface_formats.data());
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, surface_formats.data()));
 
 		if(surface_formats.size() == 1 && surface_formats.at(0).format == VkFormat::VK_FORMAT_UNDEFINED) {
 			return {VkFormat::VK_FORMAT_B8G8R8A8_SRGB, VkColorSpaceKHR::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
@@ -520,11 +499,9 @@ namespace wm {
 
 	VkPresentModeKHR wm_vulkan_rendering_system::get_surface_presentation_mode() const {
 		uint32_t surface_presentation_mode_count;
-		auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &surface_presentation_mode_count, nullptr);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &surface_presentation_mode_count, nullptr));
 		std::vector<VkPresentModeKHR> surface_presentation_modes(surface_presentation_mode_count);
-		result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &surface_presentation_mode_count, surface_presentation_modes.data());
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &surface_presentation_mode_count, surface_presentation_modes.data()));
 
 		for(const auto& spm : surface_presentation_modes) {
 			if(spm == VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -536,8 +513,7 @@ namespace wm {
 
 	VkSurfaceCapabilitiesKHR wm_vulkan_rendering_system::get_surface_capabilities() const {
 		VkSurfaceCapabilitiesKHR surface_capabilities;
-		auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_capabilities);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_capabilities));
 		return surface_capabilities;
 	}
 
@@ -571,8 +547,7 @@ namespace wm {
 			image_view_create_info.subresourceRange.baseArrayLayer = 0;
 			image_view_create_info.subresourceRange.layerCount = 1;
 
-			auto result = vkCreateImageView(device, &image_view_create_info, nullptr, &swap_chain_image_views.at(i));
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
+			WM_ASSERT_VULKAN(vkCreateImageView(device, &image_view_create_info, nullptr, &swap_chain_image_views.at(i)));
 		}
 	}
 
@@ -618,8 +593,7 @@ namespace wm {
 		descriptor_set_layout_create_info.bindingCount = static_cast<uint32_t>(descriptor_set_layout_bindings.size());
 		descriptor_set_layout_create_info.pBindings = descriptor_set_layout_bindings.data();
 
-		auto result = vkCreateDescriptorSetLayout(device, &descriptor_set_layout_create_info, nullptr, &descriptor_set_layout);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateDescriptorSetLayout(device, &descriptor_set_layout_create_info, nullptr, &descriptor_set_layout));
 	}
 
 	void wm_vulkan_rendering_system::create_pipeline() {
@@ -642,7 +616,7 @@ namespace wm {
 		pipeline_fragment_shader_stage_create_info.module = fragment_shader_module;
 		pipeline_fragment_shader_stage_create_info.pName = "main";
 
-		std::vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stage_create_infos = {pipeline_vertex_shader_stage_create_info, pipeline_fragment_shader_stage_create_info};
+		std::array<VkPipelineShaderStageCreateInfo, 2> pipeline_shader_stage_create_infos = {pipeline_vertex_shader_stage_create_info, pipeline_fragment_shader_stage_create_info};
 
 		auto binding_descriptions = vertex::get_binding_descriptions();
 		auto attribute_descriptions = vertex::get_attribute_descriptions();
@@ -693,7 +667,7 @@ namespace wm {
 		pipeline_multisample_state_create_info.sampleShadingEnable = VK_FALSE;
 		pipeline_multisample_state_create_info.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
 
-		std::vector<VkPipelineColorBlendAttachmentState> pipeline_color_blend_attachment_states;
+
 		VkPipelineColorBlendAttachmentState pipeline_color_blend_attachment_state {};
 		pipeline_color_blend_attachment_state.colorWriteMask =
 			VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT |
@@ -701,7 +675,7 @@ namespace wm {
 			VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT |
 			VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
 		pipeline_color_blend_attachment_state.blendEnable = VK_FALSE;
-		pipeline_color_blend_attachment_states.push_back(pipeline_color_blend_attachment_state);
+		std::array<VkPipelineColorBlendAttachmentState, 1> pipeline_color_blend_attachment_states = {pipeline_color_blend_attachment_state};
 
 		VkPipelineColorBlendStateCreateInfo pipeline_color_blend_state_create_info {};
 		pipeline_color_blend_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -714,10 +688,9 @@ namespace wm {
 		pipeline_layout_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_create_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
 		pipeline_layout_create_info.pSetLayouts = descriptor_set_layouts.data();
-		auto result = vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &pipeline_layout);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &pipeline_layout));
 
-		std::vector<VkGraphicsPipelineCreateInfo> graphics_pipeline_create_infos;
+
 		VkGraphicsPipelineCreateInfo graphics_pipeline_create_info {};
 		graphics_pipeline_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		graphics_pipeline_create_info.stageCount = static_cast<uint32_t>(pipeline_shader_stage_create_infos.size());
@@ -731,10 +704,10 @@ namespace wm {
 		graphics_pipeline_create_info.layout = pipeline_layout;
 		graphics_pipeline_create_info.renderPass = render_pass;
 		graphics_pipeline_create_info.subpass = 0;
-		graphics_pipeline_create_infos.push_back(graphics_pipeline_create_info);
 
-		result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphics_pipeline_create_infos.size()), graphics_pipeline_create_infos.data(), nullptr, &pipeline);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		std::array<VkGraphicsPipelineCreateInfo, 1> graphics_pipeline_create_infos = {graphics_pipeline_create_info};
+
+		WM_ASSERT_VULKAN(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphics_pipeline_create_infos.size()), graphics_pipeline_create_infos.data(), nullptr, &pipeline));
 
 		vkDestroyShaderModule(device, vertex_shader_module, nullptr);
 		vkDestroyShaderModule(device, fragment_shader_module, nullptr);
@@ -743,7 +716,6 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::create_render_pass() {
-		std::vector<VkSubpassDependency> subpass_dependencies;
 		VkSubpassDependency subpass_dependency {};
 		subpass_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		subpass_dependency.dstSubpass = 0;
@@ -751,9 +723,8 @@ namespace wm {
 		subpass_dependency.srcAccessMask = 0;
 		subpass_dependency.dstStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		subpass_dependency.dstAccessMask = VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		subpass_dependencies.push_back(subpass_dependency);
+		std::array<VkSubpassDependency, 1> subpass_dependencies = {subpass_dependency};
 
-		std::vector<VkAttachmentDescription> attachment_descriptions;
 		VkAttachmentDescription color_attachment_description {};
 		color_attachment_description.format = surface_format.format;
 		color_attachment_description.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
@@ -763,20 +734,18 @@ namespace wm {
 		color_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		color_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 		color_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		attachment_descriptions.push_back(color_attachment_description);
+		std::array<VkAttachmentDescription, 1> attachment_descriptions = {color_attachment_description};
 
-		std::vector<VkAttachmentReference> attachment_references;
 		VkAttachmentReference color_attachment_reference {};
 		color_attachment_reference.attachment = 0;
 		color_attachment_reference.layout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		attachment_references.push_back(color_attachment_reference);
+		std::array<VkAttachmentReference, 1> attachment_references = {color_attachment_reference};
 
-		std::vector<VkSubpassDescription> subpass_descriptions;
 		VkSubpassDescription subpass_description {};
 		subpass_description.pipelineBindPoint = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass_description.colorAttachmentCount = static_cast<uint32_t>(attachment_references.size());
 		subpass_description.pColorAttachments = attachment_references.data();
-		subpass_descriptions.push_back(subpass_description);
+		std::array<VkSubpassDescription, 1> subpass_descriptions = {subpass_description};
 
 		VkRenderPassCreateInfo render_pass_create_info {};
 		render_pass_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -787,15 +756,14 @@ namespace wm {
 		render_pass_create_info.dependencyCount = static_cast<uint32_t>(subpass_dependencies.size());
 		render_pass_create_info.pDependencies = subpass_dependencies.data();
 
-		auto result = vkCreateRenderPass(device, &render_pass_create_info, nullptr, &render_pass);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateRenderPass(device, &render_pass_create_info, nullptr, &render_pass));
 	}
 
 	void wm_vulkan_rendering_system::create_framebuffers() {
 		swap_chain_framebuffers.resize(swap_chain_image_views.size());
 
 		for(int32_t i = 0; i < static_cast<int32_t>(swap_chain_image_views.size()); i++) {
-			std::vector<VkImageView> attachments = {swap_chain_image_views.at(i)};
+			std::array<VkImageView, 1> attachments = {swap_chain_image_views.at(i)};
 
 			VkFramebufferCreateInfo framebuffer_create_info {};
 			framebuffer_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -806,8 +774,7 @@ namespace wm {
 			framebuffer_create_info.height = swap_chain_extent.height;
 			framebuffer_create_info.layers = 1;
 
-			auto result = vkCreateFramebuffer(device, &framebuffer_create_info, nullptr, &swap_chain_framebuffers.at(i));
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
+			WM_ASSERT_VULKAN(vkCreateFramebuffer(device, &framebuffer_create_info, nullptr, &swap_chain_framebuffers.at(i)));
 		}
 	}
 
@@ -833,8 +800,7 @@ namespace wm {
 		shader_module_create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
 		VkShaderModule shader_module;
-		auto result = vkCreateShaderModule(device, &shader_module_create_info, nullptr, &shader_module);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateShaderModule(device, &shader_module_create_info, nullptr, &shader_module));
 		return shader_module;
 	}
 
@@ -848,8 +814,7 @@ namespace wm {
 		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_device_memory);
 
 		void* data;
-		auto result = vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
 		memcpy(data, vertices.data(), size);
 
 		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertex_buffer, vertex_buffer_device_memory);
@@ -867,8 +832,7 @@ namespace wm {
 		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_device_memory);
 
 		void* data;
-		auto result = vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
 		memcpy(data, indices.data(), size);
 
 		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index_buffer, index_buffer_device_memory);
@@ -885,8 +849,7 @@ namespace wm {
 		buffer_create_info.usage = usage;
 		buffer_create_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 
-		auto result = vkCreateBuffer(device, &buffer_create_info, nullptr, &buffer);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateBuffer(device, &buffer_create_info, nullptr, &buffer));
 
 		VkMemoryRequirements memory_requirements;
 		vkGetBufferMemoryRequirements(device, buffer, &memory_requirements);
@@ -905,10 +868,9 @@ namespace wm {
 		memory_allocation_info.allocationSize = memory_requirements.size;
 		memory_allocation_info.memoryTypeIndex = memory_type_index;
 
-		result = vkAllocateMemory(device, &memory_allocation_info, nullptr, &device_memory);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkAllocateMemory(device, &memory_allocation_info, nullptr, &device_memory));
 
-		result = vkBindBufferMemory(device, buffer, device_memory, 0);
+		WM_ASSERT_VULKAN(vkBindBufferMemory(device, buffer, device_memory, 0));
 	}
 
 	void wm_vulkan_rendering_system::copy_buffer(const VkBuffer source_buffer, const VkBuffer destination_buffer, const size_t size) {
@@ -919,32 +881,27 @@ namespace wm {
 		command_buffer_allocation_info.commandBufferCount = 1;
 
 		VkCommandBuffer command_buffer;
-		auto result = vkAllocateCommandBuffers(device, &command_buffer_allocation_info, &command_buffer);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkAllocateCommandBuffers(device, &command_buffer_allocation_info, &command_buffer));
 
 		VkCommandBufferBeginInfo command_buffer_begin_info {};
 		command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		command_buffer_begin_info.flags = VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		result = vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
 
 		VkBufferCopy buffer_copy {};
 		buffer_copy.size = size;
 		vkCmdCopyBuffer(command_buffer, source_buffer, destination_buffer, 1, &buffer_copy);
 
-		result = vkEndCommandBuffer(command_buffer);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffer));
 
 		VkSubmitInfo submit_info {};
 		submit_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &command_buffer;
 
-		result = vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
-		result = vkQueueWaitIdle(graphics_queue);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE));
+		WM_ASSERT_VULKAN(vkQueueWaitIdle(graphics_queue));
 
 		vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
 	}
@@ -980,7 +937,7 @@ namespace wm {
 		ubo.projection = glm::perspectiveRH(glm::radians(45.0f), static_cast<float>(swap_chain_extent.width) / static_cast<float>(swap_chain_extent.height), 0.1f, 10.0f);
 
 		void* data;
-		vkMapMemory(device, uniform_buffers_device_memory.at(image_index), 0, sizeof(ubo), 0, &data);
+		WM_ASSERT_VULKAN(vkMapMemory(device, uniform_buffers_device_memory.at(image_index), 0, sizeof(ubo), 0, &data));
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, uniform_buffers_device_memory.at(image_index));
 	}
@@ -997,8 +954,7 @@ namespace wm {
 		descriptor_pool_create_info.pPoolSizes = descriptor_pool_sizes.data();
 		descriptor_pool_create_info.maxSets = static_cast<uint32_t>(swap_chain_images.size());
 
-		auto result = vkCreateDescriptorPool(device, &descriptor_pool_create_info, nullptr, &descriptor_pool);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateDescriptorPool(device, &descriptor_pool_create_info, nullptr, &descriptor_pool));
 	}
 
 	void wm_vulkan_rendering_system::create_descriptor_sets() {
@@ -1010,8 +966,7 @@ namespace wm {
 		descriptor_set_allocation_info.pSetLayouts = layouts.data();
 
 		descriptor_sets.resize(swap_chain_images.size());
-		auto result = vkAllocateDescriptorSets(device, &descriptor_set_allocation_info, descriptor_sets.data());
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkAllocateDescriptorSets(device, &descriptor_set_allocation_info, descriptor_sets.data()));
 
 		for(size_t i = 0; i < swap_chain_images.size(); i++) {
 			VkDescriptorBufferInfo descriptor_buffer_info {};
@@ -1040,8 +995,7 @@ namespace wm {
 		command_pool_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		command_pool_create_info.queueFamilyIndex = graphics_queue_family_index;
 
-		auto result = vkCreateCommandPool(device, &command_pool_create_info, nullptr, &command_pool);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkCreateCommandPool(device, &command_pool_create_info, nullptr, &command_pool));
 	}
 
 	void wm_vulkan_rendering_system::create_command_buffers() {
@@ -1052,8 +1006,7 @@ namespace wm {
 		command_buffer_allocation_info.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		command_buffer_allocation_info.commandBufferCount = static_cast<uint32_t>(command_buffers.size());
 
-		auto result = vkAllocateCommandBuffers(device, &command_buffer_allocation_info, command_buffers.data());
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkAllocateCommandBuffers(device, &command_buffer_allocation_info, command_buffers.data()));
 
 		WM_LOG_INFO_2("Vulkan command buffer allocated");
 
@@ -1061,8 +1014,7 @@ namespace wm {
 			VkCommandBufferBeginInfo command_buffer_begin_info {};
 			command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-			result = vkBeginCommandBuffer(command_buffers.at(i), &command_buffer_begin_info);
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
+			WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffers.at(i), &command_buffer_begin_info));
 
 			VkClearValue clear_value = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 
@@ -1090,8 +1042,7 @@ namespace wm {
 
 			vkCmdEndRenderPass(command_buffers.at(i));
 
-			result = vkEndCommandBuffer(command_buffers.at(i));
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
+			WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffers.at(i)));
 		}
 
 		WM_LOG_INFO_2("Vulkan drawing commands recorded");
@@ -1113,47 +1064,44 @@ namespace wm {
 		fence_create_info.flags = VkFenceCreateFlagBits::VK_FENCE_CREATE_SIGNALED_BIT;
 
 		for(int32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			auto result = vkCreateSemaphore(device, &semaphore_create_info, nullptr, &image_is_available.at(i));
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
-			result = vkCreateSemaphore(device, &semaphore_create_info, nullptr, &rendering_is_finished.at(i));
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
-			result = vkCreateFence(device, &fence_create_info, nullptr, &in_flight.at(i));
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
+			WM_ASSERT_VULKAN(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &image_is_available.at(i)));
+			WM_ASSERT_VULKAN(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &rendering_is_finished.at(i)));
+			WM_ASSERT_VULKAN(vkCreateFence(device, &fence_create_info, nullptr, &in_flight.at(i)));
 		}
 	}
 
 
 	//drawing
 	void wm_vulkan_rendering_system::update() {
-		#ifdef WM_PLATFORM_LINUX
-			//TODO
-			vkDeviceWaitIdle(device);
-		#endif
+	#ifdef WM_PLATFORM_LINUX
+		//TODO Linux swap chain problem
+		WM_ASSERT_VULKAN(vkDeviceWaitIdle(device));
+	#endif
 
 		if(engine::get_window_system()->get_window_count() == 0 || minimized) {
 			return;
 		}
 
-		frame_index = engine::get_time_system()->get_frame_count() % MAX_FRAMES_IN_FLIGHT;
+		frame_index = engine::get_time_system()->get_frame_index() % MAX_FRAMES_IN_FLIGHT;
 		uint32_t image_index;
 
-		vkWaitForFences(device, 1, &in_flight.at(frame_index), VK_TRUE, UINT64_MAX);
+		WM_ASSERT_VULKAN(vkWaitForFences(device, 1, &in_flight.at(frame_index), VK_TRUE, UINT64_MAX));
 
 		auto result = vkAcquireNextImageKHR(device, swap_chain, UINT64_MAX, image_is_available.at(frame_index), VK_NULL_HANDLE, &image_index);
 		if(result == VkResult::VK_ERROR_OUT_OF_DATE_KHR) {
 			recreate_swap_chain();
 		} else if(result != VkResult::VK_SUBOPTIMAL_KHR) {
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
+			WM_ASSERT_VULKAN(result);
 		}
 
 		if(images_in_flight.at(image_index) != VK_NULL_HANDLE) {
-			vkWaitForFences(device, 1, &images_in_flight.at(image_index), VK_TRUE, UINT64_MAX);
+			WM_ASSERT_VULKAN(vkWaitForFences(device, 1, &images_in_flight.at(image_index), VK_TRUE, UINT64_MAX));
 		}
 		images_in_flight.at(image_index) = images_in_flight.at(frame_index);
 
-		std::vector<VkSemaphore> image_is_available_semaphores = {image_is_available.at(frame_index)};
-		std::vector<VkPipelineStageFlags> pipeline_stages = {VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-		std::vector<VkSemaphore> rendering_is_finished_semaphores = {rendering_is_finished.at(frame_index)};
+		std::array<VkSemaphore, 1> image_is_available_semaphores = {image_is_available.at(frame_index)};
+		std::array<VkPipelineStageFlags, 1> pipeline_stages = {VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+		std::array<VkSemaphore, 1> rendering_is_finished_semaphores = {rendering_is_finished.at(frame_index)};
 
 		update_uniform_buffer(image_index);
 
@@ -1167,12 +1115,11 @@ namespace wm {
 		submit_info.signalSemaphoreCount = static_cast<uint32_t>(rendering_is_finished_semaphores.size());
 		submit_info.pSignalSemaphores = rendering_is_finished_semaphores.data();
 
-		vkResetFences(device, 1, &in_flight.at(frame_index));
+		WM_ASSERT_VULKAN(vkResetFences(device, 1, &in_flight.at(frame_index)));
 
-		result = vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight.at(frame_index));
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		WM_ASSERT_VULKAN(vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight.at(frame_index)));
 
-		std::vector<VkSwapchainKHR> swap_chains = {swap_chain};
+		std::array<VkSwapchainKHR, 1> swap_chains = {swap_chain};
 
 		VkPresentInfoKHR present_info {};
 		present_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1189,15 +1136,14 @@ namespace wm {
 			if(framebuffer_resized) {
 				recreate_swap_chain();
 			}
-			WM_ASSERT(result == VkResult::VK_SUCCESS);
+			WM_ASSERT_VULKAN(result);
 		}
 
 		WM_LOG_INFO_3("vulkan rendering system updated");
 	}
 
 	wm_vulkan_rendering_system::~wm_vulkan_rendering_system() {
-		auto result = vkDeviceWaitIdle(device);
-		WM_ASSERT(result == VkResult::VK_SUCCESS);
+		vkDeviceWaitIdle(device);
 
 		for(int32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(device, image_is_available.at(i), nullptr);
@@ -1238,4 +1184,4 @@ namespace wm {
 		WM_LOG_INFO_1("vulkan rendering system destructed");
 	}
 
-}
+	}

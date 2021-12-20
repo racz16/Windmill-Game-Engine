@@ -2,6 +2,8 @@
 
 namespace wm {
 
+	static const int32_t GAMEPAD_BUTTON_COUNT = 15;
+
 	enum class gamepad_button {
 		button_a = 0,
 		button_b = 1,

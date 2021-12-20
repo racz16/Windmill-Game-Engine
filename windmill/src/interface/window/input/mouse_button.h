@@ -2,6 +2,8 @@
 
 namespace wm {
 
+	static const int32_t MOUSE_BUTTON_COUNT = 8;
+
 	enum class mouse_button {
 		button_left = 0,
 		button_right = 1,

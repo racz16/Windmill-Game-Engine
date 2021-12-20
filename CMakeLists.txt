@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.7)
 
 project("Windmill-Game-Engine")
 set(CMAKE_CXX_STANDARD 17)
