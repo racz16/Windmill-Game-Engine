@@ -20,6 +20,7 @@
 
 #include "wm_glfw_window.h"
 #include "wm_glfw_window_system.h"
+#include "../resource/wm_resource_system.h"
 
 namespace wm {
 
@@ -436,6 +437,25 @@ namespace wm {
 		}
 		glfwSetCursor(window_handler, cursor);
 		WM_LOG_INFO_2("GLFW window cursor shape changed");
+	}
+
+	void wm_glfw_window::set_cursor_image(const std::string file_path) const {
+		auto image = engine::get_resource_system()->get_image(file_path);
+		GLFWimage glfw_image {image->get_size().x, image->get_size().y, image->get_pixels()};
+
+		auto cursor = glfwCreateCursor(&glfw_image, 0, 0);
+		glfwSetCursor(window_handler, cursor);
+
+		image.destroy();
+	}
+
+	void wm_glfw_window::set_icon(const std::string file_path) const {
+		auto image = engine::get_resource_system()->get_image(file_path);
+		GLFWimage glfw_image {image->get_size().x, image->get_size().y, image->get_pixels()};
+
+		glfwSetWindowIcon(window_handler, 1, &glfw_image);
+
+		image.destroy();
 	}
 
 	void wm_glfw_window::destroy_cursor() {

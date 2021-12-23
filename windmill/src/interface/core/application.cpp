@@ -30,6 +30,7 @@ namespace wm {
 
 	void application::initialize() {
 		add_log_system();
+		add_resource_system();
 		add_event_system();
 		add_time_system();
 		add_window_system();
@@ -75,6 +76,12 @@ namespace wm {
 		const auto rendering_system = rendering_system::create();
 		engine::set_system(rendering_system::get_key(), rendering_system);
 		WM_LOG_INFO_1("rendering system added");
+	}
+
+	void application::add_resource_system() {
+		const auto resource_system = resource_system::create();
+		engine::set_system(resource_system::get_key(), resource_system);
+		WM_LOG_INFO_1("resource system added");
 	}
 
 	bool application::loop_condition() {

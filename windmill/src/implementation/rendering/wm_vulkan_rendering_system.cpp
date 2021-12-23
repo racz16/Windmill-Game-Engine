@@ -7,18 +7,25 @@
 
 #include "wm_vulkan_rendering_system.h"
 #include "../window/wm_glfw_window.h"
+#include "../resource/wm_resource_system.h"
 
 namespace wm {
 
-	const std::array<vertex, 4> wm_vulkan_rendering_system::vertices = {{
-		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+	const std::array<vertex, 8> wm_vulkan_rendering_system::vertices = {{
+		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+		{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+		{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 	}};
 
-	const std::array<uint16_t, 6> wm_vulkan_rendering_system::indices = {
-		0, 1, 2, 2, 3, 0
+	const std::array<uint16_t, 12> wm_vulkan_rendering_system::indices = {
+		0, 1, 2, 2, 3, 0,
+		4, 5, 6, 6, 7, 4
 	};
 
 
@@ -34,8 +41,12 @@ namespace wm {
 		create_render_pass();
 		create_descriptor_set_layout();
 		create_pipeline();
-		create_framebuffers();
 		create_command_pool();
+		create_depth_resources();
+		create_framebuffers();
+		create_texture_image();
+		create_texture_image_view();
+		create_texture_sampler();
 		create_vertex_buffer();
 		create_index_buffer();
 		create_uniform_buffers();
@@ -283,7 +294,8 @@ namespace wm {
 			device_queue_create_infos.push_back(device_graphics_queue_create_info);
 		}
 
-		//VkPhysicalDeviceFeatures physical_device_features {};
+		VkPhysicalDeviceFeatures physical_device_features {};
+		physical_device_features.samplerAnisotropy = anisotropy ? VK_TRUE : VK_FALSE;
 
 		std::vector<const char*> layers = get_required_layers();
 		std::vector<const char*> device_extensions = get_required_device_extensions();
@@ -296,7 +308,7 @@ namespace wm {
 		device_create_info.ppEnabledLayerNames = layers.data();
 		device_create_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions.size());
 		device_create_info.ppEnabledExtensionNames = device_extensions.data();
-		//device_create_info.pEnabledFeatures = &physical_device_features;
+		device_create_info.pEnabledFeatures = &physical_device_features;
 
 		WM_ASSERT_VULKAN(vkCreateDevice(physical_device, &device_create_info, nullptr, &device));
 		WM_LOG_INFO_2("Vulkan device created");
@@ -318,10 +330,10 @@ namespace wm {
 		//vagy id megadása, pl. felületen kiválasztotta a felsoroltak közül
 		for(const auto& pd : physical_devices) {
 			VkPhysicalDeviceProperties physical_device_properties;
-			//VkPhysicalDeviceFeatures physical_device_features;
+			VkPhysicalDeviceFeatures physical_device_features;
 			VkPhysicalDeviceMemoryProperties physical_device_memory_properties;
 			vkGetPhysicalDeviceProperties(pd, &physical_device_properties);
-			//vkGetPhysicalDeviceFeatures(pd, &physical_device_features);
+			vkGetPhysicalDeviceFeatures(pd, &physical_device_features);
 			vkGetPhysicalDeviceMemoryProperties(pd, &physical_device_memory_properties);
 
 			uint32_t surface_format_count;
@@ -370,6 +382,8 @@ namespace wm {
 				this->graphics_queue_family_index = graphics_queue_family_index;
 				this->presentation_queue_family_index = presentation_queue_family_index;
 				this->physical_device_memory_properties = physical_device_memory_properties;
+				this->anisotropy = physical_device_features.samplerAnisotropy;
+				this->max_anisotropy = physical_device_properties.limits.maxSamplerAnisotropy;
 				physical_device_name = physical_device_properties.deviceName;
 				if(physical_device_properties.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
 					break;
@@ -472,6 +486,7 @@ namespace wm {
 		create_swap_chain_image_views();
 		create_render_pass();
 		create_pipeline();
+		create_depth_resources();
 		create_framebuffers();
 		create_uniform_buffers();
 		create_descriptor_pool();
@@ -532,26 +547,15 @@ namespace wm {
 	void wm_vulkan_rendering_system::create_swap_chain_image_views() {
 		swap_chain_image_views.resize(swap_chain_images.size());
 		for(int32_t i = 0; i < swap_chain_images.size(); i++) {
-			VkImageViewCreateInfo image_view_create_info {};
-			image_view_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			image_view_create_info.image = swap_chain_images.at(i);
-			image_view_create_info.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
-			image_view_create_info.format = surface_format.format;
-			image_view_create_info.components.r = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
-			image_view_create_info.components.g = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
-			image_view_create_info.components.b = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
-			image_view_create_info.components.a = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
-			image_view_create_info.subresourceRange.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
-			image_view_create_info.subresourceRange.baseMipLevel = 0;
-			image_view_create_info.subresourceRange.levelCount = 1;
-			image_view_create_info.subresourceRange.baseArrayLayer = 0;
-			image_view_create_info.subresourceRange.layerCount = 1;
-
-			WM_ASSERT_VULKAN(vkCreateImageView(device, &image_view_create_info, nullptr, &swap_chain_image_views.at(i)));
+			swap_chain_image_views.at(i) = create_image_view(swap_chain_images.at(i), surface_format.format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT);
 		}
 	}
 
 	void wm_vulkan_rendering_system::cleanup_swap_chain() {
+		vkDestroyImageView(device, depth_image_view, nullptr);
+		vkDestroyImage(device, depth_image, nullptr);
+		vkFreeMemory(device, depth_image_device_memory, nullptr);
+
 		for(auto framebuffer : swap_chain_framebuffers) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
 		}
@@ -580,13 +584,20 @@ namespace wm {
 
 	//pipeline
 	void wm_vulkan_rendering_system::create_descriptor_set_layout() {
-		std::array<VkDescriptorSetLayoutBinding, 1> descriptor_set_layout_bindings;
-		VkDescriptorSetLayoutBinding descriptor_set_layout_binding {};
-		descriptor_set_layout_binding.binding = 0;
-		descriptor_set_layout_binding.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptor_set_layout_binding.descriptorCount = 1;
-		descriptor_set_layout_binding.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
-		descriptor_set_layout_bindings.at(0) = descriptor_set_layout_binding;
+		VkDescriptorSetLayoutBinding uniform_buffer_descriptor_set_layout_binding {};
+		uniform_buffer_descriptor_set_layout_binding.binding = 0;
+		uniform_buffer_descriptor_set_layout_binding.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniform_buffer_descriptor_set_layout_binding.descriptorCount = 1;
+		uniform_buffer_descriptor_set_layout_binding.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+
+		VkDescriptorSetLayoutBinding sampler_descriptor_set_layout_binding {};
+		sampler_descriptor_set_layout_binding.binding = 1;
+		sampler_descriptor_set_layout_binding.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		sampler_descriptor_set_layout_binding.descriptorCount = 1;
+		sampler_descriptor_set_layout_binding.pImmutableSamplers = nullptr;
+		sampler_descriptor_set_layout_binding.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		std::array<VkDescriptorSetLayoutBinding, 2> descriptor_set_layout_bindings = {uniform_buffer_descriptor_set_layout_binding, sampler_descriptor_set_layout_binding};
 
 		VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info {};
 		descriptor_set_layout_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -690,6 +701,14 @@ namespace wm {
 		pipeline_layout_create_info.pSetLayouts = descriptor_set_layouts.data();
 		WM_ASSERT_VULKAN(vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &pipeline_layout));
 
+		VkPipelineDepthStencilStateCreateInfo pipeline_depth_stencil_state_create_info {};
+		pipeline_depth_stencil_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		pipeline_depth_stencil_state_create_info.depthTestEnable = VK_TRUE;
+		pipeline_depth_stencil_state_create_info.depthWriteEnable = VK_TRUE;
+		pipeline_depth_stencil_state_create_info.depthCompareOp = VkCompareOp::VK_COMPARE_OP_LESS;
+		pipeline_depth_stencil_state_create_info.depthBoundsTestEnable = VK_FALSE;
+		pipeline_depth_stencil_state_create_info.stencilTestEnable = VK_FALSE;
+
 
 		VkGraphicsPipelineCreateInfo graphics_pipeline_create_info {};
 		graphics_pipeline_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -704,6 +723,7 @@ namespace wm {
 		graphics_pipeline_create_info.layout = pipeline_layout;
 		graphics_pipeline_create_info.renderPass = render_pass;
 		graphics_pipeline_create_info.subpass = 0;
+		graphics_pipeline_create_info.pDepthStencilState = &pipeline_depth_stencil_state_create_info;
 
 		std::array<VkGraphicsPipelineCreateInfo, 1> graphics_pipeline_create_infos = {graphics_pipeline_create_info};
 
@@ -719,10 +739,10 @@ namespace wm {
 		VkSubpassDependency subpass_dependency {};
 		subpass_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		subpass_dependency.dstSubpass = 0;
-		subpass_dependency.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		subpass_dependency.srcStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		subpass_dependency.srcAccessMask = 0;
-		subpass_dependency.dstStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		subpass_dependency.dstAccessMask = VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		subpass_dependency.dstStageMask = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		subpass_dependency.dstAccessMask = VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VkAccessFlagBits::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		std::array<VkSubpassDependency, 1> subpass_dependencies = {subpass_dependency};
 
 		VkAttachmentDescription color_attachment_description {};
@@ -734,17 +754,33 @@ namespace wm {
 		color_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		color_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 		color_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		std::array<VkAttachmentDescription, 1> attachment_descriptions = {color_attachment_description};
+
+		VkAttachmentDescription depth_attachment_description {};
+		depth_attachment_description.format = get_depth_format();
+		depth_attachment_description.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+		depth_attachment_description.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depth_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		std::array<VkAttachmentDescription, 2> attachment_descriptions = {color_attachment_description, depth_attachment_description};
 
 		VkAttachmentReference color_attachment_reference {};
 		color_attachment_reference.attachment = 0;
 		color_attachment_reference.layout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		std::array<VkAttachmentReference, 1> attachment_references = {color_attachment_reference};
+		std::array<VkAttachmentReference, 1> color_attachment_references = {color_attachment_reference};
+
+		VkAttachmentReference depth_attachment_reference {};
+		depth_attachment_reference.attachment = 1;
+		depth_attachment_reference.layout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		VkSubpassDescription subpass_description {};
 		subpass_description.pipelineBindPoint = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass_description.colorAttachmentCount = static_cast<uint32_t>(attachment_references.size());
-		subpass_description.pColorAttachments = attachment_references.data();
+		subpass_description.colorAttachmentCount = static_cast<uint32_t>(color_attachment_references.size());
+		subpass_description.pColorAttachments = color_attachment_references.data();
+		subpass_description.pDepthStencilAttachment = &depth_attachment_reference;
 		std::array<VkSubpassDescription, 1> subpass_descriptions = {subpass_description};
 
 		VkRenderPassCreateInfo render_pass_create_info {};
@@ -763,7 +799,7 @@ namespace wm {
 		swap_chain_framebuffers.resize(swap_chain_image_views.size());
 
 		for(int32_t i = 0; i < static_cast<int32_t>(swap_chain_image_views.size()); i++) {
-			std::array<VkImageView, 1> attachments = {swap_chain_image_views.at(i)};
+			std::array<VkImageView, 2> attachments = {swap_chain_image_views.at(i), depth_image_view};
 
 			VkFramebufferCreateInfo framebuffer_create_info {};
 			framebuffer_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -804,6 +840,205 @@ namespace wm {
 		return shader_module;
 	}
 
+
+	//texture
+	void wm_vulkan_rendering_system::create_texture_image() {
+		auto image = engine::get_resource_system()->get_image("res/texture/checked.png");
+		VkDeviceSize size = image->get_size().x * image->get_size().y * 4;
+
+		VkBuffer staging_buffer;
+		VkDeviceMemory staging_buffer_device_memory;
+		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_device_memory);
+
+		void* data;
+		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
+		memcpy(data, image->get_pixels(), static_cast<size_t>(size));
+		vkUnmapMemory(device, staging_buffer_device_memory);
+
+		create_image(image->get_size(), VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image, texture_image_device_memory);
+
+		transition_image_layout(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		copy_buffer_to_image(staging_buffer, texture_image, static_cast<uint32_t>(image->get_size().x), static_cast<uint32_t>(image->get_size().y));
+		transition_image_layout(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		vkDestroyBuffer(device, staging_buffer, nullptr);
+		vkFreeMemory(device, staging_buffer_device_memory, nullptr);
+		image.destroy();
+	}
+
+	void wm_vulkan_rendering_system::create_texture_image_view() {
+		texture_image_view = create_image_view(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT);
+	}
+
+	void wm_vulkan_rendering_system::create_image(const glm::ivec2& size, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory) {
+		VkImageCreateInfo image_create_info {};
+		image_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		image_create_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+		image_create_info.extent.width = static_cast<uint32_t>(size.x);
+		image_create_info.extent.height = static_cast<uint32_t>(size.y);
+		image_create_info.extent.depth = 1;
+		image_create_info.mipLevels = 1;
+		image_create_info.arrayLayers = 1;
+		image_create_info.format = format;
+		image_create_info.tiling = image_tiling;
+		image_create_info.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+		image_create_info.usage = image_usage;
+		image_create_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+		image_create_info.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+
+		WM_ASSERT_VULKAN(vkCreateImage(device, &image_create_info, nullptr, &texture_image));
+
+		VkMemoryRequirements memory_requirements;
+		vkGetImageMemoryRequirements(device, texture_image, &memory_requirements);
+
+		int32_t memory_type_index = -1;
+		for(uint32_t i = 0; i < physical_device_memory_properties.memoryTypeCount; i++) {
+			if(memory_requirements.memoryTypeBits & (1 << i) && (physical_device_memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+				memory_type_index = i;
+				break;
+			}
+		}
+		WM_ASSERT(memory_type_index != -1);
+
+		VkMemoryAllocateInfo memory_allocation_info {};
+		memory_allocation_info.sType = VkStructureType::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		memory_allocation_info.allocationSize = memory_requirements.size;
+		memory_allocation_info.memoryTypeIndex = memory_type_index;
+
+		WM_ASSERT_VULKAN(vkAllocateMemory(device, &memory_allocation_info, nullptr, &texture_image_device_memory));
+
+		WM_ASSERT_VULKAN(vkBindImageMemory(device, texture_image, texture_image_device_memory, 0));
+	}
+
+	VkImageView wm_vulkan_rendering_system::create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags) {
+		VkImageViewCreateInfo image_view_create_info {};
+		image_view_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		image_view_create_info.image = image;
+		image_view_create_info.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
+		image_view_create_info.format = format;
+		image_view_create_info.subresourceRange.aspectMask = image_aspect_flags;
+		image_view_create_info.subresourceRange.baseMipLevel = 0;
+		image_view_create_info.subresourceRange.levelCount = 1;
+		image_view_create_info.subresourceRange.baseArrayLayer = 0;
+		image_view_create_info.subresourceRange.layerCount = 1;
+
+		VkImageView image_view;
+		WM_ASSERT_VULKAN(vkCreateImageView(device, &image_view_create_info, nullptr, &image_view));
+
+		return image_view;
+	}
+
+	void wm_vulkan_rendering_system::create_texture_sampler() {
+		VkSamplerCreateInfo sampler_create_info {};
+		sampler_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		sampler_create_info.magFilter = VkFilter::VK_FILTER_LINEAR;
+		sampler_create_info.minFilter = VkFilter::VK_FILTER_LINEAR;
+		sampler_create_info.addressModeU = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		sampler_create_info.addressModeV = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		sampler_create_info.addressModeW = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		sampler_create_info.anisotropyEnable = anisotropy;
+		sampler_create_info.maxAnisotropy = max_anisotropy;
+		sampler_create_info.borderColor = VkBorderColor::VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		sampler_create_info.unnormalizedCoordinates = VK_FALSE;
+		sampler_create_info.compareEnable = VK_FALSE;//TODO: PCF
+		sampler_create_info.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
+		sampler_create_info.mipmapMode = VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler_create_info.mipLodBias = 0.0f;
+		sampler_create_info.minLod = 0.0f;
+		sampler_create_info.maxLod = 0.0f;
+
+		WM_ASSERT_VULKAN(vkCreateSampler(device, &sampler_create_info, nullptr, &texture_sampler));
+	}
+
+	void wm_vulkan_rendering_system::transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout) {
+		VkCommandBuffer command_buffer = begin_single_time_commands();
+
+		VkPipelineStageFlags source_stage;
+		VkPipelineStageFlags destination_stage;
+
+		VkImageMemoryBarrier image_memory_barrier {};
+		image_memory_barrier.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		image_memory_barrier.oldLayout = old_layout;
+		image_memory_barrier.newLayout = new_layout;
+		image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		image_memory_barrier.image = image;
+		image_memory_barrier.subresourceRange.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+		image_memory_barrier.subresourceRange.baseMipLevel = 0;
+		image_memory_barrier.subresourceRange.levelCount = 1;
+		image_memory_barrier.subresourceRange.baseArrayLayer = 0;
+		image_memory_barrier.subresourceRange.layerCount = 1;
+		if(old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+			image_memory_barrier.srcAccessMask = 0;
+			image_memory_barrier.dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+			source_stage = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			destination_stage = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+		} else if(old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+			image_memory_barrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+			image_memory_barrier.dstAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+			source_stage = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+			destination_stage = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		} else {
+			WM_THROW_ERROR("unsupported layout transition");
+		}
+
+		std::array<VkImageMemoryBarrier, 1> image_memory_barriers = {image_memory_barrier};
+
+		vkCmdPipelineBarrier(command_buffer, source_stage, destination_stage, 0, 0, nullptr, 0, nullptr, static_cast<uint32_t>(image_memory_barriers.size()), image_memory_barriers.data());
+
+		end_single_time_commands(command_buffer);
+	}
+
+	void wm_vulkan_rendering_system::copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
+		VkCommandBuffer command_buffer = begin_single_time_commands();
+
+		VkBufferImageCopy buffer_image_copy {};
+		buffer_image_copy.bufferOffset = 0;
+		buffer_image_copy.bufferRowLength = 0;
+		buffer_image_copy.bufferImageHeight = 0;
+		buffer_image_copy.imageSubresource.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+		buffer_image_copy.imageSubresource.mipLevel = 0;
+		buffer_image_copy.imageSubresource.baseArrayLayer = 0;
+		buffer_image_copy.imageSubresource.layerCount = 1;
+		buffer_image_copy.imageOffset = {0, 0, 0};
+		buffer_image_copy.imageExtent = {width, height, 1};
+
+		std::array<VkBufferImageCopy, 1> buffer_image_copies = {buffer_image_copy};
+
+		vkCmdCopyBufferToImage(command_buffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<uint32_t>(buffer_image_copies.size()), buffer_image_copies.data());
+
+		end_single_time_commands(command_buffer);
+	}
+
+
+	//depth
+	void wm_vulkan_rendering_system::create_depth_resources() {
+		VkFormat depth_format = get_depth_format();
+		create_image(glm::vec2(swap_chain_extent.width, swap_chain_extent.height), depth_format, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image, depth_image_device_memory);
+		depth_image_view = create_image_view(depth_image, depth_format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT);
+
+	}
+
+	VkFormat wm_vulkan_rendering_system::get_depth_format() const {
+		return get_depth_format({VkFormat::VK_FORMAT_D32_SFLOAT, VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT, VkFormat::VK_FORMAT_D24_UNORM_S8_UINT}, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	}
+
+	VkFormat wm_vulkan_rendering_system::get_depth_format(const std::vector<VkFormat>& formats, const VkImageTiling image_tiling, const VkFormatFeatureFlags format_features) const {
+		for(VkFormat format : formats) {
+			VkFormatProperties format_properties;
+			vkGetPhysicalDeviceFormatProperties(physical_device, format, &format_properties);
+			if(image_tiling == VkImageTiling::VK_IMAGE_TILING_LINEAR && (format_properties.linearTilingFeatures & format_features) == format_features) {
+				return format;
+			} else if(image_tiling == VkImageTiling::VK_IMAGE_TILING_OPTIMAL && (format_properties.optimalTilingFeatures & format_features) == format_features) {
+				return format;
+			}
+		}
+		WM_THROW_ERROR("Can't find appropirate depth format");
+	}
+
+	bool  wm_vulkan_rendering_system::depth_has_stencil_component(const VkFormat format) const {
+		return format == VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT || format == VkFormat::VK_FORMAT_D24_UNORM_S8_UINT;
+	}
 
 	//vertex buffer
 	void wm_vulkan_rendering_system::create_vertex_buffer() {
@@ -874,36 +1109,13 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::copy_buffer(const VkBuffer source_buffer, const VkBuffer destination_buffer, const size_t size) {
-		VkCommandBufferAllocateInfo command_buffer_allocation_info {};
-		command_buffer_allocation_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		command_buffer_allocation_info.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		command_buffer_allocation_info.commandPool = command_pool;
-		command_buffer_allocation_info.commandBufferCount = 1;
-
-		VkCommandBuffer command_buffer;
-		WM_ASSERT_VULKAN(vkAllocateCommandBuffers(device, &command_buffer_allocation_info, &command_buffer));
-
-		VkCommandBufferBeginInfo command_buffer_begin_info {};
-		command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		command_buffer_begin_info.flags = VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
+		VkCommandBuffer command_buffer = begin_single_time_commands();
 
 		VkBufferCopy buffer_copy {};
 		buffer_copy.size = size;
 		vkCmdCopyBuffer(command_buffer, source_buffer, destination_buffer, 1, &buffer_copy);
 
-		WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffer));
-
-		VkSubmitInfo submit_info {};
-		submit_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &command_buffer;
-
-		WM_ASSERT_VULKAN(vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE));
-		WM_ASSERT_VULKAN(vkQueueWaitIdle(graphics_queue));
-
-		vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+		end_single_time_commands(command_buffer);
 	}
 
 
@@ -933,6 +1145,7 @@ namespace wm {
 
 		uniform_buffer_object ubo {};
 		ubo.model = glm::rotate(glm::mat4(1.0f), rotation * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::rotate(ubo.model, glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		ubo.projection = glm::perspectiveRH(glm::radians(45.0f), static_cast<float>(swap_chain_extent.width) / static_cast<float>(swap_chain_extent.height), 0.1f, 10.0f);
 
@@ -943,10 +1156,15 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::create_descriptor_pool() {
-		VkDescriptorPoolSize descriptor_pool_size {};
-		descriptor_pool_size.type = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptor_pool_size.descriptorCount = static_cast<uint32_t>(swap_chain_images.size());
-		std::array<VkDescriptorPoolSize, 1> descriptor_pool_sizes = {descriptor_pool_size};
+		VkDescriptorPoolSize uniform_buffer_descriptor_pool_size {};
+		uniform_buffer_descriptor_pool_size.type = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uniform_buffer_descriptor_pool_size.descriptorCount = static_cast<uint32_t>(swap_chain_images.size());
+
+		VkDescriptorPoolSize sampler_descriptor_pool_size {};
+		sampler_descriptor_pool_size.type = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		sampler_descriptor_pool_size.descriptorCount = static_cast<uint32_t>(swap_chain_images.size());
+
+		std::array<VkDescriptorPoolSize, 2> descriptor_pool_sizes = {uniform_buffer_descriptor_pool_size, sampler_descriptor_pool_size};
 
 		VkDescriptorPoolCreateInfo descriptor_pool_create_info {};
 		descriptor_pool_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -974,15 +1192,30 @@ namespace wm {
 			descriptor_buffer_info.offset = 0;
 			descriptor_buffer_info.range = sizeof(uniform_buffer_object);
 
-			VkWriteDescriptorSet write_descriptor_set {};
-			write_descriptor_set.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			write_descriptor_set.dstSet = descriptor_sets.at(i);
-			write_descriptor_set.dstBinding = 0;
-			write_descriptor_set.dstArrayElement = 0;
-			write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			write_descriptor_set.descriptorCount = 1;
-			write_descriptor_set.pBufferInfo = &descriptor_buffer_info;
-			std::array<VkWriteDescriptorSet, 1> write_descriptor_sets = {write_descriptor_set};
+			VkDescriptorImageInfo descriptor_image_info {};
+			descriptor_image_info.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			descriptor_image_info.imageView = texture_image_view;
+			descriptor_image_info.sampler = texture_sampler;
+
+			VkWriteDescriptorSet uniform_buffer_write_descriptor_set {};
+			uniform_buffer_write_descriptor_set.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			uniform_buffer_write_descriptor_set.dstSet = descriptor_sets.at(i);
+			uniform_buffer_write_descriptor_set.dstBinding = 0;
+			uniform_buffer_write_descriptor_set.dstArrayElement = 0;
+			uniform_buffer_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			uniform_buffer_write_descriptor_set.descriptorCount = 1;
+			uniform_buffer_write_descriptor_set.pBufferInfo = &descriptor_buffer_info;
+
+			VkWriteDescriptorSet sampler_write_descriptor_set {};
+			sampler_write_descriptor_set.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			sampler_write_descriptor_set.dstSet = descriptor_sets.at(i);
+			sampler_write_descriptor_set.dstBinding = 1;
+			sampler_write_descriptor_set.dstArrayElement = 0;
+			sampler_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			sampler_write_descriptor_set.descriptorCount = 1;
+			sampler_write_descriptor_set.pImageInfo = &descriptor_image_info;
+
+			std::array<VkWriteDescriptorSet, 2> write_descriptor_sets = {uniform_buffer_write_descriptor_set, sampler_write_descriptor_set};
 
 			vkUpdateDescriptorSets(device, write_descriptor_sets.size(), write_descriptor_sets.data(), 0, nullptr);
 		}
@@ -1016,7 +1249,9 @@ namespace wm {
 
 			WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffers.at(i), &command_buffer_begin_info));
 
-			VkClearValue clear_value = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+			VkClearValue color_clear_value = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+			VkClearValue depth_clear_value = {{{1.0f, 0.0f}}};
+			std::array<VkClearValue, 2> clear_values = {color_clear_value, depth_clear_value};
 
 			VkRenderPassBeginInfo render_pass_begin_info {};
 			render_pass_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1024,8 +1259,8 @@ namespace wm {
 			render_pass_begin_info.framebuffer = swap_chain_framebuffers.at(i);
 			render_pass_begin_info.renderArea.offset = {0, 0};
 			render_pass_begin_info.renderArea.extent = swap_chain_extent;
-			render_pass_begin_info.clearValueCount = 1;
-			render_pass_begin_info.pClearValues = &clear_value;
+			render_pass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+			render_pass_begin_info.pClearValues = clear_values.data();
 
 			vkCmdBeginRenderPass(command_buffers.at(i), &render_pass_begin_info, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1046,6 +1281,41 @@ namespace wm {
 		}
 
 		WM_LOG_INFO_2("Vulkan drawing commands recorded");
+	}
+
+	VkCommandBuffer wm_vulkan_rendering_system::begin_single_time_commands() {
+		VkCommandBufferAllocateInfo command_buffer_allocate_info {};
+		command_buffer_allocate_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		command_buffer_allocate_info.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		command_buffer_allocate_info.commandPool = command_pool;
+		command_buffer_allocate_info.commandBufferCount = 1;
+
+		VkCommandBuffer command_buffer;
+		WM_ASSERT_VULKAN(vkAllocateCommandBuffers(device, &command_buffer_allocate_info, &command_buffer));
+
+		VkCommandBufferBeginInfo command_buffer_begin_info {};
+		command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		command_buffer_begin_info.flags = VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
+
+		return command_buffer;
+	}
+
+	void wm_vulkan_rendering_system::end_single_time_commands(const VkCommandBuffer command_buffer) {
+		WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffer));
+
+		VkSubmitInfo submit_info {};
+		submit_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &command_buffer;
+
+		std::array<VkCommandBuffer, 1> command_buffers = {command_buffer};
+
+		WM_ASSERT_VULKAN(vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE));
+		WM_ASSERT_VULKAN(vkQueueWaitIdle(graphics_queue));
+
+		vkFreeCommandBuffers(device, command_pool, static_cast<uint32_t>(command_buffers.size()), command_buffers.data());
 	}
 
 
@@ -1153,6 +1423,11 @@ namespace wm {
 
 		cleanup_swap_chain();
 
+		vkDestroySampler(device, texture_sampler, nullptr);
+		vkDestroyImageView(device, texture_image_view, nullptr);
+		vkDestroyImage(device, texture_image, nullptr);
+		vkFreeMemory(device, texture_image_device_memory, nullptr);
+
 		vkDestroyDescriptorSetLayout(device, descriptor_set_layout, nullptr);
 
 		vkDestroyBuffer(device, index_buffer, nullptr);
@@ -1184,4 +1459,4 @@ namespace wm {
 		WM_LOG_INFO_1("vulkan rendering system destructed");
 	}
 
-	}
+}

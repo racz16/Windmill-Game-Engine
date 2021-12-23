@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.16)
 
 project("Windmill-Game-Engine")
 set(CMAKE_CXX_STANDARD 17)
@@ -30,6 +30,9 @@ add_subdirectory("${WM_LIB_PATH_GLFW}")
 #GLM
 set(WM_LIB_PATH_GLM "${WM_SOURCE_DIR}/lib/glm")
 add_subdirectory("${WM_LIB_PATH_GLM}")
+
+#STB
+set(WM_LIB_PATH_STB "${WM_SOURCE_DIR}/lib/stb")
 
 #windmill
 add_subdirectory("windmill")

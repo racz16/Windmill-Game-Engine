@@ -47,6 +47,10 @@ namespace wm {
 		return get_system<rendering_system>(rendering_system::get_key());
 	}
 
+	ptr<resource_system> engine::get_resource_system() {
+		return get_system<resource_system>(resource_system::get_key());
+	}
+
 	void engine::destroy() {
 		for(int32_t i = static_cast<int32_t>(order.size()) - 1; i >= 0; i--) {
 			const auto key = order.at(i).first;

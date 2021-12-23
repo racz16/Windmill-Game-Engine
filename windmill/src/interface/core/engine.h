@@ -6,6 +6,7 @@
 #include "../time/time_system.h"
 #include "../event/event_system.h"
 #include "../rendering/rendering_system.h"
+#include "../resource/resource_system.h"
 
 namespace wm {
 
@@ -56,6 +57,7 @@ namespace wm {
 		static ptr<window_system> get_window_system();
 		static ptr<time_system> get_time_system();
 		static ptr<rendering_system> get_rendering_system();
+		static ptr<resource_system> get_resource_system();
 
 		static parameter_container& get_parameters();
 

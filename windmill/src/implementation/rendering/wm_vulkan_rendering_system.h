@@ -7,8 +7,9 @@
 namespace wm {
 
 	struct vertex {
-		glm::vec2 position;
+		glm::vec3 position;
 		glm::vec3 color;
+		glm::vec2 texture_coordinates;
 
 		static std::array<VkVertexInputBindingDescription, 1> get_binding_descriptions() {
 			std::array<VkVertexInputBindingDescription, 1> binding_descriptions {};
@@ -20,18 +21,23 @@ namespace wm {
 			return binding_descriptions;
 		}
 
-		static std::array<VkVertexInputAttributeDescription, 2> get_attribute_descriptions() {
-			std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions {};
+		static std::array<VkVertexInputAttributeDescription, 3> get_attribute_descriptions() {
+			std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions {};
 
 			attribute_descriptions.at(0).binding = 0;
 			attribute_descriptions.at(0).location = 0;
-			attribute_descriptions.at(0).format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
+			attribute_descriptions.at(0).format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
 			attribute_descriptions.at(0).offset = offsetof(vertex, position);
 
 			attribute_descriptions.at(1).binding = 0;
 			attribute_descriptions.at(1).location = 1;
 			attribute_descriptions.at(1).format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
 			attribute_descriptions.at(1).offset = offsetof(vertex, color);
+
+			attribute_descriptions.at(2).binding = 0;
+			attribute_descriptions.at(2).location = 2;
+			attribute_descriptions.at(2).format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
+			attribute_descriptions.at(2).offset = offsetof(vertex, texture_coordinates);
 
 			return attribute_descriptions;
 		}
@@ -48,13 +54,15 @@ namespace wm {
 	private:
 		static const int32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-		static const std::array<vertex, 4> vertices;
-		static const std::array<uint16_t, 6> indices;
+		static const std::array<vertex, 8> vertices;
+		static const std::array<uint16_t, 12> indices;
 
 		VkInstance instance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT debug_utils_messenger = VK_NULL_HANDLE;
 		//device
 		VkPhysicalDevice physical_device = VK_NULL_HANDLE;
+		bool anisotropy = false;
+		float max_anisotropy = -1.0;
 		VkPhysicalDeviceMemoryProperties physical_device_memory_properties;
 		int32_t graphics_queue_family_index = -1;
 		int32_t presentation_queue_family_index = -1;
@@ -86,6 +94,15 @@ namespace wm {
 		std::vector<VkDeviceMemory> uniform_buffers_device_memory;
 		VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> descriptor_sets;
+		//texture
+		VkImage texture_image;
+		VkImageView texture_image_view;
+		VkSampler texture_sampler;
+		VkDeviceMemory texture_image_device_memory;
+		//depth texture
+		VkImage depth_image;
+		VkImageView depth_image_view;
+		VkDeviceMemory depth_image_device_memory;
 		//command buffers
 		VkCommandPool command_pool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> command_buffers;
@@ -145,6 +162,19 @@ namespace wm {
 		void create_index_buffer();
 		void create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& buffer_memory);
 		void copy_buffer(const VkBuffer source_buffer, const VkBuffer destination_buffer, const size_t size);
+		//texture
+		void create_texture_image();
+		void create_texture_image_view();
+		void create_image(const glm::ivec2& size, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory);
+		VkImageView create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags);
+		void create_texture_sampler();
+		void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout);
+		void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+		//depth
+		void create_depth_resources();
+		VkFormat get_depth_format() const;
+		VkFormat get_depth_format(const std::vector<VkFormat>& formats, const VkImageTiling image_tiling, const VkFormatFeatureFlags format_features) const;
+		bool depth_has_stencil_component(const VkFormat format) const;
 		//uniform buffers
 		void create_uniform_buffers();
 		void update_uniform_buffer(const uint32_t image_index) const;
@@ -153,6 +183,8 @@ namespace wm {
 		//command buffers
 		void create_command_pool();
 		void create_command_buffers();
+		VkCommandBuffer begin_single_time_commands();
+		void end_single_time_commands(const VkCommandBuffer command_buffer);
 		//sync
 		void create_semaphores();
 	public:

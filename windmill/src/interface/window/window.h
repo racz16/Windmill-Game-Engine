@@ -52,6 +52,8 @@ namespace wm {
 		virtual void set_cursor_mode(const cursor_mode mode) = 0;
 		virtual wm::cursor_shape get_cursor_shape() const = 0;
 		virtual void set_cursor_shape(const wm::cursor_shape cursor_shape) = 0;
+		virtual void set_cursor_image(const std::string file_path) const = 0;
+		virtual void set_icon(const std::string file_path) const = 0;
 		virtual ptr_view<window_input_handler> get_input_handler() = 0;
 		virtual ~window() { }
 	};
