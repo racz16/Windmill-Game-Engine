@@ -6,16 +6,16 @@
 
 namespace wm {
 
-	struct vertex {
+	struct gpu_vertex {
 		glm::vec3 position;
-		glm::vec3 color;
+		glm::vec3 normal;
 		glm::vec2 texture_coordinates;
 
 		static std::array<VkVertexInputBindingDescription, 1> get_binding_descriptions() {
 			std::array<VkVertexInputBindingDescription, 1> binding_descriptions {};
 
 			binding_descriptions.at(0).binding = 0;
-			binding_descriptions.at(0).stride = sizeof(vertex);
+			binding_descriptions.at(0).stride = sizeof(gpu_vertex);
 			binding_descriptions.at(0).inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX;
 
 			return binding_descriptions;
@@ -27,17 +27,17 @@ namespace wm {
 			attribute_descriptions.at(0).binding = 0;
 			attribute_descriptions.at(0).location = 0;
 			attribute_descriptions.at(0).format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
-			attribute_descriptions.at(0).offset = offsetof(vertex, position);
+			attribute_descriptions.at(0).offset = offsetof(gpu_vertex, position);
 
 			attribute_descriptions.at(1).binding = 0;
 			attribute_descriptions.at(1).location = 1;
 			attribute_descriptions.at(1).format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
-			attribute_descriptions.at(1).offset = offsetof(vertex, color);
+			attribute_descriptions.at(1).offset = offsetof(gpu_vertex, normal);
 
 			attribute_descriptions.at(2).binding = 0;
 			attribute_descriptions.at(2).location = 2;
 			attribute_descriptions.at(2).format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
-			attribute_descriptions.at(2).offset = offsetof(vertex, texture_coordinates);
+			attribute_descriptions.at(2).offset = offsetof(gpu_vertex, texture_coordinates);
 
 			return attribute_descriptions;
 		}
@@ -54,8 +54,8 @@ namespace wm {
 	private:
 		static const int32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-		static const std::array<vertex, 8> vertices;
-		static const std::array<uint16_t, 12> indices;
+		static std::vector<gpu_vertex> vertices;
+		static std::vector<uint32_t> indices;
 
 		VkInstance instance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT debug_utils_messenger = VK_NULL_HANDLE;
@@ -158,6 +158,7 @@ namespace wm {
 		std::vector<char> read_file(const std::string& file_name) const;
 		VkShaderModule create_shader_module(const std::vector<char>& code) const;
 		//vertex buffer
+		void load_mesh();
 		void create_vertex_buffer();
 		void create_index_buffer();
 		void create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& buffer_memory);

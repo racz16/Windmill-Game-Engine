@@ -4,6 +4,7 @@
 #include "../core/key.h"
 #include "../ptr/ptr.h"
 #include "image.h"
+#include "mesh.h"
 
 namespace wm {
 
@@ -13,6 +14,7 @@ namespace wm {
 		static key<resource_system> get_key();
 
 		virtual ptr<image> get_image(const std::string& file_path) = 0;
+		virtual ptr<mesh> get_mesh(const std::string& file_path) = 0;
 	};
 
 }

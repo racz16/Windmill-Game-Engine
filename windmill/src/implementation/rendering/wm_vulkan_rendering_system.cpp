@@ -11,22 +11,8 @@
 
 namespace wm {
 
-	const std::array<vertex, 8> wm_vulkan_rendering_system::vertices = {{
-		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-		{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-		{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-		{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-	}};
-
-	const std::array<uint16_t, 12> wm_vulkan_rendering_system::indices = {
-		0, 1, 2, 2, 3, 0,
-		4, 5, 6, 6, 7, 4
-	};
+	std::vector<gpu_vertex> wm_vulkan_rendering_system::vertices;
+	std::vector<uint32_t> wm_vulkan_rendering_system::indices;
 
 
 	wm_vulkan_rendering_system::wm_vulkan_rendering_system() {
@@ -47,6 +33,7 @@ namespace wm {
 		create_texture_image();
 		create_texture_image_view();
 		create_texture_sampler();
+		load_mesh();
 		create_vertex_buffer();
 		create_index_buffer();
 		create_uniform_buffers();
@@ -629,8 +616,8 @@ namespace wm {
 
 		std::array<VkPipelineShaderStageCreateInfo, 2> pipeline_shader_stage_create_infos = {pipeline_vertex_shader_stage_create_info, pipeline_fragment_shader_stage_create_info};
 
-		auto binding_descriptions = vertex::get_binding_descriptions();
-		auto attribute_descriptions = vertex::get_attribute_descriptions();
+		auto binding_descriptions = gpu_vertex::get_binding_descriptions();
+		auto attribute_descriptions = gpu_vertex::get_attribute_descriptions();
 
 		VkPipelineVertexInputStateCreateInfo pipeline_vertex_input_state_create_info {};
 		pipeline_vertex_input_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -646,9 +633,9 @@ namespace wm {
 
 		VkViewport viewport {};
 		viewport.x = 0.0f;
-		viewport.y = 0.0f;
+		viewport.y = static_cast<float>(swap_chain_extent.height);
 		viewport.width = static_cast<float>(swap_chain_extent.width);
-		viewport.height = static_cast<float>(swap_chain_extent.height);
+		viewport.height = -static_cast<float>(swap_chain_extent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
@@ -843,7 +830,7 @@ namespace wm {
 
 	//texture
 	void wm_vulkan_rendering_system::create_texture_image() {
-		auto image = engine::get_resource_system()->get_image("res/texture/checked.png");
+		auto image = engine::get_resource_system()->get_image("res/mesh/helmet.jpg");
 		VkDeviceSize size = image->get_size().x * image->get_size().y * 4;
 
 		VkBuffer staging_buffer;
@@ -1040,7 +1027,16 @@ namespace wm {
 		return format == VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT || format == VkFormat::VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 
+
 	//vertex buffer
+	void wm_vulkan_rendering_system::load_mesh() {
+		auto mesh = engine::get_resource_system()->get_mesh("res/mesh/helmet.obj");
+		for(auto& v : mesh->get_vertices()) {
+			vertices.push_back({v.get_position(), v.get_normal(), v.get_texture_coordinate()});
+		}
+		indices = mesh->get_indices();
+	}
+
 	void wm_vulkan_rendering_system::create_vertex_buffer() {
 		const size_t size = sizeof(vertices.at(0)) * vertices.size();
 
@@ -1144,10 +1140,9 @@ namespace wm {
 		rotation += delta_time * ROTATION_SPEED;
 
 		uniform_buffer_object ubo {};
-		ubo.model = glm::rotate(glm::mat4(1.0f), rotation * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.model = glm::rotate(ubo.model, glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f), rotation * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		ubo.projection = glm::perspectiveRH(glm::radians(45.0f), static_cast<float>(swap_chain_extent.width) / static_cast<float>(swap_chain_extent.height), 0.1f, 10.0f);
+		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swap_chain_extent.width) / static_cast<float>(swap_chain_extent.height), 0.1f, 10.0f);
 
 		void* data;
 		WM_ASSERT_VULKAN(vkMapMemory(device, uniform_buffers_device_memory.at(image_index), 0, sizeof(ubo), 0, &data));
@@ -1269,7 +1264,7 @@ namespace wm {
 			std::array<VkBuffer, 1> vertex_buffers = {vertex_buffer};
 			std::array<VkDeviceSize, 1> offsets = {0};
 			vkCmdBindVertexBuffers(command_buffers.at(i), 0, 1, vertex_buffers.data(), offsets.data());
-			vkCmdBindIndexBuffer(command_buffers.at(i), index_buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT16);
+			vkCmdBindIndexBuffer(command_buffers.at(i), index_buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
 
 			vkCmdBindDescriptorSets(command_buffers.at(i), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_sets.at(i), 0, nullptr);
 

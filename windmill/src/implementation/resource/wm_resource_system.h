@@ -9,6 +9,7 @@ namespace wm {
 	class wm_resource_system: public wm_base_system, public resource_system {
 	public:
 		ptr<image> get_image(const std::string& file_path) override;
+		ptr<mesh> get_mesh(const std::string& file_path) override;
 
 		void update() override { return wm_base_system::update(); }
 		bool is_active() const override { return wm_base_system::is_active(); }
