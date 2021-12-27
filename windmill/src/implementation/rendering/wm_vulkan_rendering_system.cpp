@@ -28,6 +28,7 @@ namespace wm {
 		create_descriptor_set_layout();
 		create_pipeline();
 		create_command_pool();
+		create_color_resources();
 		create_depth_resources();
 		create_framebuffers();
 		create_texture_image();
@@ -371,6 +372,7 @@ namespace wm {
 				this->physical_device_memory_properties = physical_device_memory_properties;
 				this->anisotropy = physical_device_features.samplerAnisotropy;
 				this->max_anisotropy = physical_device_properties.limits.maxSamplerAnisotropy;
+				this->msaa_sample_count = get_msaa_sample_count(physical_device_properties);
 				physical_device_name = physical_device_properties.deviceName;
 				if(physical_device_properties.deviceType == VkPhysicalDeviceType::VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
 					break;
@@ -473,6 +475,7 @@ namespace wm {
 		create_swap_chain_image_views();
 		create_render_pass();
 		create_pipeline();
+		create_color_resources();
 		create_depth_resources();
 		create_framebuffers();
 		create_uniform_buffers();
@@ -539,6 +542,10 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::cleanup_swap_chain() {
+		vkDestroyImageView(device, color_image_view, nullptr);
+		vkDestroyImage(device, color_image, nullptr);
+		vkFreeMemory(device, color_image_device_memory, nullptr);
+
 		vkDestroyImageView(device, depth_image_view, nullptr);
 		vkDestroyImage(device, depth_image, nullptr);
 		vkFreeMemory(device, depth_image_device_memory, nullptr);
@@ -663,7 +670,7 @@ namespace wm {
 		VkPipelineMultisampleStateCreateInfo pipeline_multisample_state_create_info {};
 		pipeline_multisample_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		pipeline_multisample_state_create_info.sampleShadingEnable = VK_FALSE;
-		pipeline_multisample_state_create_info.rasterizationSamples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+		pipeline_multisample_state_create_info.rasterizationSamples = msaa_sample_count;
 
 
 		VkPipelineColorBlendAttachmentState pipeline_color_blend_attachment_state {};
@@ -734,17 +741,17 @@ namespace wm {
 
 		VkAttachmentDescription color_attachment_description {};
 		color_attachment_description.format = surface_format.format;
-		color_attachment_description.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+		color_attachment_description.samples = msaa_sample_count;
 		color_attachment_description.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
 		color_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
 		color_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		color_attachment_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		color_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
-		color_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		color_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription depth_attachment_description {};
 		depth_attachment_description.format = get_depth_format();
-		depth_attachment_description.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+		depth_attachment_description.samples = msaa_sample_count;
 		depth_attachment_description.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depth_attachment_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depth_attachment_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -752,7 +759,17 @@ namespace wm {
 		depth_attachment_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 		depth_attachment_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-		std::array<VkAttachmentDescription, 2> attachment_descriptions = {color_attachment_description, depth_attachment_description};
+		VkAttachmentDescription color_attachment_resolve_description {};
+		color_attachment_resolve_description.format = surface_format.format;
+		color_attachment_resolve_description.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+		color_attachment_resolve_description.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment_resolve_description.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+		color_attachment_resolve_description.stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment_resolve_description.stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color_attachment_resolve_description.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment_resolve_description.finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		std::array<VkAttachmentDescription, 3> attachment_descriptions = {color_attachment_description, depth_attachment_description, color_attachment_resolve_description};
 
 		VkAttachmentReference color_attachment_reference {};
 		color_attachment_reference.attachment = 0;
@@ -763,11 +780,17 @@ namespace wm {
 		depth_attachment_reference.attachment = 1;
 		depth_attachment_reference.layout = VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+		VkAttachmentReference color_attachment_resolve_reference {};
+		color_attachment_resolve_reference.attachment = 2;
+		color_attachment_resolve_reference.layout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		std::array<VkAttachmentReference, 1> color_attachment_resolve_references = {color_attachment_resolve_reference};
+
 		VkSubpassDescription subpass_description {};
 		subpass_description.pipelineBindPoint = VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass_description.colorAttachmentCount = static_cast<uint32_t>(color_attachment_references.size());
 		subpass_description.pColorAttachments = color_attachment_references.data();
 		subpass_description.pDepthStencilAttachment = &depth_attachment_reference;
+		subpass_description.pResolveAttachments = color_attachment_resolve_references.data();
 		std::array<VkSubpassDescription, 1> subpass_descriptions = {subpass_description};
 
 		VkRenderPassCreateInfo render_pass_create_info {};
@@ -786,7 +809,7 @@ namespace wm {
 		swap_chain_framebuffers.resize(swap_chain_image_views.size());
 
 		for(int32_t i = 0; i < static_cast<int32_t>(swap_chain_image_views.size()); i++) {
-			std::array<VkImageView, 2> attachments = {swap_chain_image_views.at(i), depth_image_view};
+			std::array<VkImageView, 3> attachments = {color_image_view, depth_image_view, swap_chain_image_views.at(i)};
 
 			VkFramebufferCreateInfo framebuffer_create_info {};
 			framebuffer_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -843,7 +866,7 @@ namespace wm {
 		memcpy(data, image->get_pixels(), static_cast<size_t>(size));
 		vkUnmapMemory(device, staging_buffer_device_memory);
 
-		create_image(image->get_size(), texture_mipmap_level_count, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image, texture_image_device_memory);
+		create_image(image->get_size(), texture_mipmap_level_count, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image, texture_image_device_memory);
 
 		transition_image_layout(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture_mipmap_level_count);
 		copy_buffer_to_image(staging_buffer, texture_image, static_cast<uint32_t>(image->get_size().x), static_cast<uint32_t>(image->get_size().y));
@@ -858,7 +881,7 @@ namespace wm {
 		texture_image_view = create_image_view(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, texture_mipmap_level_count);
 	}
 
-	void wm_vulkan_rendering_system::create_image(const glm::ivec2& size, const uint32_t mipmap_level_count, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory) {
+	void wm_vulkan_rendering_system::create_image(const glm::ivec2& size, const uint32_t mipmap_level_count, const VkSampleCountFlagBits sample_count, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory) {
 		VkImageCreateInfo image_create_info {};
 		image_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		image_create_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
@@ -872,7 +895,7 @@ namespace wm {
 		image_create_info.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
 		image_create_info.usage = image_usage;
 		image_create_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
-		image_create_info.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+		image_create_info.samples = sample_count;
 
 		WM_ASSERT_VULKAN(vkCreateImage(device, &image_create_info, nullptr, &texture_image));
 
@@ -1064,10 +1087,38 @@ namespace wm {
 	}
 
 
-	//depth
+	//color texture
+	void wm_vulkan_rendering_system::create_color_resources() {
+		VkFormat format = surface_format.format;
+
+		create_image(glm::vec2(swap_chain_extent.width, swap_chain_extent.height), 1, msaa_sample_count, format, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, color_image, color_image_device_memory);
+		color_image_view = create_image_view(color_image, format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, 1);
+	}
+
+	VkSampleCountFlagBits wm_vulkan_rendering_system::get_msaa_sample_count(const VkPhysicalDeviceProperties physical_device_properties) const {
+		VkSampleCountFlags counts = physical_device_properties.limits.framebufferColorSampleCounts & physical_device_properties.limits.framebufferDepthSampleCounts;
+		if(counts & VkSampleCountFlagBits::VK_SAMPLE_COUNT_64_BIT) {
+			return VkSampleCountFlagBits::VK_SAMPLE_COUNT_64_BIT;
+		} else if(counts & VkSampleCountFlagBits::VK_SAMPLE_COUNT_32_BIT) {
+			return VkSampleCountFlagBits::VK_SAMPLE_COUNT_32_BIT;
+		} else if(counts & VkSampleCountFlagBits::VK_SAMPLE_COUNT_16_BIT) {
+			return VkSampleCountFlagBits::VK_SAMPLE_COUNT_16_BIT;
+		} else if(counts & VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT) {
+			return VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT;
+		} else if(counts & VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT) {
+			return VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT;
+		} else if(counts & VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT) {
+			return VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT;
+		}
+
+		return VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+	}
+
+
+	//depth texture
 	void wm_vulkan_rendering_system::create_depth_resources() {
 		VkFormat depth_format = get_depth_format();
-		create_image(glm::vec2(swap_chain_extent.width, swap_chain_extent.height), 1, depth_format, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image, depth_image_device_memory);
+		create_image(glm::vec2(swap_chain_extent.width, swap_chain_extent.height), 1, msaa_sample_count, depth_format, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image, depth_image_device_memory);
 		depth_image_view = create_image_view(depth_image, depth_format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
 
