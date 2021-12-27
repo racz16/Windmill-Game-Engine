@@ -96,6 +96,7 @@ namespace wm {
 		std::vector<VkDescriptorSet> descriptor_sets;
 		//texture
 		VkImage texture_image;
+		uint32_t texture_mipmap_level_count;
 		VkImageView texture_image_view;
 		VkSampler texture_sampler;
 		VkDeviceMemory texture_image_device_memory;
@@ -166,11 +167,12 @@ namespace wm {
 		//texture
 		void create_texture_image();
 		void create_texture_image_view();
-		void create_image(const glm::ivec2& size, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory);
-		VkImageView create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags);
+		void create_image(const glm::ivec2& size, const uint32_t mipmap_level_count, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory);
+		VkImageView create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags, const uint32_t mipmap_level_count);
 		void create_texture_sampler();
-		void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout);
+		void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout, const uint32_t mipmap_level_count);
 		void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+		void generate_mipmaps(VkImage image, const VkFormat format, const glm::vec2& size, const uint32_t mipmap_level_count);
 		//depth
 		void create_depth_resources();
 		VkFormat get_depth_format() const;

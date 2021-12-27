@@ -534,7 +534,7 @@ namespace wm {
 	void wm_vulkan_rendering_system::create_swap_chain_image_views() {
 		swap_chain_image_views.resize(swap_chain_images.size());
 		for(int32_t i = 0; i < swap_chain_images.size(); i++) {
-			swap_chain_image_views.at(i) = create_image_view(swap_chain_images.at(i), surface_format.format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT);
+			swap_chain_image_views.at(i) = create_image_view(swap_chain_images.at(i), surface_format.format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		}
 	}
 
@@ -831,6 +831,7 @@ namespace wm {
 	//texture
 	void wm_vulkan_rendering_system::create_texture_image() {
 		auto image = engine::get_resource_system()->get_image("res/mesh/helmet.jpg");
+		texture_mipmap_level_count = static_cast<uint32_t>(std::floor(std::log2(std::max(image->get_size().x, image->get_size().y)))) + 1;
 		VkDeviceSize size = image->get_size().x * image->get_size().y * 4;
 
 		VkBuffer staging_buffer;
@@ -842,11 +843,11 @@ namespace wm {
 		memcpy(data, image->get_pixels(), static_cast<size_t>(size));
 		vkUnmapMemory(device, staging_buffer_device_memory);
 
-		create_image(image->get_size(), VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image, texture_image_device_memory);
+		create_image(image->get_size(), texture_mipmap_level_count, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image, texture_image_device_memory);
 
-		transition_image_layout(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		transition_image_layout(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture_mipmap_level_count);
 		copy_buffer_to_image(staging_buffer, texture_image, static_cast<uint32_t>(image->get_size().x), static_cast<uint32_t>(image->get_size().y));
-		transition_image_layout(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		generate_mipmaps(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, image->get_size(), texture_mipmap_level_count);
 
 		vkDestroyBuffer(device, staging_buffer, nullptr);
 		vkFreeMemory(device, staging_buffer_device_memory, nullptr);
@@ -854,17 +855,17 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::create_texture_image_view() {
-		texture_image_view = create_image_view(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT);
+		texture_image_view = create_image_view(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, texture_mipmap_level_count);
 	}
 
-	void wm_vulkan_rendering_system::create_image(const glm::ivec2& size, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory) {
+	void wm_vulkan_rendering_system::create_image(const glm::ivec2& size, const uint32_t mipmap_level_count, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory) {
 		VkImageCreateInfo image_create_info {};
 		image_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		image_create_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
 		image_create_info.extent.width = static_cast<uint32_t>(size.x);
 		image_create_info.extent.height = static_cast<uint32_t>(size.y);
 		image_create_info.extent.depth = 1;
-		image_create_info.mipLevels = 1;
+		image_create_info.mipLevels = mipmap_level_count;
 		image_create_info.arrayLayers = 1;
 		image_create_info.format = format;
 		image_create_info.tiling = image_tiling;
@@ -897,7 +898,7 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkBindImageMemory(device, texture_image, texture_image_device_memory, 0));
 	}
 
-	VkImageView wm_vulkan_rendering_system::create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags) {
+	VkImageView wm_vulkan_rendering_system::create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags, const uint32_t mipmap_level_count) {
 		VkImageViewCreateInfo image_view_create_info {};
 		image_view_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		image_view_create_info.image = image;
@@ -905,7 +906,7 @@ namespace wm {
 		image_view_create_info.format = format;
 		image_view_create_info.subresourceRange.aspectMask = image_aspect_flags;
 		image_view_create_info.subresourceRange.baseMipLevel = 0;
-		image_view_create_info.subresourceRange.levelCount = 1;
+		image_view_create_info.subresourceRange.levelCount = mipmap_level_count;
 		image_view_create_info.subresourceRange.baseArrayLayer = 0;
 		image_view_create_info.subresourceRange.layerCount = 1;
 
@@ -930,14 +931,13 @@ namespace wm {
 		sampler_create_info.compareEnable = VK_FALSE;//TODO: PCF
 		sampler_create_info.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
 		sampler_create_info.mipmapMode = VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		sampler_create_info.mipLodBias = 0.0f;
 		sampler_create_info.minLod = 0.0f;
-		sampler_create_info.maxLod = 0.0f;
+		sampler_create_info.maxLod = static_cast<float>(texture_mipmap_level_count);
 
 		WM_ASSERT_VULKAN(vkCreateSampler(device, &sampler_create_info, nullptr, &texture_sampler));
 	}
 
-	void wm_vulkan_rendering_system::transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout) {
+	void wm_vulkan_rendering_system::transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout, const uint32_t mipmap_level_count) {
 		VkCommandBuffer command_buffer = begin_single_time_commands();
 
 		VkPipelineStageFlags source_stage;
@@ -952,7 +952,7 @@ namespace wm {
 		image_memory_barrier.image = image;
 		image_memory_barrier.subresourceRange.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 		image_memory_barrier.subresourceRange.baseMipLevel = 0;
-		image_memory_barrier.subresourceRange.levelCount = 1;
+		image_memory_barrier.subresourceRange.levelCount = mipmap_level_count;
 		image_memory_barrier.subresourceRange.baseArrayLayer = 0;
 		image_memory_barrier.subresourceRange.layerCount = 1;
 		if(old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
@@ -997,13 +997,78 @@ namespace wm {
 		end_single_time_commands(command_buffer);
 	}
 
+	void wm_vulkan_rendering_system::generate_mipmaps(VkImage image, const VkFormat format, const glm::vec2& size, const uint32_t mipmap_level_count) {
+		VkFormatProperties format_properties;
+		vkGetPhysicalDeviceFormatProperties(physical_device, format, &format_properties);
+		WM_ASSERT((format_properties.optimalTilingFeatures & VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT);
+
+		VkCommandBuffer command_buffer = begin_single_time_commands();
+
+		VkImageMemoryBarrier image_memory_barrier {};
+		image_memory_barrier.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		image_memory_barrier.image = image;
+		image_memory_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		image_memory_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		image_memory_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		image_memory_barrier.subresourceRange.baseArrayLayer = 0;
+		image_memory_barrier.subresourceRange.layerCount = 1;
+		image_memory_barrier.subresourceRange.levelCount = 1;
+
+		glm::ivec2 mipmap_size = size;
+
+		for(uint32_t i = 1; i < mipmap_level_count; i++) {
+			image_memory_barrier.subresourceRange.baseMipLevel = i - 1;
+			image_memory_barrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			image_memory_barrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			image_memory_barrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+			image_memory_barrier.dstAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+
+			vkCmdPipelineBarrier(command_buffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+
+			VkImageBlit image_blit {};
+			image_blit.srcOffsets[0] = {0, 0, 0};
+			image_blit.srcOffsets[1] = {mipmap_size.x, mipmap_size.y, 1};
+			image_blit.srcSubresource.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+			image_blit.srcSubresource.mipLevel = i - 1;
+			image_blit.srcSubresource.baseArrayLayer = 0;
+			image_blit.srcSubresource.layerCount = 1;
+			image_blit.dstOffsets[0] = {0, 0, 0};
+			image_blit.dstOffsets[1] = {mipmap_size.x > 1 ? mipmap_size.x / 2 : 1, mipmap_size.y > 1 ? mipmap_size.y / 2 : 1, 1};
+			image_blit.dstSubresource.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+			image_blit.dstSubresource.mipLevel = i;
+			image_blit.dstSubresource.baseArrayLayer = 0;
+			image_blit.dstSubresource.layerCount = 1;
+
+			vkCmdBlitImage(command_buffer, image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_blit, VkFilter::VK_FILTER_LINEAR);
+
+			image_memory_barrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			image_memory_barrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			image_memory_barrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
+			image_memory_barrier.dstAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+
+			vkCmdPipelineBarrier(command_buffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+
+			mipmap_size.x = std::max(mipmap_size.x / 2.0f, 1.0f);
+			mipmap_size.y = std::max(mipmap_size.y / 2.0f, 1.0f);
+		}
+
+		image_memory_barrier.subresourceRange.baseMipLevel = mipmap_level_count - 1;
+		image_memory_barrier.oldLayout = VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		image_memory_barrier.newLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		image_memory_barrier.srcAccessMask = VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
+		image_memory_barrier.dstAccessMask = VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(command_buffer, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &image_memory_barrier);
+
+		end_single_time_commands(command_buffer);
+	}
+
 
 	//depth
 	void wm_vulkan_rendering_system::create_depth_resources() {
 		VkFormat depth_format = get_depth_format();
-		create_image(glm::vec2(swap_chain_extent.width, swap_chain_extent.height), depth_format, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image, depth_image_device_memory);
-		depth_image_view = create_image_view(depth_image, depth_format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT);
-
+		create_image(glm::vec2(swap_chain_extent.width, swap_chain_extent.height), 1, depth_format, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image, depth_image_device_memory);
+		depth_image_view = create_image_view(depth_image, depth_format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
 
 	VkFormat wm_vulkan_rendering_system::get_depth_format() const {
