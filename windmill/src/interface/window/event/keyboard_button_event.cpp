@@ -7,8 +7,8 @@ namespace wm {
 		return key;
 	}
 
-	keyboard_button_event::keyboard_button_event(const ptr<wm::window> window, const keyboard_button button, const button_state state, const int32_t scancode, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock):
-		window_event(window), button(button), state(state), scancode(scancode), shift(shift), ctrl(ctrl), alt(alt), super(super), caps_lock(caps_lock), num_lock(num_lock), button_name(get_button_name(button, scancode)) { }
+	keyboard_button_event::keyboard_button_event(const keyboard_button button, const button_state state, const int32_t scancode, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock):
+		event(true), button(button), state(state), scancode(scancode), shift(shift), ctrl(ctrl), alt(alt), super(super), caps_lock(caps_lock), num_lock(num_lock), button_name(get_button_name(button, scancode)) { }
 
 	std::string keyboard_button_event::get_button_name(const keyboard_button button, const int32_t scancode) const {
 		switch(button) {
@@ -43,7 +43,7 @@ namespace wm {
 			case keyboard_button::button_f22: return "F22";
 			case keyboard_button::button_f23: return "F23";
 			case keyboard_button::button_f24: return "F24";
-			case keyboard_button::button_f25: return  "F25";
+			case keyboard_button::button_f25: return "F25";
 			case keyboard_button::button_home: return "HOME";
 			case keyboard_button::button_insert: return "INS";
 			case keyboard_button::button_left: return "LEFT";

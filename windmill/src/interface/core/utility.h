@@ -103,6 +103,7 @@ namespace wm {
 		static const std::array<gamepad_axis, GAMEPAD_AXIS_COUNT>& get_gamepad_axes();
 		static const std::array<gamepad_button, GAMEPAD_BUTTON_COUNT>& get_gamepad_buttons();
 
+		static uint32_t to_vulkan_version(const glm::ivec3 version);
 	};
 
 }

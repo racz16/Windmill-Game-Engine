@@ -15,6 +15,8 @@ namespace wm {
 		static std::unordered_map<int32_t, ptr<system>> systems;
 		static std::vector<std::pair<int32_t, std::string>> order;
 		static parameter_container parameters;
+		static std::string engine_name;
+		static glm::ivec3 engine_version;
 
 		static int32_t index_of_order(const int32_t hash);
 
@@ -62,9 +64,12 @@ namespace wm {
 		static parameter_container& get_parameters();
 
 		static key<std::string> get_app_name_key();
+		static key<glm::ivec3> get_app_version_key();
 
+		static std::string get_engine_name();
+		static glm::ivec3 get_engine_version();
 		static std::string get_app_name();
-
+		static glm::ivec3 get_app_version();
 	};
 
 }

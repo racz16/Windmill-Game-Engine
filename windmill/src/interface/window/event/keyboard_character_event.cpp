@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	keyboard_character_event::keyboard_character_event(const ptr<wm::window> window, uint32_t utf_32_code_point): window_event(window), utf_32_code_point(utf_32_code_point) { }
+	keyboard_character_event::keyboard_character_event(uint32_t utf_32_code_point): event(true), utf_32_code_point(utf_32_code_point) { }
 
 	uint32_t keyboard_character_event::get_utf_32_code_point() const {
 		return utf_32_code_point;

@@ -137,8 +137,6 @@ namespace wm {
 		VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_create_info() const;
 		void create_debug_utils_messenger();
 		void destroy_debug_utils_messenger();
-		//surface
-		void create_surface();
 		//device
 		void create_device();
 		void get_physical_device();
@@ -147,6 +145,7 @@ namespace wm {
 		std::vector<VkExtensionProperties> get_available_device_extensions(const VkPhysicalDevice physical_device) const;
 		bool are_device_extensions_supported(const std::vector<const char*>& required_device_extensions, const std::vector<VkExtensionProperties>& available_device_extensions) const;
 		//swap chain
+		void register_window_resize_event_handler();
 		void create_swap_chain();
 		void recreate_swap_chain();
 		VkSurfaceFormatKHR get_surface_format() const;

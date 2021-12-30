@@ -8,7 +8,7 @@ namespace wm {
 		return action == button_action::press || action == button_action::keep_down;
 	}
 
-	bool button_state::is_up()  const{
+	bool button_state::is_up() const{
 		return action == button_action::keep_up || action == button_action::release;
 	}
 

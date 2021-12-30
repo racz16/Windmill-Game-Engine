@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	window_focus_event::window_focus_event(const ptr<wm::window> window, const bool focus): window_event(window), focus(focus) { }
+	window_focus_event::window_focus_event(const bool focus): event(true), focus(focus) { }
 
 	bool window_focus_event::is_focused() const {
 		return focus;

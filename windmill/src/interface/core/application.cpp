@@ -66,8 +66,7 @@ namespace wm {
 
 	void application::add_window_system() {
 		const auto name = engine::get_app_name();
-		const auto window_system = window_system::get_instance();
-		window_system->create_window(glm::ivec2(640, 480), name, false);
+		const auto window_system = window_system::create(glm::ivec2(640, 480), name);
 		engine::set_system(window_system::get_key(), window_system);
 		WM_LOG_INFO_1("window system added");
 	}
@@ -85,7 +84,7 @@ namespace wm {
 	}
 
 	bool application::loop_condition() {
-		return engine::get_window_system()->get_window_count() > 0;
+		return !engine::get_window_system()->is_closing();
 	}
 
 	void application::loop() {

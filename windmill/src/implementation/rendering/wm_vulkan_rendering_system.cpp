@@ -2,11 +2,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "core/engine.h"
+#include "core/utility.h"
 #include "defines/log_defines.h"
 #include "window/event/window_framebuffer_size_event.h"
 
 #include "wm_vulkan_rendering_system.h"
-#include "../window/wm_glfw_window.h"
 #include "../resource/wm_resource_system.h"
 
 namespace wm {
@@ -20,8 +20,9 @@ namespace wm {
 	#ifdef WM_BUILD_DEBUG
 		create_debug_utils_messenger();
 	#endif
-		create_surface();
+		create_surface(&instance, &surface);
 		create_device();
+		register_window_resize_event_handler();
 		create_swap_chain();
 		create_swap_chain_image_views();
 		create_render_pass();
@@ -43,7 +44,7 @@ namespace wm {
 		create_command_buffers();
 		create_semaphores();
 
-		WM_LOG_INFO_1("vulkan rendering system constructed");
+		WM_LOG_INFO_1("vulkan rendering system created");
 	}
 
 	void wm_vulkan_rendering_system::create_instance() {
@@ -52,10 +53,10 @@ namespace wm {
 
 		VkApplicationInfo application_info {};
 		application_info.sType = VkStructureType::VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		application_info.pEngineName = "Windmill Game Engine";									// TODO: nem ide kéne beégetni, hanem valahol, pl. engine-ben definiálni
-		application_info.engineVersion = VK_MAKE_API_VERSION(0, 0, 1, 0);						// TODO: nem ide kéne beégetni, hanem valahol, pl. engine-ben definiálni
-		application_info.pApplicationName = engine::get_app_name().c_str();						// TODO: mi van akkor, ha nincs ott semmi?
-		application_info.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);					// TODO: engine parameter container-ből kéne jönnie
+		application_info.pEngineName = engine::get_engine_name().c_str();
+		application_info.engineVersion = utility::to_vulkan_version(engine::get_engine_version());
+		application_info.pApplicationName = engine::get_app_name().c_str();
+		application_info.applicationVersion = utility::to_vulkan_version(engine::get_app_version());
 		application_info.apiVersion = VK_API_VERSION_1_2;
 
 		VkInstanceCreateInfo instance_create_info {};
@@ -68,10 +69,6 @@ namespace wm {
 	#ifdef WM_BUILD_DEBUG
 		const auto debug_utils_messenger_create_info = create_debug_utils_messenger_create_info();
 		instance_create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debug_utils_messenger_create_info;
-		// TODO: VK_EXT_validation_features: ki és be lehet kapcsolni validációs funkciókat
-		// ha minden igaz, amiket bekapcsolni lehet, azokat a validation layer is bekapcsolja
-		// de van pár, ami alapból be van kapcsolva és release módban ki lehetne szedni
-		// https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/chap4.html#VkValidationFeaturesEXT
 	#endif
 
 		WM_ASSERT_VULKAN(vkCreateInstance(&instance_create_info, nullptr, &instance));
@@ -82,11 +79,11 @@ namespace wm {
 	//layers
 	std::vector<const char*> wm_vulkan_rendering_system::get_layers() const {
 		const auto required_layers = get_required_layers();
-		const auto available_layers = get_available_layers();
 	#ifdef WM_BUILD_DEBUG
-		//log_available_layers(available_layers);
-	#endif
+		const auto available_layers = get_available_layers();
+		log_available_layers(available_layers);
 		validate_layers(required_layers, available_layers);
+	#endif
 		return required_layers;
 	}
 
@@ -114,7 +111,7 @@ namespace wm {
 				result_string += "\r\n";
 			}
 		}
-		WM_LOG_INFO_2(result_string);
+		WM_LOG_INFO_3(result_string);
 	}
 
 	void wm_vulkan_rendering_system::validate_layers(const std::vector<const char*>& required_layers, const std::vector<VkLayerProperties>& available_layers) const {
@@ -127,7 +124,7 @@ namespace wm {
 				}
 			}
 			if(!layer_found) {
-				throw new std::runtime_error("Layer " + std::string(rl) + " is not available");
+				WM_THROW_ERROR("Layer " + std::string(rl) + " is not available");
 			}
 		}
 	}
@@ -136,18 +133,16 @@ namespace wm {
 	//instance extensions
 	std::vector<const char*> wm_vulkan_rendering_system::get_extensions() const {
 		const auto required_extensions = get_required_extensions();
-		const auto available_extensions = get_available_extensions();
 	#ifdef WM_BUILD_DEBUG
-		//log_available_extensions(available_extensions);
-	#endif
+		const auto available_extensions = get_available_extensions();
+		log_available_extensions(available_extensions);
 		validate_extensions(required_extensions, available_extensions);
+	#endif
 		return required_extensions;
 	}
 
 	std::vector<const char*> wm_vulkan_rendering_system::get_required_extensions() const {
-		uint32_t window_extension_count;
-		const auto window_extensions = glfwGetRequiredInstanceExtensions(&window_extension_count);			// TODO: GLFW-tól függetleníteni kéne
-		auto required_extensions = std::vector<const char*>(window_extensions, window_extensions + window_extension_count);
+		auto required_extensions = engine::get_window_system()->get_required_extensions();
 	#ifdef WM_BUILD_DEBUG
 		required_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	#endif
@@ -170,7 +165,7 @@ namespace wm {
 				result_string += "\r\n";
 			}
 		}
-		WM_LOG_INFO_2(result_string);
+		WM_LOG_INFO_3(result_string);
 	}
 
 	void wm_vulkan_rendering_system::validate_extensions(const std::vector<const char*>& required_extensions, const std::vector<VkExtensionProperties>& available_extensions) const {
@@ -183,7 +178,7 @@ namespace wm {
 				}
 			}
 			if(!extension_found) {
-				throw new std::runtime_error("Instance extension " + std::string(re) + " is not available");
+				WM_THROW_ERROR("Instance extension " + std::string(re) + " is not available");
 			}
 		}
 	}
@@ -217,11 +212,9 @@ namespace wm {
 		} else if(message_severity == VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
 			WM_LOG_WARNING("Vulkan warning: " + severity + ", " + type + ", " + callback_data->pMessage);
 		} else {
-			WM_THROW_ERROR("Vulkan error: " + severity + ", " + type + ", " + callback_data->pMessage);
+			WM_LOG_ERROR("Vulkan error: " + severity + ", " + type + ", " + callback_data->pMessage, __FUNCTION__, __LINE__);
 		}
 		return VK_FALSE;
-		// TODO: el lehet nevezni az objektumokat és itt az lehet, hogy hasznos lenne, meg amúgy is érdemes volna megnézni, hogy milyen paramétereket kapok még itt
-		// https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/chap45.html#debugging-debug-utils
 	}
 
 	VkDebugUtilsMessengerCreateInfoEXT wm_vulkan_rendering_system::create_debug_utils_messenger_create_info() const {
@@ -253,13 +246,6 @@ namespace wm {
 		vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
 		debug_utils_messenger = VK_NULL_HANDLE;
 		WM_LOG_INFO_2("Vulkan debug messenger destroyed");
-	}
-
-
-	//surface
-	void wm_vulkan_rendering_system::create_surface() {
-		WM_ASSERT_VULKAN(glfwCreateWindowSurface(instance, engine::get_window_system()->get_window(0).convert<wm_glfw_window>()->get_handler(), nullptr, &surface)); // TODO
-		WM_LOG_INFO_2("Vulkan surface created");
 	}
 
 
@@ -313,9 +299,6 @@ namespace wm {
 		std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
 		WM_ASSERT_VULKAN(vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data()));
 		std::string physical_device_name = "";
-		//TODO: egyedi kiválasztási lehetőség
-		//vagy preferencia, pl. dedikált vs. integrált
-		//vagy id megadása, pl. felületen kiválasztotta a felsoroltak közül
 		for(const auto& pd : physical_devices) {
 			VkPhysicalDeviceProperties physical_device_properties;
 			VkPhysicalDeviceFeatures physical_device_features;
@@ -338,7 +321,6 @@ namespace wm {
 				continue;
 			}
 
-			//TODO: itt lehetne akár csekkolni vulkan api verzió kompatibilitást, textúra méret limiteket stb.
 			int32_t i = 0;
 			int32_t graphics_queue_family_index = -1;
 			int32_t presentation_queue_family_index = -1;
@@ -416,12 +398,14 @@ namespace wm {
 
 
 	//swap chain
-	void wm_vulkan_rendering_system::create_swap_chain() {
+	void wm_vulkan_rendering_system::register_window_resize_event_handler() {
 		engine::get_event_system()->add_event_listener(window_framebuffer_size_event::get_key(), ptr<event_listener<window_framebuffer_size_event>>(new event_listener<window_framebuffer_size_event>([this](const window_framebuffer_size_event event) {
 			this->framebuffer_resized = true;
 			this->minimized = event.get_new_size().x == 0 || event.get_new_size().y == 0;
 		})).to_ptr_view());
+	}
 
+	void wm_vulkan_rendering_system::create_swap_chain() {
 		surface_format = get_surface_format();
 		auto surface_presentation_mode = get_surface_presentation_mode();
 		auto surface_capabilities = get_surface_capabilities();
@@ -445,7 +429,7 @@ namespace wm {
 		swap_chain_create_info.compositeAlpha = VkCompositeAlphaFlagBitsKHR::VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		swap_chain_create_info.presentMode = surface_presentation_mode;
 		swap_chain_create_info.clipped = VK_TRUE;
-		swap_chain_create_info.oldSwapchain = VK_NULL_HANDLE;
+		//swap_chain_create_info.oldSwapchain = swap_chain;
 		if(graphics_queue_family_index != presentation_queue_family_index) {
 			std::array<uint32_t, 2> queue_family_indices = {static_cast<uint32_t>(graphics_queue_family_index), static_cast<uint32_t>(presentation_queue_family_index)};
 
@@ -526,7 +510,7 @@ namespace wm {
 		if(surface_capabilities.currentExtent.width != UINT_MAX) {
 			return surface_capabilities.currentExtent;
 		} else {
-			const glm::ivec2 framebuffer_size = engine::get_window_system()->get_window(0)->get_framebuffer_size();
+			const glm::ivec2 framebuffer_size = engine::get_window_system()->get_framebuffer_size();
 			VkExtent2D extent;
 			extent.width = std::clamp(static_cast<uint32_t>(framebuffer_size.x), surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
 			extent.height = std::clamp(static_cast<uint32_t>(framebuffer_size.y), surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
@@ -553,11 +537,14 @@ namespace wm {
 		for(auto framebuffer : swap_chain_framebuffers) {
 			vkDestroyFramebuffer(device, framebuffer, nullptr);
 		}
+		WM_LOG_INFO_2("Vulkan framebuffers destroyed");
 		vkFreeCommandBuffers(device, command_pool, static_cast<uint32_t>(command_buffers.size()), command_buffers.data());
+		WM_LOG_INFO_2("Vulkan command buffers destroyed");
 		vkDestroyPipeline(device, pipeline, nullptr);
+		WM_LOG_INFO_2("Vulkan graphics pipeline destroyed");
 		vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
 		vkDestroyRenderPass(device, render_pass, nullptr);
-		WM_LOG_INFO_2("Vulkan graphics pipeline destroyed");
+		WM_LOG_INFO_2("Vulkan renderpass destroyed");
 
 		for(auto swap_chain_image_view : swap_chain_image_views) {
 			vkDestroyImageView(device, swap_chain_image_view, nullptr);
@@ -569,6 +556,7 @@ namespace wm {
 			vkDestroyBuffer(device, uniform_buffers.at(i), nullptr);
 			vkFreeMemory(device, uniform_buffers_device_memory.at(i), nullptr);
 		}
+		WM_LOG_INFO_2("Vulkan uniform buffers destroyed");
 
 		vkDestroyDescriptorPool(device, descriptor_pool, nullptr);
 
@@ -603,9 +591,9 @@ namespace wm {
 
 	void wm_vulkan_rendering_system::create_pipeline() {
 		auto verteex_shader_code = read_file("res/shader/shader.vert.spv");
+		WM_LOG_INFO_2("Vertex shader loaded");
 		auto fragment_shader_code = read_file("res/shader/shader.frag.spv");
-		WM_LOG_INFO_2(std::string("Vertex shader size: ") + std::to_string(verteex_shader_code.size()));
-		WM_LOG_INFO_2(std::string("Fragment shader size: ") + std::to_string(fragment_shader_code.size()));
+		WM_LOG_INFO_2("Fragment shader loaded");
 		auto vertex_shader_module = create_shader_module(verteex_shader_code);
 		auto fragment_shader_module = create_shader_module(fragment_shader_code);
 
@@ -672,7 +660,6 @@ namespace wm {
 		pipeline_multisample_state_create_info.sampleShadingEnable = VK_FALSE;
 		pipeline_multisample_state_create_info.rasterizationSamples = msaa_sample_count;
 
-
 		VkPipelineColorBlendAttachmentState pipeline_color_blend_attachment_state {};
 		pipeline_color_blend_attachment_state.colorWriteMask =
 			VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT |
@@ -702,7 +689,6 @@ namespace wm {
 		pipeline_depth_stencil_state_create_info.depthCompareOp = VkCompareOp::VK_COMPARE_OP_LESS;
 		pipeline_depth_stencil_state_create_info.depthBoundsTestEnable = VK_FALSE;
 		pipeline_depth_stencil_state_create_info.stencilTestEnable = VK_FALSE;
-
 
 		VkGraphicsPipelineCreateInfo graphics_pipeline_create_info {};
 		graphics_pipeline_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -803,6 +789,8 @@ namespace wm {
 		render_pass_create_info.pDependencies = subpass_dependencies.data();
 
 		WM_ASSERT_VULKAN(vkCreateRenderPass(device, &render_pass_create_info, nullptr, &render_pass));
+
+		WM_LOG_INFO_2("Vulkan renderpass created");
 	}
 
 	void wm_vulkan_rendering_system::create_framebuffers() {
@@ -822,6 +810,7 @@ namespace wm {
 
 			WM_ASSERT_VULKAN(vkCreateFramebuffer(device, &framebuffer_create_info, nullptr, &swap_chain_framebuffers.at(i)));
 		}
+		WM_LOG_INFO_2("Vulkan framebuffers created");
 	}
 
 
@@ -875,6 +864,8 @@ namespace wm {
 		vkDestroyBuffer(device, staging_buffer, nullptr);
 		vkFreeMemory(device, staging_buffer_device_memory, nullptr);
 		image.destroy();
+
+		WM_LOG_INFO_2("Vulkan texture created");
 	}
 
 	void wm_vulkan_rendering_system::create_texture_image_view() {
@@ -1090,7 +1081,6 @@ namespace wm {
 	//color texture
 	void wm_vulkan_rendering_system::create_color_resources() {
 		VkFormat format = surface_format.format;
-
 		create_image(glm::vec2(swap_chain_extent.width, swap_chain_extent.height), 1, msaa_sample_count, format, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, color_image, color_image_device_memory);
 		color_image_view = create_image_view(color_image, format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	}
@@ -1139,7 +1129,7 @@ namespace wm {
 		WM_THROW_ERROR("Can't find appropirate depth format");
 	}
 
-	bool  wm_vulkan_rendering_system::depth_has_stencil_component(const VkFormat format) const {
+	bool wm_vulkan_rendering_system::depth_has_stencil_component(const VkFormat format) const {
 		return format == VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT || format == VkFormat::VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 
@@ -1169,6 +1159,8 @@ namespace wm {
 
 		vkDestroyBuffer(device, staging_buffer, nullptr);
 		vkFreeMemory(device, staging_buffer_device_memory, nullptr);
+
+		WM_LOG_INFO_2("Vulkan vertex buffer created");
 	}
 
 	void wm_vulkan_rendering_system::create_index_buffer() {
@@ -1187,6 +1179,8 @@ namespace wm {
 
 		vkDestroyBuffer(device, staging_buffer, nullptr);
 		vkFreeMemory(device, staging_buffer_device_memory, nullptr);
+
+		WM_LOG_INFO_2("Vulkan index buffer created");
 	}
 
 	void wm_vulkan_rendering_system::create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& device_memory) {
@@ -1247,6 +1241,7 @@ namespace wm {
 				uniform_buffers_device_memory.at(i)
 			);
 		}
+		WM_LOG_INFO_2("Vulkan uniform buffers created");
 	}
 
 	void wm_vulkan_rendering_system::update_uniform_buffer(const uint32_t image_index) const {
@@ -1352,7 +1347,7 @@ namespace wm {
 
 		WM_ASSERT_VULKAN(vkAllocateCommandBuffers(device, &command_buffer_allocation_info, command_buffers.data()));
 
-		WM_LOG_INFO_2("Vulkan command buffer allocated");
+		WM_LOG_INFO_2("Vulkan command buffers allocated");
 
 		for(int32_t i = 0; i < static_cast<int32_t>(command_buffers.size()); i++) {
 			VkCommandBufferBeginInfo command_buffer_begin_info {};
@@ -1459,7 +1454,7 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkDeviceWaitIdle(device));
 	#endif
 
-		if(engine::get_window_system()->get_window_count() == 0 || minimized) {
+		if(engine::get_window_system()->is_closing() || minimized) {
 			return;
 		}
 
@@ -1521,7 +1516,7 @@ namespace wm {
 		}
 
 		WM_LOG_INFO_3("vulkan rendering system updated");
-	}
+}
 
 	wm_vulkan_rendering_system::~wm_vulkan_rendering_system() {
 		vkDeviceWaitIdle(device);
@@ -1538,6 +1533,7 @@ namespace wm {
 		vkDestroyImageView(device, texture_image_view, nullptr);
 		vkDestroyImage(device, texture_image, nullptr);
 		vkFreeMemory(device, texture_image_device_memory, nullptr);
+		WM_LOG_INFO_2("Vulkan texture destroyed");
 
 		vkDestroyDescriptorSetLayout(device, descriptor_set_layout, nullptr);
 
@@ -1550,7 +1546,6 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan vertex buffer destroyed");
 
 		vkDestroyCommandPool(device, command_pool, nullptr);
-		WM_LOG_INFO_2("Vulkan command pool destroyed");
 
 		vkDestroyDevice(device, nullptr);
 		device = VK_NULL_HANDLE;
@@ -1567,7 +1562,7 @@ namespace wm {
 		instance = VK_NULL_HANDLE;
 		WM_LOG_INFO_2("Vulkan instance destroyed");
 
-		WM_LOG_INFO_1("vulkan rendering system destructed");
+		WM_LOG_INFO_1("vulkan rendering system destroyed");
 	}
 
 }

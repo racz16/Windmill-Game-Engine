@@ -211,4 +211,8 @@ namespace wm {
 		return gamepad_buttons;
 	}
 
+	uint32_t utility::to_vulkan_version(const glm::ivec3 version) {
+		return (static_cast<uint32_t>(version[0]) << 22) | (static_cast<uint32_t>(version[1]) << 12) | (static_cast<uint32_t>(version[2]));
+	}
+
 }

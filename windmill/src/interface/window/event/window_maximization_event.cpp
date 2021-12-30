@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	window_maximization_event::window_maximization_event(const ptr<wm::window> window, const bool maximized): window_event(window), maximized(maximized) { }
+	window_maximization_event::window_maximization_event(const bool maximized):event(true), maximized(maximized) { }
 
 	bool window_maximization_event::is_maximized() const {
 		return maximized;

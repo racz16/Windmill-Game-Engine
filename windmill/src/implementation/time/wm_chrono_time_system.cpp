@@ -9,7 +9,7 @@ namespace wm {
 	const double wm_chrono_time_system::DEFAULT_FRAME_TIME = 1000.0 / 30.0;
 
 	wm_chrono_time_system::wm_chrono_time_system(const int32_t delta_time_histroy_size): delta_time_history(delta_time_histroy_size, DEFAULT_FRAME_TIME) {
-		WM_LOG_INFO_1("chrono time system constructed");
+		WM_LOG_INFO_1("chrono time system created");
 	}
 
 	void wm_chrono_time_system::update() {
@@ -74,6 +74,6 @@ namespace wm {
 	}
 
 	wm_chrono_time_system::~wm_chrono_time_system() {
-		WM_LOG_INFO_1("chrono time system destructed");
+		WM_LOG_INFO_1("chrono time system destroyed");
 	}
 }

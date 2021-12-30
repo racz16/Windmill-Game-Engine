@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	mouse_enter_leave_event::mouse_enter_leave_event(const ptr<wm::window> window, const bool enter): window_event(window), enter(enter) { }
+	mouse_enter_leave_event::mouse_enter_leave_event(const bool enter): event(true), enter(enter) { }
 
 	bool mouse_enter_leave_event::is_enter() const {
 		return enter;

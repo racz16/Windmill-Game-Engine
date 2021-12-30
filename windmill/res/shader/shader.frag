@@ -11,5 +11,5 @@ void main() {
 	vec3 N = normalize(normal);
 	vec3 L = normalize(vec3(1.0f, 1.0f, 0.0f));
 	vec3 texture_color = texture(texture_sampler, texture_coordinate).rgb;
-    out_color = vec4(texture_color * dot(N, L), 1.0f);
+	out_color = vec4(texture_color * dot(N, L), 1.0f);
 }

@@ -60,9 +60,9 @@
 //
 #include "../windmill/src/interface/window/cursor_mode.h"
 #include "../windmill/src/interface/window/cursor_shape.h"
+#include "../windmill/src/interface/window/standard_cursor_shape.h"
 #include "../windmill/src/interface/window/video_mode.h"
 #include "../windmill/src/interface/window/window_system.h"
-#include "../windmill/src/interface/window/window.h"
 //event
 #include "../windmill/src/interface/window/event/gamepad_connection_event.h"
 #include "../windmill/src/interface/window/event/keyboard_button_event.h"
@@ -74,7 +74,6 @@
 #include "../windmill/src/interface/window/event/window_closed_event.h"
 #include "../windmill/src/interface/window/event/window_content_scale_event.h"
 #include "../windmill/src/interface/window/event/window_drag_and_drop_event.h"
-#include "../windmill/src/interface/window/event/window_event.h"
 #include "../windmill/src/interface/window/event/window_focus_event.h"
 #include "../windmill/src/interface/window/event/window_framebuffer_size_event.h"
 #include "../windmill/src/interface/window/event/window_maximization_event.h"

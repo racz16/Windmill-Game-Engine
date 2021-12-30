@@ -4,8 +4,8 @@
 
 namespace wm {
 
-	ptr<window_system> window_system::get_instance() {
-		return wm_glfw_window_system::get_instance().convert<window_system>();
+	ptr<window_system> window_system::create(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible) {
+		return ptr<window_system>(new wm_glfw_window_system(size, title, fullscreen, visible)).convert<window_system>();
 	}
 
 	key<window_system> window_system::get_key() {

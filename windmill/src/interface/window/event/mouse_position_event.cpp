@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	mouse_position_event::mouse_position_event(const ptr<wm::window> window, const glm::dvec2 position): window_event(window), position(position) { }
+	mouse_position_event::mouse_position_event(const glm::dvec2& position): event(true), position(position) { }
 
 	glm::dvec2 mouse_position_event::get_new_position() const {
 		return position;

@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	window_minimization_event::window_minimization_event(const ptr<wm::window> window, const bool minimized): window_event(window), minimized(minimized) { }
+	window_minimization_event::window_minimization_event(const bool minimized): event(true), minimized(minimized) { }
 
 	bool window_minimization_event::is_minimized() const {
 		return minimized;

@@ -7,8 +7,8 @@ namespace wm {
 		return key;
 	}
 
-	mouse_button_event::mouse_button_event(const ptr<wm::window> window, const mouse_button button, const bool press, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock):
-		window_event(window), button(button), press(press), shift(shift), ctrl(ctrl), alt(alt), super(super), caps_lock(caps_lock), num_lock(num_lock), button_name(get_button_name(button)) { }
+	mouse_button_event::mouse_button_event(const mouse_button button, const bool press, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock):
+		event(true), button(button), press(press), shift(shift), ctrl(ctrl), alt(alt), super(super), caps_lock(caps_lock), num_lock(num_lock), button_name(get_button_name(button)) { }
 
 	std::string mouse_button_event::get_button_name(const mouse_button button) const {
 		switch(button) {

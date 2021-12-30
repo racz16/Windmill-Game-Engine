@@ -5,7 +5,7 @@
 namespace wm {
 
 	wm_event_system::wm_event_system() {
-		WM_LOG_INFO_1("wm event system constructed");
+		WM_LOG_INFO_1("wm event system created");
 	}
 
 	void wm_event_system::add_event_listener(const int32_t key, const int32_t event_listener_id, const std::any event_listener) {
@@ -55,7 +55,7 @@ namespace wm {
 	}
 
 	wm_event_system::~wm_event_system() {
-		WM_LOG_INFO_1("wm event system destructed");
+		WM_LOG_INFO_1("wm event system destroyed");
 	}
 
 }

@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	window_size_event::window_size_event(const ptr<wm::window> window, const glm::ivec2 size): window_event(window), size(size) { }
+	window_size_event::window_size_event(const glm::ivec2& size): event(true), size(size) { }
 
 	glm::ivec2 window_size_event::get_new_size() const {
 		return size;

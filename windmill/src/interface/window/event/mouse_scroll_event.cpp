@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	mouse_scroll_event::mouse_scroll_event(const ptr<wm::window> window, const glm::dvec2 offset): window_event(window), offset(offset) { }
+	mouse_scroll_event::mouse_scroll_event(const glm::dvec2& offset): event(true), offset(offset) { }
 
 	glm::dvec2 mouse_scroll_event::get_offset() const {
 		return offset;

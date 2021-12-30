@@ -7,6 +7,6 @@ namespace wm {
 		return key;
 	}
 
-	window_closed_event::window_closed_event(const ptr<wm::window> window): window_event(window) { }
+	window_closed_event::window_closed_event(): event(true) { }
 
 }
