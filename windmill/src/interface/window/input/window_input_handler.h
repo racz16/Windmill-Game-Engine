@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../../core/defines.h"
 #include "button_state.h"
 #include "keyboard_button.h"
 #include "mouse_button.h"
@@ -15,6 +14,7 @@ namespace wm {
 	public:
 		virtual void update() = 0;
 		virtual button_state get_keyboard_button_state(const keyboard_button button) const = 0;
+		virtual bool is_mouse_over_window() const = 0;
 		virtual button_state get_mouse_button_state(const mouse_button button) const = 0;
 		virtual position_state get_mouse_position() const = 0;
 		virtual bool is_gamepad_available(const int32_t gamepad_index) const = 0;

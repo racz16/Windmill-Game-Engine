@@ -1,13 +1,13 @@
 #pragma once
 
-#include "window_event.h"
+#include "../../event/event.h"
 #include "../../core/key.h"
 #include "../input/keyboard_button.h"
 #include "../input/button_state.h"
 
 namespace wm {
 
-	class WM_PUBLIC keyboard_button_event: public window_event {
+	class WM_PUBLIC keyboard_button_event: public event {
 	private:
 		keyboard_button button;
 		button_state state;
@@ -24,7 +24,7 @@ namespace wm {
 	public:
 		static key<keyboard_button_event> get_key();
 
-		keyboard_button_event(const ptr<wm::window> window, const keyboard_button button, const button_state state, const int32_t scancode, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock);
+		keyboard_button_event(const keyboard_button button, const button_state state, const int32_t scancode, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock);
 		keyboard_button get_button() const;
 		std::string get_button_name() const;
 		button_state get_state() const;

@@ -5,6 +5,8 @@ namespace wm {
 	std::unordered_map<int32_t, ptr<system>> engine::systems;
 	std::vector<std::pair<int32_t, std::string>> engine::order;
 	parameter_container engine::parameters;
+	std::string engine::engine_name = "Windmill Game Engine";
+	glm::ivec3 engine::engine_version = glm::ivec3(0, 0, 1);
 
 	engine::engine() { }
 
@@ -21,7 +23,6 @@ namespace wm {
 		for(int32_t i = 0; i < order.size(); i++) {
 			const auto key = order.at(i).first;
 			const auto system = systems.at(key);
-			WM_ASSERT(system.is_valid());
 			if(system->is_active()) {
 				system->update();
 			}
@@ -44,6 +45,14 @@ namespace wm {
 		return get_system<time_system>(time_system::get_key());
 	}
 
+	ptr<rendering_system> engine::get_rendering_system() {
+		return get_system<rendering_system>(rendering_system::get_key());
+	}
+
+	ptr<resource_system> engine::get_resource_system() {
+		return get_system<resource_system>(resource_system::get_key());
+	}
+
 	void engine::destroy() {
 		for(int32_t i = static_cast<int32_t>(order.size()) - 1; i >= 0; i--) {
 			const auto key = order.at(i).first;
@@ -63,8 +72,25 @@ namespace wm {
 		return key;
 	}
 
+	key<glm::ivec3> engine::get_app_version_key() {
+		static const key<glm::ivec3> key("WM_APP_VERSION");
+		return key;
+	}
+
+	std::string engine::get_engine_name() {
+		return engine_name;
+	}
+
+	glm::ivec3 engine::get_engine_version() {
+		return engine_version;
+	}
+
 	std::string engine::get_app_name() {
-		return engine::get_parameters().get<std::string>(engine::get_app_name_key());
+		return engine::get_parameters().get_or_default<std::string>(engine::get_app_name_key(), "Windmill Test Application");
+	}
+
+	glm::ivec3 engine::get_app_version() {
+		return engine::get_parameters().get_or_default<glm::ivec3>(engine::get_app_version_key(), glm::ivec3(1, 0, 0));
 	}
 
 }

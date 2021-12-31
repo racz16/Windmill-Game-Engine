@@ -1,6 +1,6 @@
 #pragma once
 
-#include "defines.h"
+#include "../defines/general_defines.h"
 
 namespace wm {
 

@@ -7,6 +7,6 @@ namespace wm {
 		return key;
 	}
 
-	window_refresh_required_event::window_refresh_required_event(const ptr<wm::window> window): window_event(window) { }
+	window_refresh_required_event::window_refresh_required_event(): event(true) { }
 
 }

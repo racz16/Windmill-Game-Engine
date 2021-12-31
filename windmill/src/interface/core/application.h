@@ -1,6 +1,6 @@
 #pragma once
 
-#include "defines.h"
+#include "../defines/general_defines.h"
 
 namespace wm {
 
@@ -11,6 +11,8 @@ namespace wm {
 		virtual void add_event_system();
 		virtual void add_time_system();
 		virtual void add_window_system();
+		virtual void add_rendering_system();
+		virtual void add_resource_system();
 		virtual bool loop_condition();
 		virtual void loop();
 		virtual void destroy();

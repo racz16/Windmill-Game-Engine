@@ -1,12 +1,8 @@
 #pragma once
 
-#include "log_level.h"
 #include "log_writer.h"
-#include "../core/defines.h"
 #include "../core/system.h"
 #include "../core/key.h"
-#include "../ptr/ptr.h"
-#include "../ptr/ptr_view.h"
 
 namespace wm {
 

@@ -2,6 +2,8 @@
 
 namespace wm {
 
+	static const int32_t KEYBOARD_BUTTON_COUNT = 120;
+
 	enum class keyboard_button {
 		button_unknown = -1,
 		button_space = 32,

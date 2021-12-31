@@ -1,8 +1,6 @@
 #pragma once
 
 #include "log/log_system.h"
-#include "log/log_level.h"
-#include "log/log_writer.h"
 
 #include "../core/wm_base_system.h"
 

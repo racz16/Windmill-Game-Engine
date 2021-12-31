@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	window_drag_and_drop_event::window_drag_and_drop_event(const ptr<wm::window> window, const std::vector<std::string> paths): window_event(window), paths(paths) { }
+	window_drag_and_drop_event::window_drag_and_drop_event(const std::vector<std::string> paths): event(true), paths(paths) { }
 
 	std::vector<std::string> window_drag_and_drop_event::get_paths() const {
 		return paths;

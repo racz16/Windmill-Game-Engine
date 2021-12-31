@@ -1,4 +1,4 @@
-#include "core/engine.h"
+#include "defines/log_defines.h"
 
 #include "wm_scoped_time_logger.h"
 

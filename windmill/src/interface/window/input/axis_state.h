@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../../core/defines.h"
-#include "button_action.h"
+#include "../../defines/general_defines.h"
 
 namespace wm {
 

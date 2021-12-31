@@ -20,6 +20,15 @@ namespace wm {
 		}
 
 		template<class T>
+		T get_or_default(const key<T> key, T default_value) const {
+			if(contains<T>(key)) {
+				return get<T>(key);
+			} else {
+				return default_value;
+			}
+		}
+
+		template<class T>
 		void set(const key<T> key, T parameter) {
 			parameters.insert_or_assign(key.get_hash(), parameter);
 		}

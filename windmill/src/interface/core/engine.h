@@ -1,14 +1,12 @@
 #pragma once
 
-#include "defines.h"
-#include "key.h"
-#include "../ptr/ptr.h"
-#include "system.h"
 #include "parameter_container.h"
 #include "../log/log_system.h"
 #include "../window/window_system.h"
 #include "../time/time_system.h"
 #include "../event/event_system.h"
+#include "../rendering/rendering_system.h"
+#include "../resource/resource_system.h"
 
 namespace wm {
 
@@ -17,6 +15,8 @@ namespace wm {
 		static std::unordered_map<int32_t, ptr<system>> systems;
 		static std::vector<std::pair<int32_t, std::string>> order;
 		static parameter_container parameters;
+		static std::string engine_name;
+		static glm::ivec3 engine_version;
 
 		static int32_t index_of_order(const int32_t hash);
 
@@ -24,13 +24,12 @@ namespace wm {
 	public:
 
 		template<class T>
-		static bool has_system(const key<T> key) {
+		static bool contains_system(const key<T> key) {
 			return systems.find(key.get_hash()) != systems.end();
 		}
 
 		template<class T>
 		static ptr<T> get_system(const key<T> key) {
-			WM_ASSERT(has_system<T>(key));
 			return systems.at(key.get_hash()).template convert<T>();
 		}
 
@@ -45,7 +44,7 @@ namespace wm {
 
 		template<class T>
 		static void remove_system(const key<T> key) {
-			if(has_system(key)) {
+			if(contains_system(key)) {
 				systems.erase(key.get_hash());
 				const auto index = index_of_order(key.get_hash());
 				order.erase(order.begin() + index);
@@ -59,13 +58,18 @@ namespace wm {
 		static ptr<event_system> get_event_system();
 		static ptr<window_system> get_window_system();
 		static ptr<time_system> get_time_system();
+		static ptr<rendering_system> get_rendering_system();
+		static ptr<resource_system> get_resource_system();
 
 		static parameter_container& get_parameters();
 
 		static key<std::string> get_app_name_key();
+		static key<glm::ivec3> get_app_version_key();
 
+		static std::string get_engine_name();
+		static glm::ivec3 get_engine_version();
 		static std::string get_app_name();
-
+		static glm::ivec3 get_app_version();
 	};
 
 }

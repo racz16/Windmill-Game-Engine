@@ -1,7 +1,6 @@
 #include "application.h"
 #include "engine.h"
-#include "../time/time_system.h"
-#include "../event/event_system.h"
+#include "../defines/log_defines.h"
 
 namespace wm {
 
@@ -17,20 +16,25 @@ namespace wm {
 			loop();
 			WM_LOG_INFO_1(name + " stopped");
 			destroy();
+		} catch(const windmill_error& ex) {
+			WM_LOG_ERROR(ex.what(), ex.get_function(), ex.get_line());
+			WM_BREAKPOINT();
 		} catch(const std::exception& ex) {
-			WM_LOG_ERROR(ex.what());
+			WM_LOG_ERROR(ex.what(), __FUNCTION__, __LINE__);
 			WM_BREAKPOINT();
 		} catch(...) {
-			WM_LOG_ERROR("Unknown exception");
+			WM_LOG_ERROR("Unknown exception", __FUNCTION__, __LINE__);
 			WM_BREAKPOINT();
 		}
 	}
 
 	void application::initialize() {
 		add_log_system();
+		add_resource_system();
 		add_event_system();
 		add_time_system();
 		add_window_system();
+		add_rendering_system();
 	}
 
 	void application::add_log_system() {
@@ -62,14 +66,25 @@ namespace wm {
 
 	void application::add_window_system() {
 		const auto name = engine::get_app_name();
-		const auto window_system = window_system::get_instance();
-		window_system->create_window(glm::ivec2(640, 480), name, false);
+		const auto window_system = window_system::create(glm::ivec2(640, 480), name);
 		engine::set_system(window_system::get_key(), window_system);
 		WM_LOG_INFO_1("window system added");
 	}
 
+	void application::add_rendering_system() {
+		const auto rendering_system = rendering_system::create();
+		engine::set_system(rendering_system::get_key(), rendering_system);
+		WM_LOG_INFO_1("rendering system added");
+	}
+
+	void application::add_resource_system() {
+		const auto resource_system = resource_system::create();
+		engine::set_system(resource_system::get_key(), resource_system);
+		WM_LOG_INFO_1("resource system added");
+	}
+
 	bool application::loop_condition() {
-		return engine::get_window_system()->get_window_count() > 0;
+		return !engine::get_window_system()->is_closing();
 	}
 
 	void application::loop() {

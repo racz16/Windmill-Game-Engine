@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ptr_meta.h"
+#include "../defines/debug_defines.h"
 
 namespace wm {
 
@@ -11,10 +12,9 @@ namespace wm {
 		int32_t id;
 
 		void destroy() {
-			auto& meta = ptr_meta::get_meta(id);
-			if(raw_pointer != nullptr && meta.is_valid()) {
+			if(is_valid()) {
 				delete raw_pointer;
-				meta.invalidate();
+				ptr_meta::get_meta(id).invalidate();
 			}
 		}
 
@@ -53,7 +53,7 @@ namespace wm {
 		}
 
 		T* operator->() const {
-			WM_ASSERT(raw_pointer != nullptr && ptr_meta::get_meta(id).is_valid());
+			WM_ASSERT(is_valid());
 			return raw_pointer;
 		}
 
@@ -76,7 +76,7 @@ namespace wm {
 		}
 
 		int32_t is_valid() const {
-			return ptr_meta::get_meta(id).is_valid();
+			return raw_pointer != nullptr && ptr_meta::get_meta(id).is_valid();
 		}
 
 		~base_ptr<T>() {

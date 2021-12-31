@@ -7,7 +7,7 @@ namespace wm {
 		return key;
 	}
 
-	window_content_scale_event::window_content_scale_event(const ptr<wm::window> window, const glm::vec2 scale): window_event(window), scale(scale) { }
+	window_content_scale_event::window_content_scale_event(const glm::vec2& scale): event(true), scale(scale) { }
 
 	glm::vec2 window_content_scale_event::get_new_scale() const {
 		return scale;

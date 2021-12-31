@@ -1,7 +1,5 @@
 #pragma once
 
-#include "log/log_level.h"
-
 #include "wm_base_log_writer.h"
 
 namespace wm {

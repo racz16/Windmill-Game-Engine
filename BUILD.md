@@ -1,61 +1,117 @@
 # Build instructions
 
-To build the source code, you have to clone the repository (with submodules) and compile it with a compiler which supports C++17. In Linux you have to install X11. If you have trouble building the code, take a look at the following step-by-step build instructions.
+To build the source code, you have to clone the repository (with submodules), install the Vulkan SDK and compile the code with a compiler which supports C++17. On Linux you have to install X11. It is also necessary to compile the shaders with the appropirate compile_shaders script in the root folder. You have to repeat the shader compilation every time you create or edit a shader. If you have trouble building the code, take a look at the following step-by-step build instructions.
+
+Required versions:
+
+- CMake 3.16+ (tested with 3.19.2)
+- Vulkan SDK 1.2+ (tested with 1.2.189.2)
+- Visual Studio 2017+ (tested with 2019)
+- GCC 8+ (tested with 9.3.0)
 
 ## Windows
 
 1. Download and install __CMake__ (<https://cmake.org/download>)
-2. Download and install __Visual Studio__ 2019 Community Edition (<https://visualstudio.microsoft.com/downloads>)
+2. Download and install the LunarG __Vulkan SDK__ (<https://vulkan.lunarg.com/sdk/home#windows>)
+3. Download and install __Visual Studio__ 2022 Community Edition (<https://visualstudio.microsoft.com/downloads>)
    - Include the __Desktop development with C++__ and the __Git for Windows__ components
-3. Open Visual Studio and select the __Clone a repository__ option in the Start Window
-4. Enter __<https://github.com/racz16/Windmill-Game-Engine.git>__ into the Repository location
-5. Click on the __Clone__ button
-6. Click on the __Switch between solutions and available views__ button (top of the Solution Explorer)
-7. Select the __example_1.exe__ (or any other) Debug Target (click on the little arrow pointing downwards next to the button Select Startup Item...)
-   - You can switch between the __debug-win__ and the __release-win__ configurations
-8. Click on the __example_1.exe__ button
+4. Open Visual Studio and select the __Clone a repository__ option in the Start Window
+5. Enter __<https://github.com/racz16/Windmill-Game-Engine.git>__ into the Repository location
+6. Click on the __Clone__ button
+7. Run the __compile_shaders.ps1__ script (right click, Run with PowerShell)
+   - You have to repeat this step every time you create or edit a shader
+8. Click on the __Switch between solutions and available views__ button (top of the Solution Explorer)
+9. Select the __example_1.exe__ (or any other) Debug Target (click on the little arrow pointing downwards next to the button Select Startup Item...)
+    - You can switch between the __debug-win__ and the __release-win__ configurations
+10. Click on the __example_1.exe__ button
 
 ## Linux
 
 1. Open the Terminal
 2. Install git
 
-        sudo apt install git
+    ```bash
+    sudo apt install git
+    ```
 
 3. Install CMake
 
-        sudo apt install cmake
+    ```bash
+    sudo apt install cmake
+    ```
 
 4. Install the C++ build tools
 
-        sudo apt install build-essential
+    ```bash
+    sudo apt install build-essential
+    ```
 
 5. Install X11
 
-        sudo apt install xorg-dev
+    ```bash
+    sudo apt install xorg-dev
+    ```
 
-6. Clone the repository
+6. Install the Vulkan SDK
 
-        git clone --recursive https://github.com/racz16/Windmill-Game-Engine.git
+    ```bash
+    wget -qO - https://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+    ```
+
+    ```bash
+    sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.189-focal.list https://packages.lunarg.com/vulkan/1.2.189/lunarg-vulkan-1.2.189-focal.list
+    ```
+
+    ```bash
+    sudo apt-get update
+    ```
+
+    ```bash
+    sudo apt-get install vulkan-sdk
+    ```
+
+7. Clone the repository
+
+    ```bash
+    git clone --recursive https://github.com/racz16/Windmill-Game-Engine.git
+    ```
 
     Don't forget the --recursive option to download the necessary dependencies
 
-7. Go inside the repository's root folder
+8. Run the shader compiler script
 
-        cd Windmill-Game-Engine
+    ```bash
+    ./compile_shaders.sh
+    ```
 
-8. Run CMake
+    You have to repeat this step every time you create or edit a shader
 
-        cmake .
+9. Go inside the repository's root folder
 
-9. Build the code
+    ```bash
+    cd Windmill-Game-Engine
+    ```
 
-        cmake --build .
+10. Run CMake
+
+    ```bash
+    cmake .
+    ```
+
+11. Build the code
+
+    ```bash
+    cmake --build .
+    ```
 
     or
 
-        cmake --build . --config Release
+    ```bash
+    cmake --build . --config Release
+    ```
 
-10. Run one of the examples
+12. Run one of the examples
 
-        ./example_1
+    ```bash
+    ./example_1
+    ```

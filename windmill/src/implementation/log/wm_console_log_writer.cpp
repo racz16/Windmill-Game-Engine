@@ -1,4 +1,4 @@
-#include "core/defines.h"
+#include "defines/general_defines.h"
 
 #include "wm_console_log_writer.h"
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../interface/window/input/window_input_handler.h"
+#include "window/input/window_input_handler.h"
 
 namespace wm {
 
@@ -17,10 +17,10 @@ namespace wm {
 		std::unordered_map<mouse_button, button_state> mouse_button_state;
 		position_state mouse_position;
 		//gamepad
-		std::vector<std::unordered_map<gamepad_button, bool>> gamepad_button_down;
-		std::vector<std::unordered_map<gamepad_button, button_state>> gamepad_button_state;
-		std::vector<std::unordered_map<gamepad_axis, float>> gamepad_axis_value;
-		std::vector<std::unordered_map<gamepad_axis, axis_state>> gamepad_axis_state;
+		std::array<std::unordered_map<gamepad_button, bool>, GAMEPAD_COUNT> gamepad_button_down;
+		std::array<std::unordered_map<gamepad_button, button_state>, GAMEPAD_COUNT> gamepad_button_state;
+		std::array<std::unordered_map<gamepad_axis, float>, GAMEPAD_COUNT> gamepad_axis_value;
+		std::array<std::unordered_map<gamepad_axis, axis_state>, GAMEPAD_COUNT> gamepad_axis_state;
 
 		void initialize_keyboard();
 		void initialize_mouse();
@@ -33,6 +33,7 @@ namespace wm {
 		wm_glfw_window_input_handler(GLFWwindow* window_handler);
 		void update() override;
 		button_state get_keyboard_button_state(const keyboard_button button) const override;
+		bool is_mouse_over_window() const override;
 		button_state get_mouse_button_state(const mouse_button button) const override;
 		position_state get_mouse_position() const override;
 		bool is_gamepad_available(const int32_t gamepad_index) const override;

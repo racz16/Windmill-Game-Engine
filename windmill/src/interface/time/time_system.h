@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../core/defines.h"
 #include "../core/system.h"
 #include "../ptr/ptr.h"
 #include "../core/key.h"
@@ -17,7 +16,7 @@ namespace wm {
 		virtual double get_fps() const = 0;
 		virtual double get_frame_time() const = 0;
 		virtual double get_average_frame_time() const = 0;
-		virtual int32_t get_frame_count() const = 0;
+		virtual int32_t get_frame_index() const = 0;
 	};
 
 }
