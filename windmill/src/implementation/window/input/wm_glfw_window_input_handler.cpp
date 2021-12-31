@@ -147,7 +147,7 @@ namespace wm {
 		}
 	}
 
-	void wm_glfw_window_input_handler::set_clipboard_text(const std::string text) const {
+	void wm_glfw_window_input_handler::set_clipboard_text(const std::string& text) const {
 		glfwSetClipboardString(nullptr, text.c_str());
 	}
 

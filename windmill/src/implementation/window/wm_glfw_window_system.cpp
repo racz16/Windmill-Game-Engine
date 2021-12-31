@@ -454,7 +454,7 @@ namespace wm {
 		WM_LOG_INFO_2("GLFW window cursor shape changed");
 	}
 
-	void wm_glfw_window_system::set_cursor_shape(const std::string file_path) {
+	void wm_glfw_window_system::set_cursor_shape(const std::string& file_path) {
 		auto image = engine::get_resource_system()->get_image(file_path);
 		GLFWimage glfw_image {image->get_size().x, image->get_size().y, image->get_pixels()};
 		destroy_cursor();
@@ -472,7 +472,7 @@ namespace wm {
 		}
 	}
 
-	void wm_glfw_window_system::set_icon(const std::string file_path) const {
+	void wm_glfw_window_system::set_icon(const std::string& file_path) const {
 		auto image = engine::get_resource_system()->get_image(file_path);
 		GLFWimage glfw_image {image->get_size().x, image->get_size().y, image->get_pixels()};
 

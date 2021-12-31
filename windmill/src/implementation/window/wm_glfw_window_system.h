@@ -82,8 +82,8 @@ namespace wm {
 		void set_cursor_mode(const cursor_mode mode) override;
 		wm::cursor_shape get_cursor_shape() const override;
 		void set_cursor_shape(const standard_cursor_shape cursor_shape) override;
-		void set_cursor_shape(const std::string file_path) override;
-		void set_icon(const std::string file_path) const override;
+		void set_cursor_shape(const std::string& file_path) override;
+		void set_icon(const std::string& file_path) const override;
 		ptr_view<window_input_handler> get_input_handler() override;
 		~wm_glfw_window_system() override;
 
