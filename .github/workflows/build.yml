@@ -55,5 +55,4 @@ jobs:
       - uses: actions/checkout@v2
       - run: sudo apt-get update
       - run: sudo apt-get install glslang-tools
-      - run: ./compile.sh
-        working-directory: ./windmill/res/shader
+      - run: ./compile_shaders.sh
