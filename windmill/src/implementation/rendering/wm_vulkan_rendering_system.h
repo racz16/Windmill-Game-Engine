@@ -10,44 +10,17 @@ namespace wm {
 		glm::vec3 position;
 		glm::vec3 normal;
 		glm::vec2 texture_coordinates;
-
-		static std::array<VkVertexInputBindingDescription, 1> get_binding_descriptions() {
-			std::array<VkVertexInputBindingDescription, 1> binding_descriptions {};
-
-			binding_descriptions.at(0).binding = 0;
-			binding_descriptions.at(0).stride = sizeof(gpu_vertex);
-			binding_descriptions.at(0).inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX;
-
-			return binding_descriptions;
-		}
-
-		static std::array<VkVertexInputAttributeDescription, 3> get_attribute_descriptions() {
-			std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions {};
-
-			attribute_descriptions.at(0).binding = 0;
-			attribute_descriptions.at(0).location = 0;
-			attribute_descriptions.at(0).format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
-			attribute_descriptions.at(0).offset = offsetof(gpu_vertex, position);
-
-			attribute_descriptions.at(1).binding = 0;
-			attribute_descriptions.at(1).location = 1;
-			attribute_descriptions.at(1).format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
-			attribute_descriptions.at(1).offset = offsetof(gpu_vertex, normal);
-
-			attribute_descriptions.at(2).binding = 0;
-			attribute_descriptions.at(2).location = 2;
-			attribute_descriptions.at(2).format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
-			attribute_descriptions.at(2).offset = offsetof(gpu_vertex, texture_coordinates);
-
-			return attribute_descriptions;
-		}
-
 	};
 
 	struct uniform_buffer_object {
 		glm::mat4 model;
 		glm::mat4 view;
 		glm::mat4 projection;
+	};
+
+	struct push_constatnt_block {
+		glm::vec2 scale;
+		glm::vec2 translate;
 	};
 
 	class wm_vulkan_rendering_system: public wm_base_system, public rendering_system {
@@ -82,7 +55,6 @@ namespace wm {
 		//render pass
 		VkRenderPass render_pass = VK_NULL_HANDLE;
 		//pipeline
-		VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
 		VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
 		VkPipeline pipeline = VK_NULL_HANDLE;
 		//buffers
@@ -94,6 +66,7 @@ namespace wm {
 		std::vector<VkDeviceMemory> uniform_buffers_device_memory;
 		VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> descriptor_sets;
+		VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
 		//texture
 		VkImage texture_image = VK_NULL_HANDLE;
 		uint32_t texture_mipmap_level_count = 1;
@@ -118,6 +91,22 @@ namespace wm {
 		std::vector<VkFence> in_flight;
 		std::vector<VkFence> images_in_flight;
 		int32_t frame_index;
+		//imgui
+		VkImage font_image = VK_NULL_HANDLE;
+		VkImageView font_image_view = VK_NULL_HANDLE;
+		VkSampler font_sampler = VK_NULL_HANDLE;
+		VkDeviceMemory font_image_device_memory = VK_NULL_HANDLE;
+		VkDescriptorPool imgui_descriptor_pool = VK_NULL_HANDLE;
+		std::vector<VkDescriptorSet> imgui_descriptor_sets;
+		VkDescriptorSetLayout imgui_descriptor_set_layout = VK_NULL_HANDLE;
+		VkPipelineLayout imgui_pipeline_layout = VK_NULL_HANDLE;
+		VkPipeline imgui_pipeline = VK_NULL_HANDLE;
+		VkBuffer imgui_vertex_buffer = VK_NULL_HANDLE;
+		VkDeviceMemory imgui_vertex_buffer_device_memory = VK_NULL_HANDLE;
+		VkBuffer imgui_index_buffer = VK_NULL_HANDLE;
+		VkDeviceMemory imgui_index_buffer_device_memory = VK_NULL_HANDLE;
+		push_constatnt_block imgui_push_constants;
+		glm::dvec2 mouse_scroll = glm::dvec2(0.0);
 
 		//instance
 		void create_instance();
@@ -145,7 +134,7 @@ namespace wm {
 		std::vector<VkExtensionProperties> get_available_device_extensions(const VkPhysicalDevice physical_device) const;
 		bool are_device_extensions_supported(const std::vector<const char*>& required_device_extensions, const std::vector<VkExtensionProperties>& available_device_extensions) const;
 		//swap chain
-		void register_window_resize_event_handler();
+		void register_event_handlers();
 		void create_swap_chain();
 		void recreate_swap_chain();
 		VkSurfaceFormatKHR get_surface_format() const;
@@ -166,7 +155,7 @@ namespace wm {
 		void load_mesh();
 		void create_vertex_buffer();
 		void create_index_buffer();
-		void create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& buffer_memory);
+		void create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& buffer_memory) const;
 		void copy_buffer(const VkBuffer source_buffer, const VkBuffer destination_buffer, const size_t size);
 		//texture
 		void create_texture_image();
@@ -174,7 +163,8 @@ namespace wm {
 		void create_image(const glm::ivec2& size, const uint32_t mipmap_level_count, const VkSampleCountFlagBits sample_count, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory);
 		VkImageView create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags, const uint32_t mipmap_level_count);
 		void create_texture_sampler();
-		void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout, const uint32_t mipmap_level_count);
+		void create_sampler(const uint32_t mipmap_level_count, const float max_anisotropy, VkSampler& sampler);
+		void transition_image_layout(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, const uint32_t mipmap_level_count);
 		void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 		void generate_mipmaps(VkImage image, const VkFormat format, const glm::vec2& size, const uint32_t mipmap_level_count);
 		//color texture
@@ -195,8 +185,19 @@ namespace wm {
 		void create_command_buffers();
 		VkCommandBuffer begin_single_time_commands();
 		void end_single_time_commands(const VkCommandBuffer command_buffer);
+		void update_command_buffer(const uint32_t image_index);
 		//sync
 		void create_semaphores();
+		//imgui
+		void initialize_imgui();
+		void create_imgui();
+		void create_imgui_font_image();
+		void create_imgui_descriptor_sets();
+		void create_imgui_pipeline();
+		void prepare_imgui();
+		void before_draw_imgui();
+		void draw_imgui(const uint32_t uimage_index);
+		void destroy_imgui();
 	public:
 		wm_vulkan_rendering_system();
 		void update() override;
