@@ -63,7 +63,7 @@ namespace wm {
 		VkBuffer index_buffer = VK_NULL_HANDLE;
 		VkDeviceMemory index_buffer_device_memory = VK_NULL_HANDLE;
 		std::vector<VkBuffer> uniform_buffers;
-		std::vector<VkDeviceMemory> uniform_buffers_device_memory;
+		std::vector<VkDeviceMemory> uniform_buffers_device_memories;
 		VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> descriptor_sets;
 		VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
@@ -101,10 +101,12 @@ namespace wm {
 		VkDescriptorSetLayout imgui_descriptor_set_layout = VK_NULL_HANDLE;
 		VkPipelineLayout imgui_pipeline_layout = VK_NULL_HANDLE;
 		VkPipeline imgui_pipeline = VK_NULL_HANDLE;
-		VkBuffer imgui_vertex_buffer = VK_NULL_HANDLE;
-		VkDeviceMemory imgui_vertex_buffer_device_memory = VK_NULL_HANDLE;
-		VkBuffer imgui_index_buffer = VK_NULL_HANDLE;
-		VkDeviceMemory imgui_index_buffer_device_memory = VK_NULL_HANDLE;
+		std::vector<VkBuffer> imgui_vertex_buffers;
+		std::vector<VkDeviceMemory> imgui_vertex_buffer_device_memories;
+		std::vector<uint32_t> imgui_vertex_count;
+		std::vector<VkBuffer> imgui_index_buffers;
+		std::vector<VkDeviceMemory> imgui_index_buffer_device_memories;
+		std::vector<uint32_t> imgui_index_count;
 		push_constatnt_block imgui_push_constants;
 		glm::dvec2 mouse_scroll = glm::dvec2(0.0);
 
@@ -195,7 +197,7 @@ namespace wm {
 		void create_imgui_descriptor_sets();
 		void create_imgui_pipeline();
 		void prepare_imgui();
-		void before_draw_imgui();
+		void before_draw_imgui(const uint32_t image_index);
 		void draw_imgui(const uint32_t uimage_index);
 		void destroy_imgui();
 	public:

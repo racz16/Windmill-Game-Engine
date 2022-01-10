@@ -560,7 +560,7 @@ namespace wm {
 
 		for(size_t i = 0; i < swap_chain_images.size(); i++) {
 			vkDestroyBuffer(device, uniform_buffers.at(i), nullptr);
-			vkFreeMemory(device, uniform_buffers_device_memory.at(i), nullptr);
+			vkFreeMemory(device, uniform_buffers_device_memories.at(i), nullptr);
 		}
 		WM_LOG_INFO_2("Vulkan uniform buffers destroyed");
 
@@ -1259,7 +1259,7 @@ namespace wm {
 		size_t buffer_size = sizeof(uniform_buffer_object);
 
 		uniform_buffers.resize(swap_chain_images.size());
-		uniform_buffers_device_memory.resize(swap_chain_images.size());
+		uniform_buffers_device_memories.resize(swap_chain_images.size());
 
 		for(size_t i = 0; i < swap_chain_images.size(); i++) {
 			create_buffer(
@@ -1267,7 +1267,7 @@ namespace wm {
 				VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				uniform_buffers.at(i),
-				uniform_buffers_device_memory.at(i)
+				uniform_buffers_device_memories.at(i)
 			);
 		}
 		WM_LOG_INFO_2("Vulkan uniform buffers created");
@@ -1285,9 +1285,9 @@ namespace wm {
 		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swap_chain_extent.width) / static_cast<float>(swap_chain_extent.height), 0.1f, 10.0f);
 
 		void* data;
-		WM_ASSERT_VULKAN(vkMapMemory(device, uniform_buffers_device_memory.at(image_index), 0, sizeof(ubo), 0, &data));
+		WM_ASSERT_VULKAN(vkMapMemory(device, uniform_buffers_device_memories.at(image_index), 0, sizeof(ubo), 0, &data));
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, uniform_buffers_device_memory.at(image_index));
+		vkUnmapMemory(device, uniform_buffers_device_memories.at(image_index));
 	}
 
 	void wm_vulkan_rendering_system::create_descriptor_pool() {
@@ -1423,7 +1423,7 @@ namespace wm {
 		VkCommandBufferBeginInfo command_buffer_begin_info {};
 		command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		before_draw_imgui();
+		before_draw_imgui(image_index);
 
 		WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffers.at(image_index), &command_buffer_begin_info));
 
@@ -1529,6 +1529,19 @@ namespace wm {
 		io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
 		io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
 		io.KeyMap[ImGuiKey_KeyPadEnter] = GLFW_KEY_KP_ENTER;
+
+		const int32_t INITIAL_VERTEX_COUNT = 512;
+		for(int32_t i = 0; i < swap_chain_images.size(); i++) {
+			imgui_vertex_buffers.push_back(VK_NULL_HANDLE);
+			imgui_vertex_buffer_device_memories.push_back(VK_NULL_HANDLE);
+			imgui_vertex_count.push_back(INITIAL_VERTEX_COUNT);
+			create_buffer(INITIAL_VERTEX_COUNT * sizeof(ImDrawVert), VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_vertex_buffers.at(i), imgui_vertex_buffer_device_memories.at(i));
+
+			imgui_index_buffers.push_back(VK_NULL_HANDLE);
+			imgui_index_buffer_device_memories.push_back(VK_NULL_HANDLE);
+			imgui_index_count.push_back(0);
+			create_buffer(INITIAL_VERTEX_COUNT * sizeof(ImDrawIdx), VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_index_buffers.at(i), imgui_index_buffer_device_memories.at(i));
+		}
 	}
 
 	void wm_vulkan_rendering_system::create_imgui_font_image() {
@@ -1827,7 +1840,7 @@ namespace wm {
 		mouse_scroll = glm::dvec2(0.0);
 	}
 
-	void wm_vulkan_rendering_system::before_draw_imgui() {
+	void wm_vulkan_rendering_system::before_draw_imgui(const uint32_t image_index) {
 		ImGui::NewFrame();
 
 		ImVec2 position {20.0f, 50.0f};
@@ -1840,44 +1853,44 @@ namespace wm {
 		ImGui::Render();
 
 		auto draw_data = ImGui::GetDrawData();
-		VkDeviceSize vertex_buffer_size = draw_data->TotalVtxCount * sizeof(ImDrawVert);
-		VkDeviceSize index_buffer_size = draw_data->TotalIdxCount * sizeof(ImDrawIdx);
-		if((vertex_buffer_size == 0) || (index_buffer_size == 0)) {
-			return;
+
+		if(draw_data->TotalVtxCount > 0) {
+			VkDeviceSize buffer_size = draw_data->TotalVtxCount * sizeof(ImDrawVert);
+			if(imgui_vertex_count.at(image_index) < draw_data->TotalVtxCount) {
+				vkDestroyBuffer(device, imgui_vertex_buffers.at(image_index), nullptr);
+				vkFreeMemory(device, imgui_vertex_buffer_device_memories.at(image_index), nullptr);
+				create_buffer(buffer_size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_vertex_buffers.at(image_index), imgui_vertex_buffer_device_memories.at(image_index));
+			}
+			imgui_vertex_count.at(image_index) = draw_data->TotalVtxCount;
+			void* data;
+			WM_ASSERT_VULKAN(vkMapMemory(device, imgui_vertex_buffer_device_memories.at(image_index), 0, buffer_size, 0, &data));
+			ImDrawVert* vertex_data_address = static_cast<ImDrawVert*>(data);
+			for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
+				const ImDrawList* cmd_list = draw_data->CmdLists[i];
+				memcpy(vertex_data_address, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
+				vertex_data_address += cmd_list->VtxBuffer.Size;
+			}
+			vkUnmapMemory(device, imgui_vertex_buffer_device_memories.at(image_index));
 		}
 
-		//TODO: performance
-		WM_ASSERT_VULKAN(vkDeviceWaitIdle(device));
-		if(vertex_buffer != VK_NULL_HANDLE) {
-			vkDestroyBuffer(device, imgui_vertex_buffer, nullptr);
-			vkFreeMemory(device, imgui_vertex_buffer_device_memory, nullptr);
+		if(draw_data->TotalIdxCount > 0) {
+			VkDeviceSize buffer_size = draw_data->TotalIdxCount * sizeof(ImDrawIdx);
+			if(imgui_index_count.at(image_index) < draw_data->TotalIdxCount) {
+				vkDestroyBuffer(device, imgui_index_buffers.at(image_index), nullptr);
+				vkFreeMemory(device, imgui_index_buffer_device_memories.at(image_index), nullptr);
+				create_buffer(buffer_size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_index_buffers.at(image_index), imgui_index_buffer_device_memories.at(image_index));
+			}
+			imgui_index_count.at(image_index) = draw_data->TotalIdxCount;
+			void* data;
+			WM_ASSERT_VULKAN(vkMapMemory(device, imgui_index_buffer_device_memories.at(image_index), 0, buffer_size, 0, &data));
+			ImDrawIdx* index_data_address = static_cast<ImDrawIdx*>(data);
+			for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
+				const ImDrawList* cmd_list = draw_data->CmdLists[i];
+				memcpy(index_data_address, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+				index_data_address += cmd_list->IdxBuffer.Size;
+			}
+			vkUnmapMemory(device, imgui_index_buffer_device_memories.at(image_index));
 		}
-		create_buffer(vertex_buffer_size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_vertex_buffer, imgui_vertex_buffer_device_memory);
-		void* data;
-		WM_ASSERT_VULKAN(vkMapMemory(device, imgui_vertex_buffer_device_memory, 0, vertex_buffer_size, 0, &data));
-		ImDrawVert* vertex_data_address = static_cast<ImDrawVert*>(data);
-		for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
-			const ImDrawList* cmd_list = draw_data->CmdLists[i];
-			memcpy(vertex_data_address, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
-			vertex_data_address += cmd_list->VtxBuffer.Size;
-		}
-
-		vkUnmapMemory(device, imgui_vertex_buffer_device_memory);
-
-		if(index_buffer != VK_NULL_HANDLE) {
-			vkDestroyBuffer(device, imgui_index_buffer, nullptr);
-			vkFreeMemory(device, imgui_index_buffer_device_memory, nullptr);
-		}
-		create_buffer(index_buffer_size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_index_buffer, imgui_index_buffer_device_memory);
-		WM_ASSERT_VULKAN(vkMapMemory(device, imgui_index_buffer_device_memory, 0, index_buffer_size, 0, &data));
-		ImDrawIdx* index_data_address = static_cast<ImDrawIdx*>(data);
-		for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
-			const ImDrawList* cmd_list = draw_data->CmdLists[i];
-			memcpy(index_data_address, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
-			index_data_address += cmd_list->IdxBuffer.Size;
-		}
-
-		vkUnmapMemory(device, imgui_index_buffer_device_memory);
 	}
 
 	void wm_vulkan_rendering_system::draw_imgui(const uint32_t image_index) {
@@ -1903,8 +1916,8 @@ namespace wm {
 
 		if(draw_data->CmdListsCount > 0) {
 			VkDeviceSize offsets[1] = {0};
-			vkCmdBindVertexBuffers(command_buffers.at(image_index), 0, 1, &imgui_vertex_buffer, offsets);
-			vkCmdBindIndexBuffer(command_buffers.at(image_index), imgui_index_buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT16);
+			vkCmdBindVertexBuffers(command_buffers.at(image_index), 0, 1, &imgui_vertex_buffers.at(image_index), offsets);
+			vkCmdBindIndexBuffer(command_buffers.at(image_index), imgui_index_buffers.at(image_index), 0, VkIndexType::VK_INDEX_TYPE_UINT16);
 
 			for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
 				auto cmd_list = draw_data->CmdLists[i];
@@ -1926,10 +1939,12 @@ namespace wm {
 
 	void wm_vulkan_rendering_system::destroy_imgui() {
 		ImGui::DestroyContext();
-		vkDestroyBuffer(device, imgui_vertex_buffer, nullptr);
-		vkFreeMemory(device, imgui_vertex_buffer_device_memory, nullptr);
-		vkDestroyBuffer(device, imgui_index_buffer, nullptr);
-		vkFreeMemory(device, imgui_index_buffer_device_memory, nullptr);
+		for(int32_t i = 0; i < swap_chain_images.size(); i++) {
+			vkDestroyBuffer(device, imgui_vertex_buffers.at(i), nullptr);
+			vkFreeMemory(device, imgui_vertex_buffer_device_memories.at(i), nullptr);
+			vkDestroyBuffer(device, imgui_index_buffers.at(i), nullptr);
+			vkFreeMemory(device, imgui_index_buffer_device_memories.at(i), nullptr);
+		}
 		vkDestroySampler(device, font_sampler, nullptr);
 		vkDestroyImageView(device, font_image_view, nullptr);
 		vkDestroyImage(device, font_image, nullptr);
