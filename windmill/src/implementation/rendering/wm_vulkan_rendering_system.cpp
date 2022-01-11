@@ -4,7 +4,10 @@
 #include "core/engine.h"
 #include "core/utility.h"
 #include "defines/log_defines.h"
+#include "defines/general_defines.h"
 #include "window/event/window_framebuffer_size_event.h"
+#include "window/event/mouse_scroll_event.h"
+#include "window/event/keyboard_character_event.h"
 
 #include "wm_vulkan_rendering_system.h"
 #include "../resource/wm_resource_system.h"
@@ -22,7 +25,7 @@ namespace wm {
 	#endif
 		create_surface(&instance, &surface);
 		create_device();
-		register_window_resize_event_handler();
+		register_event_handlers();
 		create_swap_chain();
 		create_swap_chain_image_views();
 		create_render_pass();
@@ -43,6 +46,7 @@ namespace wm {
 		create_descriptor_sets();
 		create_command_buffers();
 		create_semaphores();
+		initialize_imgui();
 
 		WM_LOG_INFO_1("vulkan rendering system created");
 	}
@@ -287,6 +291,16 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkCreateDevice(physical_device, &device_create_info, nullptr, &device));
 		WM_LOG_INFO_2("Vulkan device created");
 
+	#ifdef WM_BUILD_DEBUG
+		VkDebugUtilsObjectNameInfoEXT debug_utils_object_name_info {};
+		debug_utils_object_name_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		debug_utils_object_name_info.objectHandle = reinterpret_cast<uint64_t>(device);
+		debug_utils_object_name_info.objectType = VkObjectType::VK_OBJECT_TYPE_DEVICE;
+		debug_utils_object_name_info.pObjectName = "Logical device";
+		auto vkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
+		vkSetDebugUtilsObjectNameEXT(device, &debug_utils_object_name_info);
+	#endif
+
 		vkGetDeviceQueue(device, graphics_queue_family_index, 0, &graphics_queue);
 		vkGetDeviceQueue(device, presentation_queue_family_index, 0, &presentation_queue);
 	}
@@ -398,10 +412,17 @@ namespace wm {
 
 
 	//swap chain
-	void wm_vulkan_rendering_system::register_window_resize_event_handler() {
+	void wm_vulkan_rendering_system::register_event_handlers() {
 		engine::get_event_system()->add_event_listener(window_framebuffer_size_event::get_key(), ptr<event_listener<window_framebuffer_size_event>>(new event_listener<window_framebuffer_size_event>([this](const window_framebuffer_size_event event) {
 			this->framebuffer_resized = true;
 			this->minimized = event.get_new_size().x == 0 || event.get_new_size().y == 0;
+		})).to_ptr_view());
+		engine::get_event_system()->add_event_listener(mouse_scroll_event::get_key(), ptr<event_listener<mouse_scroll_event>>(new event_listener<mouse_scroll_event>([this](const mouse_scroll_event event) {
+			this->mouse_scroll = event.get_offset();
+		})).to_ptr_view());
+		engine::get_event_system()->add_event_listener(keyboard_character_event::get_key(), ptr<event_listener<keyboard_character_event>>(new event_listener<keyboard_character_event>([this](const keyboard_character_event event) {
+			ImGuiIO& io = ImGui::GetIO();
+			io.AddInputCharacter(event.get_utf_32_code_point());
 		})).to_ptr_view());
 	}
 
@@ -458,7 +479,6 @@ namespace wm {
 		create_swap_chain();
 		create_swap_chain_image_views();
 		create_render_pass();
-		create_pipeline();
 		create_color_resources();
 		create_depth_resources();
 		create_framebuffers();
@@ -540,9 +560,6 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan framebuffers destroyed");
 		vkFreeCommandBuffers(device, command_pool, static_cast<uint32_t>(command_buffers.size()), command_buffers.data());
 		WM_LOG_INFO_2("Vulkan command buffers destroyed");
-		vkDestroyPipeline(device, pipeline, nullptr);
-		WM_LOG_INFO_2("Vulkan graphics pipeline destroyed");
-		vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
 		vkDestroyRenderPass(device, render_pass, nullptr);
 		WM_LOG_INFO_2("Vulkan renderpass destroyed");
 
@@ -554,7 +571,7 @@ namespace wm {
 
 		for(size_t i = 0; i < swap_chain_images.size(); i++) {
 			vkDestroyBuffer(device, uniform_buffers.at(i), nullptr);
-			vkFreeMemory(device, uniform_buffers_device_memory.at(i), nullptr);
+			vkFreeMemory(device, uniform_buffers_device_memories.at(i), nullptr);
 		}
 		WM_LOG_INFO_2("Vulkan uniform buffers destroyed");
 
@@ -591,9 +608,9 @@ namespace wm {
 
 	void wm_vulkan_rendering_system::create_pipeline() {
 		auto verteex_shader_code = read_file("res/shader/shader.vert.spv");
-		WM_LOG_INFO_2("Vertex shader loaded");
+		WM_LOG_INFO_2("Lambertian vertex shader loaded");
 		auto fragment_shader_code = read_file("res/shader/shader.frag.spv");
-		WM_LOG_INFO_2("Fragment shader loaded");
+		WM_LOG_INFO_2("Lambertian fragment shader loaded");
 		auto vertex_shader_module = create_shader_module(verteex_shader_code);
 		auto fragment_shader_module = create_shader_module(fragment_shader_code);
 
@@ -611,8 +628,31 @@ namespace wm {
 
 		std::array<VkPipelineShaderStageCreateInfo, 2> pipeline_shader_stage_create_infos = {pipeline_vertex_shader_stage_create_info, pipeline_fragment_shader_stage_create_info};
 
-		auto binding_descriptions = gpu_vertex::get_binding_descriptions();
-		auto attribute_descriptions = gpu_vertex::get_attribute_descriptions();
+		VkVertexInputBindingDescription binding_description {};
+		binding_description.binding = 0;
+		binding_description.stride = sizeof(gpu_vertex);
+		binding_description.inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX;
+		std::array<VkVertexInputBindingDescription, 1> binding_descriptions = {binding_description};
+
+		VkVertexInputAttributeDescription position_attribute_description;
+		position_attribute_description.binding = 0;
+		position_attribute_description.location = 0;
+		position_attribute_description.format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
+		position_attribute_description.offset = offsetof(gpu_vertex, position);
+
+		VkVertexInputAttributeDescription texture_coordinates_attribute_description;
+		texture_coordinates_attribute_description.binding = 0;
+		texture_coordinates_attribute_description.location = 1;
+		texture_coordinates_attribute_description.format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
+		texture_coordinates_attribute_description.offset = offsetof(gpu_vertex, normal);
+
+		VkVertexInputAttributeDescription color_attribute_description;
+		color_attribute_description.binding = 0;
+		color_attribute_description.location = 2;
+		color_attribute_description.format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
+		color_attribute_description.offset = offsetof(gpu_vertex, texture_coordinates);
+
+		std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions {position_attribute_description, texture_coordinates_attribute_description, color_attribute_description};
 
 		VkPipelineVertexInputStateCreateInfo pipeline_vertex_input_state_create_info {};
 		pipeline_vertex_input_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -626,24 +666,17 @@ namespace wm {
 		pipeline_input_assembly_state_create_info.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		pipeline_input_assembly_state_create_info.primitiveRestartEnable = VK_FALSE;
 
-		VkViewport viewport {};
-		viewport.x = 0.0f;
-		viewport.y = static_cast<float>(swap_chain_extent.height);
-		viewport.width = static_cast<float>(swap_chain_extent.width);
-		viewport.height = -static_cast<float>(swap_chain_extent.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor {};
-		scissor.offset = {0, 0};
-		scissor.extent = swap_chain_extent;
-
 		VkPipelineViewportStateCreateInfo pipeline_viewport_state_create_info {};
 		pipeline_viewport_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		pipeline_viewport_state_create_info.viewportCount = 1;
-		pipeline_viewport_state_create_info.pViewports = &viewport;
 		pipeline_viewport_state_create_info.scissorCount = 1;
-		pipeline_viewport_state_create_info.pScissors = &scissor;
+
+		std::array<VkDynamicState, 2> dynamic_states = {VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT, VkDynamicState::VK_DYNAMIC_STATE_SCISSOR};
+
+		VkPipelineDynamicStateCreateInfo pipeline_dynamic_state_create_info {};
+		pipeline_dynamic_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		pipeline_dynamic_state_create_info.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
+		pipeline_dynamic_state_create_info.pDynamicStates = dynamic_states.data();
 
 		VkPipelineRasterizationStateCreateInfo pipeline_rasterization_state_create_info {};
 		pipeline_rasterization_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -697,6 +730,7 @@ namespace wm {
 		graphics_pipeline_create_info.pVertexInputState = &pipeline_vertex_input_state_create_info;
 		graphics_pipeline_create_info.pInputAssemblyState = &pipeline_input_assembly_state_create_info;
 		graphics_pipeline_create_info.pViewportState = &pipeline_viewport_state_create_info;
+		graphics_pipeline_create_info.pDynamicState = &pipeline_dynamic_state_create_info;
 		graphics_pipeline_create_info.pRasterizationState = &pipeline_rasterization_state_create_info;
 		graphics_pipeline_create_info.pMultisampleState = &pipeline_multisample_state_create_info;
 		graphics_pipeline_create_info.pColorBlendState = &pipeline_color_blend_state_create_info;
@@ -857,7 +891,7 @@ namespace wm {
 
 		create_image(image->get_size(), texture_mipmap_level_count, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image, texture_image_device_memory);
 
-		transition_image_layout(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture_mipmap_level_count);
+		transition_image_layout(texture_image, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture_mipmap_level_count);
 		copy_buffer_to_image(staging_buffer, texture_image, static_cast<uint32_t>(image->get_size().x), static_cast<uint32_t>(image->get_size().y));
 		generate_mipmaps(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, image->get_size(), texture_mipmap_level_count);
 
@@ -931,6 +965,10 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::create_texture_sampler() {
+		create_sampler(texture_mipmap_level_count, max_anisotropy, texture_sampler);
+	}
+
+	void wm_vulkan_rendering_system::create_sampler(const uint32_t mipmap_level_count, const float max_anisotropy, VkSampler& sampler) {
 		VkSamplerCreateInfo sampler_create_info {};
 		sampler_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		sampler_create_info.magFilter = VkFilter::VK_FILTER_LINEAR;
@@ -938,7 +976,7 @@ namespace wm {
 		sampler_create_info.addressModeU = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler_create_info.addressModeV = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		sampler_create_info.addressModeW = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		sampler_create_info.anisotropyEnable = anisotropy;
+		sampler_create_info.anisotropyEnable = max_anisotropy != 0.0f;
 		sampler_create_info.maxAnisotropy = max_anisotropy;
 		sampler_create_info.borderColor = VkBorderColor::VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		sampler_create_info.unnormalizedCoordinates = VK_FALSE;
@@ -946,12 +984,12 @@ namespace wm {
 		sampler_create_info.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
 		sampler_create_info.mipmapMode = VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		sampler_create_info.minLod = 0.0f;
-		sampler_create_info.maxLod = static_cast<float>(texture_mipmap_level_count);
+		sampler_create_info.maxLod = static_cast<float>(mipmap_level_count);
 
-		WM_ASSERT_VULKAN(vkCreateSampler(device, &sampler_create_info, nullptr, &texture_sampler));
+		WM_ASSERT_VULKAN(vkCreateSampler(device, &sampler_create_info, nullptr, &sampler));
 	}
 
-	void wm_vulkan_rendering_system::transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout, const uint32_t mipmap_level_count) {
+	void wm_vulkan_rendering_system::transition_image_layout(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, const uint32_t mipmap_level_count) {
 		VkCommandBuffer command_buffer = begin_single_time_commands();
 
 		VkPipelineStageFlags source_stage;
@@ -1153,6 +1191,7 @@ namespace wm {
 		void* data;
 		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
 		memcpy(data, vertices.data(), size);
+		vkUnmapMemory(device, staging_buffer_device_memory);
 
 		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertex_buffer, vertex_buffer_device_memory);
 		copy_buffer(staging_buffer, vertex_buffer, size);
@@ -1173,6 +1212,7 @@ namespace wm {
 		void* data;
 		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
 		memcpy(data, indices.data(), size);
+		vkUnmapMemory(device, staging_buffer_device_memory);
 
 		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index_buffer, index_buffer_device_memory);
 		copy_buffer(staging_buffer, index_buffer, size);
@@ -1183,7 +1223,7 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan index buffer created");
 	}
 
-	void wm_vulkan_rendering_system::create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& device_memory) {
+	void wm_vulkan_rendering_system::create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& device_memory) const {
 		VkBufferCreateInfo buffer_create_info {};
 		buffer_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		buffer_create_info.size = size;
@@ -1230,7 +1270,7 @@ namespace wm {
 		size_t buffer_size = sizeof(uniform_buffer_object);
 
 		uniform_buffers.resize(swap_chain_images.size());
-		uniform_buffers_device_memory.resize(swap_chain_images.size());
+		uniform_buffers_device_memories.resize(swap_chain_images.size());
 
 		for(size_t i = 0; i < swap_chain_images.size(); i++) {
 			create_buffer(
@@ -1238,7 +1278,7 @@ namespace wm {
 				VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				uniform_buffers.at(i),
-				uniform_buffers_device_memory.at(i)
+				uniform_buffers_device_memories.at(i)
 			);
 		}
 		WM_LOG_INFO_2("Vulkan uniform buffers created");
@@ -1256,9 +1296,9 @@ namespace wm {
 		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swap_chain_extent.width) / static_cast<float>(swap_chain_extent.height), 0.1f, 10.0f);
 
 		void* data;
-		WM_ASSERT_VULKAN(vkMapMemory(device, uniform_buffers_device_memory.at(image_index), 0, sizeof(ubo), 0, &data));
+		WM_ASSERT_VULKAN(vkMapMemory(device, uniform_buffers_device_memories.at(image_index), 0, sizeof(ubo), 0, &data));
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, uniform_buffers_device_memory.at(image_index));
+		vkUnmapMemory(device, uniform_buffers_device_memories.at(image_index));
 	}
 
 	void wm_vulkan_rendering_system::create_descriptor_pool() {
@@ -1282,12 +1322,12 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::create_descriptor_sets() {
-		std::vector<VkDescriptorSetLayout> layouts(swap_chain_images.size(), descriptor_set_layout);
+		std::vector<VkDescriptorSetLayout> descriptor_set_layouts(swap_chain_images.size(), descriptor_set_layout);
 		VkDescriptorSetAllocateInfo descriptor_set_allocation_info {};
 		descriptor_set_allocation_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		descriptor_set_allocation_info.descriptorPool = descriptor_pool;
-		descriptor_set_allocation_info.descriptorSetCount = static_cast<uint32_t>(swap_chain_images.size());
-		descriptor_set_allocation_info.pSetLayouts = layouts.data();
+		descriptor_set_allocation_info.descriptorSetCount = static_cast<uint32_t>(descriptor_set_layouts.size());
+		descriptor_set_allocation_info.pSetLayouts = descriptor_set_layouts.data();
 
 		descriptor_sets.resize(swap_chain_images.size());
 		WM_ASSERT_VULKAN(vkAllocateDescriptorSets(device, &descriptor_set_allocation_info, descriptor_sets.data()));
@@ -1297,11 +1337,13 @@ namespace wm {
 			descriptor_buffer_info.buffer = uniform_buffers.at(i);
 			descriptor_buffer_info.offset = 0;
 			descriptor_buffer_info.range = sizeof(uniform_buffer_object);
+			std::array<VkDescriptorBufferInfo, 1> descriptor_buffer_infos = {descriptor_buffer_info};
 
 			VkDescriptorImageInfo descriptor_image_info {};
 			descriptor_image_info.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			descriptor_image_info.imageView = texture_image_view;
 			descriptor_image_info.sampler = texture_sampler;
+			std::array<VkDescriptorImageInfo, 1> descriptor_image_infos = {descriptor_image_info};
 
 			VkWriteDescriptorSet uniform_buffer_write_descriptor_set {};
 			uniform_buffer_write_descriptor_set.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1309,8 +1351,8 @@ namespace wm {
 			uniform_buffer_write_descriptor_set.dstBinding = 0;
 			uniform_buffer_write_descriptor_set.dstArrayElement = 0;
 			uniform_buffer_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			uniform_buffer_write_descriptor_set.descriptorCount = 1;
-			uniform_buffer_write_descriptor_set.pBufferInfo = &descriptor_buffer_info;
+			uniform_buffer_write_descriptor_set.descriptorCount = static_cast<uint32_t>(descriptor_buffer_infos.size());
+			uniform_buffer_write_descriptor_set.pBufferInfo = descriptor_buffer_infos.data();
 
 			VkWriteDescriptorSet sampler_write_descriptor_set {};
 			sampler_write_descriptor_set.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1318,12 +1360,12 @@ namespace wm {
 			sampler_write_descriptor_set.dstBinding = 1;
 			sampler_write_descriptor_set.dstArrayElement = 0;
 			sampler_write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			sampler_write_descriptor_set.descriptorCount = 1;
-			sampler_write_descriptor_set.pImageInfo = &descriptor_image_info;
+			sampler_write_descriptor_set.descriptorCount = static_cast<uint32_t>(descriptor_image_infos.size());
+			sampler_write_descriptor_set.pImageInfo = descriptor_image_infos.data();
 
 			std::array<VkWriteDescriptorSet, 2> write_descriptor_sets = {uniform_buffer_write_descriptor_set, sampler_write_descriptor_set};
 
-			vkUpdateDescriptorSets(device, write_descriptor_sets.size(), write_descriptor_sets.data(), 0, nullptr);
+			vkUpdateDescriptorSets(device, static_cast<uint32_t>(write_descriptor_sets.size()), write_descriptor_sets.data(), 0, nullptr);
 		}
 	}
 
@@ -1333,6 +1375,7 @@ namespace wm {
 		VkCommandPoolCreateInfo command_pool_create_info {};
 		command_pool_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		command_pool_create_info.queueFamilyIndex = graphics_queue_family_index;
+		command_pool_create_info.flags = VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		WM_ASSERT_VULKAN(vkCreateCommandPool(device, &command_pool_create_info, nullptr, &command_pool));
 	}
@@ -1348,45 +1391,6 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkAllocateCommandBuffers(device, &command_buffer_allocation_info, command_buffers.data()));
 
 		WM_LOG_INFO_2("Vulkan command buffers allocated");
-
-		for(int32_t i = 0; i < static_cast<int32_t>(command_buffers.size()); i++) {
-			VkCommandBufferBeginInfo command_buffer_begin_info {};
-			command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-			WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffers.at(i), &command_buffer_begin_info));
-
-			VkClearValue color_clear_value = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-			VkClearValue depth_clear_value = {{{1.0f, 0.0f}}};
-			std::array<VkClearValue, 2> clear_values = {color_clear_value, depth_clear_value};
-
-			VkRenderPassBeginInfo render_pass_begin_info {};
-			render_pass_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			render_pass_begin_info.renderPass = render_pass;
-			render_pass_begin_info.framebuffer = swap_chain_framebuffers.at(i);
-			render_pass_begin_info.renderArea.offset = {0, 0};
-			render_pass_begin_info.renderArea.extent = swap_chain_extent;
-			render_pass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
-			render_pass_begin_info.pClearValues = clear_values.data();
-
-			vkCmdBeginRenderPass(command_buffers.at(i), &render_pass_begin_info, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
-
-			vkCmdBindPipeline(command_buffers.at(i), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-			std::array<VkBuffer, 1> vertex_buffers = {vertex_buffer};
-			std::array<VkDeviceSize, 1> offsets = {0};
-			vkCmdBindVertexBuffers(command_buffers.at(i), 0, 1, vertex_buffers.data(), offsets.data());
-			vkCmdBindIndexBuffer(command_buffers.at(i), index_buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
-
-			vkCmdBindDescriptorSets(command_buffers.at(i), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_sets.at(i), 0, nullptr);
-
-			vkCmdDrawIndexed(command_buffers.at(i), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
-
-			vkCmdEndRenderPass(command_buffers.at(i));
-
-			WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffers.at(i)));
-		}
-
-		WM_LOG_INFO_2("Vulkan drawing commands recorded");
 	}
 
 	VkCommandBuffer wm_vulkan_rendering_system::begin_single_time_commands() {
@@ -1424,6 +1428,65 @@ namespace wm {
 		vkFreeCommandBuffers(device, command_pool, static_cast<uint32_t>(command_buffers.size()), command_buffers.data());
 	}
 
+	void wm_vulkan_rendering_system::update_command_buffer(const uint32_t image_index) {
+		vkResetCommandBuffer(command_buffers.at(image_index), VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+		VkCommandBufferBeginInfo command_buffer_begin_info {};
+		command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		before_draw_imgui(image_index);
+
+		WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffers.at(image_index), &command_buffer_begin_info));
+
+		VkClearValue color_clear_value = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+		VkClearValue depth_clear_value = {{{1.0f, 0.0f}}};
+		std::array<VkClearValue, 2> clear_values = {color_clear_value, depth_clear_value};
+
+		VkRenderPassBeginInfo render_pass_begin_info {};
+		render_pass_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		render_pass_begin_info.renderPass = render_pass;
+		render_pass_begin_info.framebuffer = swap_chain_framebuffers.at(image_index);
+		render_pass_begin_info.renderArea.offset = {0, 0};
+		render_pass_begin_info.renderArea.extent = swap_chain_extent;
+		render_pass_begin_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+		render_pass_begin_info.pClearValues = clear_values.data();
+
+		vkCmdBeginRenderPass(command_buffers.at(image_index), &render_pass_begin_info, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(command_buffers.at(image_index), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+		VkViewport viewport {};
+		viewport.x = 0.0f;
+		viewport.y = static_cast<float>(swap_chain_extent.height);
+		viewport.width = static_cast<float>(swap_chain_extent.width);
+		viewport.height = -static_cast<float>(swap_chain_extent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		vkCmdSetViewport(command_buffers.at(image_index), 0, 1, &viewport);
+
+		VkRect2D scissor_rectangle {};
+		scissor_rectangle.offset = {0, 0};
+		scissor_rectangle.extent = swap_chain_extent;
+
+		vkCmdSetScissor(command_buffers.at(image_index), 0, 1, &scissor_rectangle);
+
+		std::array<VkBuffer, 1> vertex_buffers = {vertex_buffer};
+		std::array<VkDeviceSize, 1> offsets = {0};
+		vkCmdBindVertexBuffers(command_buffers.at(image_index), 0, 1, vertex_buffers.data(), offsets.data());
+		vkCmdBindIndexBuffer(command_buffers.at(image_index), index_buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+
+		vkCmdBindDescriptorSets(command_buffers.at(image_index), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_sets.at(image_index), 0, nullptr);
+
+		vkCmdDrawIndexed(command_buffers.at(image_index), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+		draw_imgui(image_index);
+
+		vkCmdEndRenderPass(command_buffers.at(image_index));
+
+		WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffers.at(image_index)));
+	}
+
 
 	//sync
 	void wm_vulkan_rendering_system::create_semaphores() {
@@ -1447,6 +1510,464 @@ namespace wm {
 	}
 
 
+	//imgui
+	void wm_vulkan_rendering_system::initialize_imgui() {
+		create_imgui();
+		create_imgui_font_image();
+		create_imgui_descriptor_sets();
+		create_imgui_pipeline();
+	}
+
+	void wm_vulkan_rendering_system::create_imgui() {
+		ImGui::CreateContext();
+
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_::ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_::ImGuiConfigFlags_NavEnableGamepad;
+
+		io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
+		io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
+		io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
+		io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
+		io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
+		io.KeyMap[ImGuiKey_PageUp] = GLFW_KEY_PAGE_UP;
+		io.KeyMap[ImGuiKey_PageDown] = GLFW_KEY_PAGE_DOWN;
+		io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
+		io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
+		io.KeyMap[ImGuiKey_Insert] = GLFW_KEY_INSERT;
+		io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
+		io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
+		io.KeyMap[ImGuiKey_Space] = GLFW_KEY_SPACE;
+		io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
+		io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
+		io.KeyMap[ImGuiKey_KeyPadEnter] = GLFW_KEY_KP_ENTER;
+
+		const int32_t INITIAL_VERTEX_COUNT = 512;
+		for(int32_t i = 0; i < swap_chain_images.size(); i++) {
+			imgui_vertex_buffers.push_back(VK_NULL_HANDLE);
+			imgui_vertex_buffer_device_memories.push_back(VK_NULL_HANDLE);
+			imgui_vertex_count.push_back(INITIAL_VERTEX_COUNT);
+			create_buffer(INITIAL_VERTEX_COUNT * sizeof(ImDrawVert), VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_vertex_buffers.at(i), imgui_vertex_buffer_device_memories.at(i));
+
+			imgui_index_buffers.push_back(VK_NULL_HANDLE);
+			imgui_index_buffer_device_memories.push_back(VK_NULL_HANDLE);
+			imgui_index_count.push_back(0);
+			create_buffer(INITIAL_VERTEX_COUNT * sizeof(ImDrawIdx), VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_index_buffers.at(i), imgui_index_buffer_device_memories.at(i));
+		}
+	}
+
+	void wm_vulkan_rendering_system::create_imgui_font_image() {
+		ImGuiIO& io = ImGui::GetIO();
+		io.DisplaySize = ImVec2(swap_chain_extent.width, swap_chain_extent.height);
+		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+
+		unsigned char* font_data;
+		int32_t font_texture_width;
+		int32_t font_texture_height;
+		io.Fonts->GetTexDataAsRGBA32(&font_data, &font_texture_width, &font_texture_height);
+		VkDeviceSize size = font_texture_width * font_texture_height * 4 * sizeof(char);
+
+		VkBuffer staging_buffer;
+		VkDeviceMemory staging_buffer_device_memory;
+		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_device_memory);
+
+		void* data;
+		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
+		memcpy(data, font_data, static_cast<size_t>(size));
+		vkUnmapMemory(device, staging_buffer_device_memory);
+
+		create_image(glm::ivec2(font_texture_width, font_texture_height), 1, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, VkFormat::VK_FORMAT_R8G8B8A8_UNORM, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, font_image, font_image_device_memory);
+		font_image_view = create_image_view(font_image, VkFormat::VK_FORMAT_R8G8B8A8_UNORM, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
+		transition_image_layout(font_image, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
+		copy_buffer_to_image(staging_buffer, font_image, font_texture_width, font_texture_height);
+		transition_image_layout(font_image, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
+
+		vkDestroyBuffer(device, staging_buffer, nullptr);
+		vkFreeMemory(device, staging_buffer_device_memory, nullptr);
+
+		create_sampler(1, 0.0f, font_sampler);
+	}
+
+	void wm_vulkan_rendering_system::create_imgui_descriptor_sets() {
+		VkDescriptorPoolSize descriptor_pool_size {};
+		descriptor_pool_size.type = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptor_pool_size.descriptorCount = 1;
+		std::array<VkDescriptorPoolSize, 1> descriptor_pool_sizes = {descriptor_pool_size};
+
+		VkDescriptorPoolCreateInfo descriptor_pool_create_info {};
+		descriptor_pool_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		descriptor_pool_create_info.maxSets = static_cast<uint32_t>(swap_chain_images.size());
+		descriptor_pool_create_info.poolSizeCount = static_cast<uint32_t>(descriptor_pool_sizes.size());
+		descriptor_pool_create_info.pPoolSizes = descriptor_pool_sizes.data();
+
+		WM_ASSERT_VULKAN(vkCreateDescriptorPool(device, &descriptor_pool_create_info, nullptr, &imgui_descriptor_pool));
+
+		VkDescriptorSetLayoutBinding descriptor_set_layout_binding {};
+		descriptor_set_layout_binding.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptor_set_layout_binding.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+		descriptor_set_layout_binding.binding = 0;
+		descriptor_set_layout_binding.descriptorCount = 1;
+		std::array<VkDescriptorSetLayoutBinding, 1> descriptor_set_layout_bindings = {descriptor_set_layout_binding};
+
+		VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info {};
+		descriptor_set_layout_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptor_set_layout_create_info.bindingCount = static_cast<uint32_t>(descriptor_set_layout_bindings.size());
+		descriptor_set_layout_create_info.pBindings = descriptor_set_layout_bindings.data();
+
+		WM_ASSERT_VULKAN(vkCreateDescriptorSetLayout(device, &descriptor_set_layout_create_info, nullptr, &imgui_descriptor_set_layout));
+
+		std::vector<VkDescriptorSetLayout> descriptor_set_layouts(swap_chain_images.size(), imgui_descriptor_set_layout);
+		VkDescriptorSetAllocateInfo descriptor_set_allocate_info {};
+		descriptor_set_allocate_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descriptor_set_allocate_info.descriptorPool = imgui_descriptor_pool;
+		descriptor_set_allocate_info.descriptorSetCount = static_cast<uint32_t>(descriptor_set_layouts.size());
+		descriptor_set_allocate_info.pSetLayouts = descriptor_set_layouts.data();
+
+		imgui_descriptor_sets.resize(swap_chain_images.size());
+		WM_ASSERT_VULKAN(vkAllocateDescriptorSets(device, &descriptor_set_allocate_info, imgui_descriptor_sets.data()));
+
+		for(size_t i = 0; i < swap_chain_images.size(); i++) {
+			VkDescriptorImageInfo descriptor_image_info {};
+			descriptor_image_info.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			descriptor_image_info.imageView = font_image_view;
+			descriptor_image_info.sampler = font_sampler;
+			std::array<VkDescriptorImageInfo, 1> descriptor_image_infos = {descriptor_image_info};
+
+			VkWriteDescriptorSet write_descriptor_set {};
+			write_descriptor_set.sType = VkStructureType::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			write_descriptor_set.dstSet = imgui_descriptor_sets.at(i);
+			write_descriptor_set.dstBinding = 0;
+			write_descriptor_set.dstArrayElement = 0;
+			write_descriptor_set.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			write_descriptor_set.descriptorCount = static_cast<uint32_t>(descriptor_image_infos.size());
+			write_descriptor_set.pImageInfo = descriptor_image_infos.data();
+
+			std::array<VkWriteDescriptorSet, 1> write_descriptor_sets = {write_descriptor_set};
+
+			vkUpdateDescriptorSets(device, static_cast<uint32_t>(write_descriptor_sets.size()), write_descriptor_sets.data(), 0, nullptr);
+		}
+	}
+
+	void wm_vulkan_rendering_system::create_imgui_pipeline() {
+		VkPushConstantRange push_constant_range {};
+		push_constant_range.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+		push_constant_range.offset = 0;
+		push_constant_range.size = sizeof(push_constatnt_block);
+		std::array<VkPushConstantRange, 1> push_constant_ranges = {push_constant_range};
+
+		std::array<VkDescriptorSetLayout, 1> descriptor_set_layouts = {imgui_descriptor_set_layout};
+
+		VkPipelineLayoutCreateInfo pipeline_layout_create_info {};
+		pipeline_layout_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeline_layout_create_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
+		pipeline_layout_create_info.pSetLayouts = descriptor_set_layouts.data();
+		pipeline_layout_create_info.pushConstantRangeCount = static_cast<uint32_t>(push_constant_ranges.size());
+		pipeline_layout_create_info.pPushConstantRanges = push_constant_ranges.data();
+		WM_ASSERT_VULKAN(vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &imgui_pipeline_layout));
+
+		VkPipelineInputAssemblyStateCreateInfo pipeline_input_assembly_state_create_info {};
+		pipeline_input_assembly_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		pipeline_input_assembly_state_create_info.topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+		VkPipelineRasterizationStateCreateInfo pipeline_rasterization_state_create_info {};
+		pipeline_rasterization_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		pipeline_rasterization_state_create_info.polygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
+		pipeline_rasterization_state_create_info.cullMode = VkCullModeFlagBits::VK_CULL_MODE_NONE;
+		pipeline_rasterization_state_create_info.frontFace = VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		pipeline_rasterization_state_create_info.lineWidth = 1.0f;
+
+		VkPipelineColorBlendAttachmentState pipeline_color_blend_attachment_state {};
+		pipeline_color_blend_attachment_state.blendEnable = VK_TRUE;
+		pipeline_color_blend_attachment_state.colorWriteMask = VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT | VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT | VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT | VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
+		pipeline_color_blend_attachment_state.srcColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_SRC_ALPHA;
+		pipeline_color_blend_attachment_state.dstColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		pipeline_color_blend_attachment_state.colorBlendOp = VkBlendOp::VK_BLEND_OP_ADD;
+		pipeline_color_blend_attachment_state.srcAlphaBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		pipeline_color_blend_attachment_state.dstAlphaBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ZERO;
+		pipeline_color_blend_attachment_state.alphaBlendOp = VkBlendOp::VK_BLEND_OP_ADD;
+		std::array<VkPipelineColorBlendAttachmentState, 1> pipeline_color_blend_attachment_states = {pipeline_color_blend_attachment_state};
+
+		VkPipelineColorBlendStateCreateInfo pipeline_color_blend_state_create_info {};
+		pipeline_color_blend_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		pipeline_color_blend_state_create_info.attachmentCount = static_cast<uint32_t>(pipeline_color_blend_attachment_states.size());
+		pipeline_color_blend_state_create_info.pAttachments = pipeline_color_blend_attachment_states.data();
+
+		VkPipelineDepthStencilStateCreateInfo pipeline_depth_stencil_state_create_info {};
+		pipeline_depth_stencil_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		pipeline_depth_stencil_state_create_info.depthTestEnable = VK_FALSE;
+		pipeline_depth_stencil_state_create_info.depthWriteEnable = VK_FALSE;
+		pipeline_depth_stencil_state_create_info.depthCompareOp = VkCompareOp::VK_COMPARE_OP_LESS_OR_EQUAL;
+		pipeline_depth_stencil_state_create_info.back.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
+
+		VkPipelineViewportStateCreateInfo pipeline_viewport_state_create_info {};
+		pipeline_viewport_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		pipeline_viewport_state_create_info.viewportCount = 1;
+		pipeline_viewport_state_create_info.scissorCount = 1;
+
+		std::array<VkDynamicState, 2> dynamic_states = {VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT, VkDynamicState::VK_DYNAMIC_STATE_SCISSOR};
+
+		VkPipelineDynamicStateCreateInfo pipeline_dynamic_state_create_info {};
+		pipeline_dynamic_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		pipeline_dynamic_state_create_info.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
+		pipeline_dynamic_state_create_info.pDynamicStates = dynamic_states.data();
+
+		VkPipelineMultisampleStateCreateInfo pipeline_multisample_state_create_info {};
+		pipeline_multisample_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		pipeline_multisample_state_create_info.rasterizationSamples = msaa_sample_count;
+
+		auto verteex_shader_code = read_file("res/shader/imgui.vert.spv");
+		WM_LOG_INFO_2("ImGui vertex shader loaded");
+		auto fragment_shader_code = read_file("res/shader/imgui.frag.spv");
+		WM_LOG_INFO_2("ImGui fragment shader loaded");
+		auto vertex_shader_module = create_shader_module(verteex_shader_code);
+		auto fragment_shader_module = create_shader_module(fragment_shader_code);
+
+		VkPipelineShaderStageCreateInfo pipeline_vertex_shader_stage_create_info {};
+		pipeline_vertex_shader_stage_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		pipeline_vertex_shader_stage_create_info.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+		pipeline_vertex_shader_stage_create_info.module = vertex_shader_module;
+		pipeline_vertex_shader_stage_create_info.pName = "main";
+
+		VkPipelineShaderStageCreateInfo pipeline_fragment_shader_stage_create_info {};
+		pipeline_fragment_shader_stage_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		pipeline_fragment_shader_stage_create_info.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+		pipeline_fragment_shader_stage_create_info.module = fragment_shader_module;
+		pipeline_fragment_shader_stage_create_info.pName = "main";
+
+		std::array<VkPipelineShaderStageCreateInfo, 2> pipeline_shader_stage_create_infos = {pipeline_vertex_shader_stage_create_info, pipeline_fragment_shader_stage_create_info};
+
+		VkVertexInputBindingDescription binding_description {};
+		binding_description.binding = 0;
+		binding_description.stride = sizeof(ImDrawVert);
+		binding_description.inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX;
+		std::array<VkVertexInputBindingDescription, 1> binding_descriptions = {binding_description};
+
+		VkVertexInputAttributeDescription position_attribute_description;
+		position_attribute_description.binding = 0;
+		position_attribute_description.location = 0;
+		position_attribute_description.format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
+		position_attribute_description.offset = offsetof(ImDrawVert, pos);
+
+		VkVertexInputAttributeDescription color_attribute_description;
+		color_attribute_description.binding = 0;
+		color_attribute_description.location = 1;
+		color_attribute_description.format = VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
+		color_attribute_description.offset = offsetof(ImDrawVert, col);
+
+		VkVertexInputAttributeDescription texture_coordinates_attribute_description;
+		texture_coordinates_attribute_description.binding = 0;
+		texture_coordinates_attribute_description.location = 2;
+		texture_coordinates_attribute_description.format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
+		texture_coordinates_attribute_description.offset = offsetof(ImDrawVert, uv);
+
+		std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions {position_attribute_description, texture_coordinates_attribute_description, color_attribute_description};
+
+		VkPipelineVertexInputStateCreateInfo pipeline_vertex_input_state_create_info {};
+		pipeline_vertex_input_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		pipeline_vertex_input_state_create_info.vertexBindingDescriptionCount = static_cast<uint32_t>(binding_descriptions.size());
+		pipeline_vertex_input_state_create_info.pVertexBindingDescriptions = binding_descriptions.data();
+		pipeline_vertex_input_state_create_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
+		pipeline_vertex_input_state_create_info.pVertexAttributeDescriptions = attribute_descriptions.data();
+
+		VkGraphicsPipelineCreateInfo graphics_pipeline_create_info {};
+		graphics_pipeline_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		graphics_pipeline_create_info.stageCount = static_cast<uint32_t>(pipeline_shader_stage_create_infos.size());
+		graphics_pipeline_create_info.pStages = pipeline_shader_stage_create_infos.data();
+		graphics_pipeline_create_info.pVertexInputState = &pipeline_vertex_input_state_create_info;
+		graphics_pipeline_create_info.pInputAssemblyState = &pipeline_input_assembly_state_create_info;
+		graphics_pipeline_create_info.pViewportState = &pipeline_viewport_state_create_info;
+		graphics_pipeline_create_info.pDynamicState = &pipeline_dynamic_state_create_info;
+		graphics_pipeline_create_info.pRasterizationState = &pipeline_rasterization_state_create_info;
+		graphics_pipeline_create_info.pMultisampleState = &pipeline_multisample_state_create_info;
+		graphics_pipeline_create_info.pColorBlendState = &pipeline_color_blend_state_create_info;
+		graphics_pipeline_create_info.layout = imgui_pipeline_layout;
+		graphics_pipeline_create_info.renderPass = render_pass;
+		graphics_pipeline_create_info.subpass = 0;
+		graphics_pipeline_create_info.pDepthStencilState = &pipeline_depth_stencil_state_create_info;
+
+		std::array<VkGraphicsPipelineCreateInfo, 1> graphics_pipeline_create_infos = {graphics_pipeline_create_info};
+
+		WM_ASSERT_VULKAN(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphics_pipeline_create_infos.size()), graphics_pipeline_create_infos.data(), nullptr, &imgui_pipeline));
+
+		vkDestroyShaderModule(device, vertex_shader_module, nullptr);
+		vkDestroyShaderModule(device, fragment_shader_module, nullptr);
+	}
+
+	void wm_vulkan_rendering_system::prepare_imgui() {
+		ImGuiIO& io = ImGui::GetIO();
+
+		io.DisplaySize = ImVec2(swap_chain_extent.width, swap_chain_extent.height);
+		io.DeltaTime = engine::get_time_system()->get_frame_time() / 1000.0f;
+
+		auto input_handler = engine::get_window_system()->get_input_handler();
+
+		glm::dvec2 mouse_position = engine::get_window_system()->get_input_handler()->get_mouse_position().get_position();
+		io.MousePos = ImVec2(mouse_position.x, mouse_position.y);
+		io.MouseDown[0] = input_handler->get_mouse_button_state(mouse_button::button_left).is_down();
+		io.MouseDown[1] = input_handler->get_mouse_button_state(mouse_button::button_right).is_down();
+		io.MouseDown[2] = input_handler->get_mouse_button_state(mouse_button::button_middle).is_down();
+		io.MouseDown[3] = input_handler->get_mouse_button_state(mouse_button::button_4).is_down();
+		io.MouseDown[4] = input_handler->get_mouse_button_state(mouse_button::button_5).is_down();
+		io.MouseWheelH = mouse_scroll.x;
+		io.MouseWheel = mouse_scroll.y;
+		io.KeyCtrl = input_handler->get_keyboard_button_state(keyboard_button::button_left_control).is_down() || input_handler->get_keyboard_button_state(keyboard_button::button_right_control).is_down();
+		io.KeyShift = input_handler->get_keyboard_button_state(keyboard_button::button_left_shift).is_down() || input_handler->get_keyboard_button_state(keyboard_button::button_right_shift).is_down();
+		io.KeyAlt = input_handler->get_keyboard_button_state(keyboard_button::button_left_alt).is_down() || input_handler->get_keyboard_button_state(keyboard_button::button_right_alt).is_down();
+		io.KeySuper = input_handler->get_keyboard_button_state(keyboard_button::button_left_super).is_down() || input_handler->get_keyboard_button_state(keyboard_button::button_right_super).is_down();
+		for(auto button : utility::get_keyboard_buttons()) {
+			io.KeysDown[static_cast<uint32_t>(button)] = input_handler->get_keyboard_button_state(button).is_down();
+		}
+
+		const float AXIS_TRESHOLD = 0.3f; //TODO
+		for(int32_t i = 0; i < input_handler->get_max_gamepad_count(); i++) {
+			if(input_handler->is_gamepad_available(i)) {
+				//buttons
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_Activate] = input_handler->get_gamepad_button_state(i, gamepad_button::button_a).is_down() ? 1.0f : 0.0f;
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_Cancel] = input_handler->get_gamepad_button_state(i, gamepad_button::button_b).is_down() ? 1.0f : 0.0f;
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_Menu] = input_handler->get_gamepad_button_state(i, gamepad_button::button_x).is_down() ? 1.0f : 0.0f;
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_Input] = input_handler->get_gamepad_button_state(i, gamepad_button::button_y).is_down() ? 1.0f : 0.0f;
+				//dpad
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_DpadLeft] = input_handler->get_gamepad_button_state(i, gamepad_button::button_dpad_left).is_down() ? 1.0f : 0.0f;
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_DpadRight] = input_handler->get_gamepad_button_state(i, gamepad_button::button_dpad_right).is_down() ? 1.0f : 0.0f;
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_DpadUp] = input_handler->get_gamepad_button_state(i, gamepad_button::button_dpad_up).is_down() ? 1.0f : 0.0f;
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_DpadDown] = input_handler->get_gamepad_button_state(i, gamepad_button::button_dpad_down).is_down() ? 1.0f : 0.0f;
+				//bumpers
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_FocusPrev] = input_handler->get_gamepad_button_state(i, gamepad_button::button_left_bumper).is_down() ? 1.0f : 0.0f;
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_FocusNext] = input_handler->get_gamepad_button_state(i, gamepad_button::button_right_bumper).is_down() ? 1.0f : 0.0f;
+				//triggers
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_TweakSlow] = input_handler->get_gamepad_axis_state(i, gamepad_axis::axis_left_trigger).get_value();
+				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_TweakFast] = input_handler->get_gamepad_axis_state(i, gamepad_axis::axis_right_trigger).get_value();
+				//axes
+				float y_axis = input_handler->get_gamepad_axis_state(i, gamepad_axis::axis_left_y).get_value();
+				io.NavInputs[ImGuiNavInput_LStickUp] = std::abs(y_axis) > AXIS_TRESHOLD ? -y_axis : 0.0f;
+				io.NavInputs[ImGuiNavInput_LStickDown] = std::abs(y_axis) > AXIS_TRESHOLD ? y_axis : 0.0f;
+				float x_axis = input_handler->get_gamepad_axis_state(i, gamepad_axis::axis_left_x).get_value();
+				io.NavInputs[ImGuiNavInput_LStickRight] = std::abs(x_axis) > AXIS_TRESHOLD ? x_axis : 0.0f;
+				io.NavInputs[ImGuiNavInput_LStickLeft] = std::abs(x_axis) > AXIS_TRESHOLD ? -x_axis : 0.0f;
+				break;
+			}
+		}
+
+		mouse_scroll = glm::dvec2(0.0);
+	}
+
+	void wm_vulkan_rendering_system::before_draw_imgui(const uint32_t image_index) {
+		ImGui::NewFrame();
+
+		ImVec2 position {20.0f, 50.0f};
+		ImGui::SetNextWindowPos(position);
+		ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_::ImGuiWindowFlags_NoNav);
+		ImGui::Text((std::to_string(engine::get_time_system()->get_fps()) + " FPS").c_str());
+		ImGui::Text((std::to_string(engine::get_time_system()->get_frame_time()) + " ms").c_str());
+		ImGui::Text((std::string("Resolution: ") + std::to_string(swap_chain_extent.width) + " x " + std::to_string(swap_chain_extent.height) + " px").c_str());
+		ImGui::End();
+		ImGui::Render();
+
+		auto draw_data = ImGui::GetDrawData();
+
+		if(draw_data->TotalVtxCount > 0) {
+			VkDeviceSize buffer_size = draw_data->TotalVtxCount * sizeof(ImDrawVert);
+			if(imgui_vertex_count.at(image_index) < draw_data->TotalVtxCount) {
+				vkDestroyBuffer(device, imgui_vertex_buffers.at(image_index), nullptr);
+				vkFreeMemory(device, imgui_vertex_buffer_device_memories.at(image_index), nullptr);
+				create_buffer(buffer_size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_vertex_buffers.at(image_index), imgui_vertex_buffer_device_memories.at(image_index));
+			}
+			imgui_vertex_count.at(image_index) = draw_data->TotalVtxCount;
+			void* data;
+			WM_ASSERT_VULKAN(vkMapMemory(device, imgui_vertex_buffer_device_memories.at(image_index), 0, buffer_size, 0, &data));
+			ImDrawVert* vertex_data_address = static_cast<ImDrawVert*>(data);
+			for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
+				const ImDrawList* cmd_list = draw_data->CmdLists[i];
+				memcpy(vertex_data_address, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
+				vertex_data_address += cmd_list->VtxBuffer.Size;
+			}
+			vkUnmapMemory(device, imgui_vertex_buffer_device_memories.at(image_index));
+		}
+
+		if(draw_data->TotalIdxCount > 0) {
+			VkDeviceSize buffer_size = draw_data->TotalIdxCount * sizeof(ImDrawIdx);
+			if(imgui_index_count.at(image_index) < draw_data->TotalIdxCount) {
+				vkDestroyBuffer(device, imgui_index_buffers.at(image_index), nullptr);
+				vkFreeMemory(device, imgui_index_buffer_device_memories.at(image_index), nullptr);
+				create_buffer(buffer_size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, imgui_index_buffers.at(image_index), imgui_index_buffer_device_memories.at(image_index));
+			}
+			imgui_index_count.at(image_index) = draw_data->TotalIdxCount;
+			void* data;
+			WM_ASSERT_VULKAN(vkMapMemory(device, imgui_index_buffer_device_memories.at(image_index), 0, buffer_size, 0, &data));
+			ImDrawIdx* index_data_address = static_cast<ImDrawIdx*>(data);
+			for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
+				const ImDrawList* cmd_list = draw_data->CmdLists[i];
+				memcpy(index_data_address, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+				index_data_address += cmd_list->IdxBuffer.Size;
+			}
+			vkUnmapMemory(device, imgui_index_buffer_device_memories.at(image_index));
+		}
+	}
+
+	void wm_vulkan_rendering_system::draw_imgui(const uint32_t image_index) {
+		ImGuiIO& io = ImGui::GetIO();
+
+		vkCmdBindDescriptorSets(command_buffers.at(image_index), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, imgui_pipeline_layout, 0, 1, &imgui_descriptor_sets.at(image_index), 0, nullptr);
+		vkCmdBindPipeline(command_buffers.at(image_index), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, imgui_pipeline);
+
+		VkViewport viewport {};
+		viewport.width = io.DisplaySize.x;
+		viewport.height = io.DisplaySize.y;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(command_buffers.at(image_index), 0, 1, &viewport);
+
+		imgui_push_constants.scale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
+		imgui_push_constants.translate = glm::vec2(-1.0f);
+		vkCmdPushConstants(command_buffers.at(image_index), imgui_pipeline_layout, VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constatnt_block), &imgui_push_constants);
+
+		auto draw_data = ImGui::GetDrawData();
+		int32_t vertex_offset = 0;
+		int32_t index_offset = 0;
+
+		if(draw_data->CmdListsCount > 0) {
+			VkDeviceSize offsets[1] = {0};
+			vkCmdBindVertexBuffers(command_buffers.at(image_index), 0, 1, &imgui_vertex_buffers.at(image_index), offsets);
+			vkCmdBindIndexBuffer(command_buffers.at(image_index), imgui_index_buffers.at(image_index), 0, VkIndexType::VK_INDEX_TYPE_UINT16);
+
+			for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
+				auto cmd_list = draw_data->CmdLists[i];
+				for(int32_t j = 0; j < cmd_list->CmdBuffer.Size; j++) {
+					auto pcmd = &cmd_list->CmdBuffer[j];
+					VkRect2D scissor_rectangle;
+					scissor_rectangle.offset.x = std::max((int32_t) (pcmd->ClipRect.x), 0);
+					scissor_rectangle.offset.y = std::max((int32_t) (pcmd->ClipRect.y), 0);
+					scissor_rectangle.extent.width = (uint32_t) (pcmd->ClipRect.z - pcmd->ClipRect.x);
+					scissor_rectangle.extent.height = (uint32_t) (pcmd->ClipRect.w - pcmd->ClipRect.y);
+					vkCmdSetScissor(command_buffers.at(image_index), 0, 1, &scissor_rectangle);
+					vkCmdDrawIndexed(command_buffers.at(image_index), pcmd->ElemCount, 1, index_offset, vertex_offset, 0);
+					index_offset += pcmd->ElemCount;
+				}
+				vertex_offset += cmd_list->VtxBuffer.Size;
+			}
+		}
+	}
+
+	void wm_vulkan_rendering_system::destroy_imgui() {
+		ImGui::DestroyContext();
+		for(int32_t i = 0; i < swap_chain_images.size(); i++) {
+			vkDestroyBuffer(device, imgui_vertex_buffers.at(i), nullptr);
+			vkFreeMemory(device, imgui_vertex_buffer_device_memories.at(i), nullptr);
+			vkDestroyBuffer(device, imgui_index_buffers.at(i), nullptr);
+			vkFreeMemory(device, imgui_index_buffer_device_memories.at(i), nullptr);
+		}
+		vkDestroySampler(device, font_sampler, nullptr);
+		vkDestroyImageView(device, font_image_view, nullptr);
+		vkDestroyImage(device, font_image, nullptr);
+		vkFreeMemory(device, font_image_device_memory, nullptr);
+		vkDestroyPipeline(device, imgui_pipeline, nullptr);
+		vkDestroyPipelineLayout(device, imgui_pipeline_layout, nullptr);
+		vkDestroyDescriptorPool(device, imgui_descriptor_pool, nullptr);
+		vkDestroyDescriptorSetLayout(device, imgui_descriptor_set_layout, nullptr);
+
+		WM_LOG_INFO_2("ImGui destroyed");
+	}
+
 	//drawing
 	void wm_vulkan_rendering_system::update() {
 	#ifdef WM_PLATFORM_LINUX
@@ -1457,6 +1978,8 @@ namespace wm {
 		if(engine::get_window_system()->is_closing() || minimized) {
 			return;
 		}
+
+		prepare_imgui();
 
 		frame_index = engine::get_time_system()->get_frame_index() % MAX_FRAMES_IN_FLIGHT;
 		uint32_t image_index;
@@ -1480,6 +2003,7 @@ namespace wm {
 		std::array<VkSemaphore, 1> rendering_is_finished_semaphores = {rendering_is_finished.at(frame_index)};
 
 		update_uniform_buffer(image_index);
+		update_command_buffer(image_index);
 
 		VkSubmitInfo submit_info {};
 		submit_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1516,16 +2040,22 @@ namespace wm {
 		}
 
 		WM_LOG_INFO_3("vulkan rendering system updated");
-}
+	}
 
 	wm_vulkan_rendering_system::~wm_vulkan_rendering_system() {
 		vkDeviceWaitIdle(device);
+
+		destroy_imgui();
 
 		for(int32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(device, image_is_available.at(i), nullptr);
 			vkDestroySemaphore(device, rendering_is_finished.at(i), nullptr);
 			vkDestroyFence(device, in_flight.at(i), nullptr);
 		}
+
+		vkDestroyPipeline(device, pipeline, nullptr);
+		vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
+		WM_LOG_INFO_2("Vulkan graphics pipeline destroyed");
 
 		cleanup_swap_chain();
 

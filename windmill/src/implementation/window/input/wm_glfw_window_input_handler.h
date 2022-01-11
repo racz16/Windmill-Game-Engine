@@ -36,12 +36,13 @@ namespace wm {
 		bool is_mouse_over_window() const override;
 		button_state get_mouse_button_state(const mouse_button button) const override;
 		position_state get_mouse_position() const override;
+		int32_t get_max_gamepad_count() const override;
 		bool is_gamepad_available(const int32_t gamepad_index) const override;
 		std::string get_gamepad_name(const int32_t gamepad_index) const override;
 		axis_state get_gamepad_axis_state(const int32_t gamepad_index, gamepad_axis axis) const override;
 		button_state get_gamepad_button_state(const int32_t gamepad_index, gamepad_button button) const override;
 		std::string get_clipboard_text() const override;
-		void set_clipboard_text(const std::string text) const override;
+		void set_clipboard_text(const std::string& text) const override;
 	};
 
 }

@@ -11,8 +11,6 @@ elseif(GNU)
 	add_compile_options("-ffast-math")
 endif()
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
@@ -20,7 +18,7 @@ set(WM_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(BUILD_SHARED_LIBS ON)
 option(WM_BUILD_EXAMPLES "Build the Windmill example programs" ON)
 
-#Assimp
+#ASSIMP
 set(WM_LIB_PATH_ASSIMP "${WM_SOURCE_DIR}/lib/assimp")
 set(ASSIMP_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}" CACHE STRING "" FORCE)
 set(ASSIMP_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}" CACHE STRING "" FORCE)
@@ -45,6 +43,9 @@ add_subdirectory("${WM_LIB_PATH_GLM}")
 
 #STB
 set(WM_LIB_PATH_STB "${WM_SOURCE_DIR}/lib/stb")
+
+#IMGUI
+set(WM_LIB_PATH_IMGUI "${WM_SOURCE_DIR}/lib/imgui")
 
 #windmill
 add_subdirectory("windmill")
