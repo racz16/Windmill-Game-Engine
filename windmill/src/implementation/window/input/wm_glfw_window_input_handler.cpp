@@ -110,6 +110,10 @@ namespace wm {
 		return mouse_position;
 	}
 
+	int32_t wm_glfw_window_input_handler::get_max_gamepad_count() const {
+		return GLFW_JOYSTICK_LAST + 1;
+	}
+
 	bool wm_glfw_window_input_handler::is_gamepad_available(const int32_t gamepad_index) const {
 		return glfwJoystickIsGamepad(gamepad_index) == GLFW_TRUE;
 	}

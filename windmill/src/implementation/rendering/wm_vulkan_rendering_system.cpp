@@ -4,6 +4,7 @@
 #include "core/engine.h"
 #include "core/utility.h"
 #include "defines/log_defines.h"
+#include "defines/general_defines.h"
 #include "window/event/window_framebuffer_size_event.h"
 #include "window/event/mouse_scroll_event.h"
 #include "window/event/keyboard_character_event.h"
@@ -289,6 +290,16 @@ namespace wm {
 
 		WM_ASSERT_VULKAN(vkCreateDevice(physical_device, &device_create_info, nullptr, &device));
 		WM_LOG_INFO_2("Vulkan device created");
+
+	#ifdef WM_BUILD_DEBUG
+		VkDebugUtilsObjectNameInfoEXT debug_utils_object_name_info {};
+		debug_utils_object_name_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		debug_utils_object_name_info.objectHandle = reinterpret_cast<uint64_t>(device);
+		debug_utils_object_name_info.objectType = VkObjectType::VK_OBJECT_TYPE_DEVICE;
+		debug_utils_object_name_info.pObjectName = "Logical device";
+		auto vkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
+		vkSetDebugUtilsObjectNameEXT(device, &debug_utils_object_name_info);
+	#endif
 
 		vkGetDeviceQueue(device, graphics_queue_family_index, 0, &graphics_queue);
 		vkGetDeviceQueue(device, presentation_queue_family_index, 0, &presentation_queue);
@@ -1807,9 +1818,8 @@ namespace wm {
 			io.KeysDown[static_cast<uint32_t>(button)] = input_handler->get_keyboard_button_state(button).is_down();
 		}
 
-		const int32_t MAX_GAMEPAD_COUNT = 16; //TODO
 		const float AXIS_TRESHOLD = 0.3f; //TODO
-		for(int32_t i = 0; i < MAX_GAMEPAD_COUNT; i++) {
+		for(int32_t i = 0; i < input_handler->get_max_gamepad_count(); i++) {
 			if(input_handler->is_gamepad_available(i)) {
 				//buttons
 				io.NavInputs[ImGuiNavInput_::ImGuiNavInput_Activate] = input_handler->get_gamepad_button_state(i, gamepad_button::button_a).is_down() ? 1.0f : 0.0f;
@@ -1834,6 +1844,7 @@ namespace wm {
 				float x_axis = input_handler->get_gamepad_axis_state(i, gamepad_axis::axis_left_x).get_value();
 				io.NavInputs[ImGuiNavInput_LStickRight] = std::abs(x_axis) > AXIS_TRESHOLD ? x_axis : 0.0f;
 				io.NavInputs[ImGuiNavInput_LStickLeft] = std::abs(x_axis) > AXIS_TRESHOLD ? -x_axis : 0.0f;
+				break;
 			}
 		}
 
