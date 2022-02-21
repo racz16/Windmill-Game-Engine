@@ -1,6 +1,7 @@
 #include "application.h"
 #include "engine.h"
 #include "../defines/log_defines.h"
+#include "../ptr/array_allocator.h"
 
 namespace wm {
 
@@ -95,6 +96,7 @@ namespace wm {
 
 	void application::destroy() {
 		engine::destroy();
+		array_allocator::destroy();
 	}
 
 }

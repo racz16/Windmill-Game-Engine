@@ -8,53 +8,62 @@ namespace wm {
 	template<class T>
 	class base_ptr {
 	protected:
-		T* raw_pointer;
 		int32_t id;
 
+		T* get_raw_pointer(ptr_meta& meta) const {
+			return static_cast<T*>(meta.get_raw_pointer());
+		}
+
+		bool is_valid(ptr_meta& meta) const {
+			return meta.get_raw_pointer() != nullptr && meta.is_valid();
+		}
+
 		void destroy() {
-			if(is_valid()) {
-				delete raw_pointer;
-				ptr_meta::get_meta(id).invalidate();
+			auto& meta = ptr_meta::get(id);
+			if(is_valid(meta)) {
+				if(meta.get_array_index() == -1) {
+					delete get_raw_pointer(meta);
+					meta.invalidate();
+					meta.set_raw_pointer(nullptr);
+				} else {
+					meta.get_array_destroy_callback()();
+				}
 			}
 		}
 
 	public:
 
-		base_ptr<T>(T* const raw_pointer): raw_pointer(raw_pointer), id(ptr_meta::get_next_id()) {
-			const ptr_meta pm;
-			ptr_meta::add_meta(id, pm);
+		base_ptr<T>(T* const raw_pointer) {
+			id = ptr_meta::add(raw_pointer);
 		}
 
-		base_ptr<T>(T* const raw_pointer, const int32_t id) : raw_pointer(raw_pointer), id(id) {
-			ptr_meta::get_meta(id).increase_reference_count();
+		base_ptr<T>(const int32_t id): id(id) {
+			ptr_meta::get(id).increase_reference_count();
 		}
 
-		base_ptr<T>(const base_ptr<T>& other_ptr) {
-			raw_pointer = other_ptr.raw_pointer;
-			id = other_ptr.id;
-			ptr_meta::get_meta(id).increase_reference_count();
+		base_ptr<T>(const base_ptr<T>& other_ptr): id(other_ptr.id) {
+			ptr_meta::get(id).increase_reference_count();
 		}
 
 		base_ptr<T>& operator=(const base_ptr<T>& other_ptr) {
-			auto& pm = ptr_meta::get_meta(id);
+			auto& pm = ptr_meta::get(id);
 			pm.decrease_reference_count();
 			if(pm.get_reference_count() <= 0 && id != other_ptr.id) {
 				destroy();
-				ptr_meta::remove_meta(id);
+				ptr_meta::remove(id);
 			}
 
-			raw_pointer = other_ptr.raw_pointer;
 			id = other_ptr.id;
 
-			auto& pm2 = ptr_meta::get_meta(id);
-			pm2.increase_reference_count();
+			ptr_meta::get(id).increase_reference_count();
 
 			return *this;
 		}
 
 		T* operator->() const {
-			WM_ASSERT(is_valid());
-			return raw_pointer;
+			auto& meta = ptr_meta::get(id);
+			WM_ASSERT(is_valid(meta));
+			return get_raw_pointer(meta);
 		}
 
 		template<class X>
@@ -72,19 +81,20 @@ namespace wm {
 		}
 
 		int32_t get_reference_count() const {
-			return ptr_meta::get_meta(id).get_reference_count();
+			return ptr_meta::get(id).get_reference_count();
 		}
 
-		int32_t is_valid() const {
-			return raw_pointer != nullptr && ptr_meta::get_meta(id).is_valid();
+		bool is_valid() const {
+			auto& meta = ptr_meta::get(id);
+			return is_valid(meta);
 		}
 
 		~base_ptr<T>() {
-			auto& pm = ptr_meta::get_meta(id);
+			auto& pm = ptr_meta::get(id);
 			pm.decrease_reference_count();
 			if(pm.get_reference_count() <= 0) {
 				destroy();
-				ptr_meta::remove_meta(id);
+				ptr_meta::remove(id);
 			}
 		}
 

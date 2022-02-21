@@ -43,10 +43,12 @@
 //
 //PTR
 //
+#include "../windmill/src/interface/ptr/array_allocator.h"
 #include "../windmill/src/interface/ptr/base_ptr.h"
 #include "../windmill/src/interface/ptr/ptr.h"
 #include "../windmill/src/interface/ptr/ptr_meta.h"
 #include "../windmill/src/interface/ptr/ptr_view.h"
+#include "../windmill/src/interface/ptr/vector_array.h"
 //
 //RENDERING
 //

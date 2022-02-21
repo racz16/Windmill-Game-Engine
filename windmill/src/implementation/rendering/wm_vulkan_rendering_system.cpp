@@ -1591,7 +1591,7 @@ namespace wm {
 	void wm_vulkan_rendering_system::create_imgui_descriptor_sets() {
 		VkDescriptorPoolSize descriptor_pool_size {};
 		descriptor_pool_size.type = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptor_pool_size.descriptorCount = 1;
+		descriptor_pool_size.descriptorCount = static_cast<uint32_t>(swap_chain_images.size());
 		std::array<VkDescriptorPoolSize, 1> descriptor_pool_sizes = {descriptor_pool_size};
 
 		VkDescriptorPoolCreateInfo descriptor_pool_create_info {};
@@ -1922,14 +1922,14 @@ namespace wm {
 		vkCmdPushConstants(command_buffers.at(image_index), imgui_pipeline_layout, VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constatnt_block), &imgui_push_constants);
 
 		auto draw_data = ImGui::GetDrawData();
-		int32_t vertex_offset = 0;
-		int32_t index_offset = 0;
 
 		if(draw_data->CmdListsCount > 0) {
 			VkDeviceSize offsets[1] = {0};
 			vkCmdBindVertexBuffers(command_buffers.at(image_index), 0, 1, &imgui_vertex_buffers.at(image_index), offsets);
 			vkCmdBindIndexBuffer(command_buffers.at(image_index), imgui_index_buffers.at(image_index), 0, VkIndexType::VK_INDEX_TYPE_UINT16);
 
+			int32_t vertex_offset = 0;
+			int32_t index_offset = 0;
 			for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
 				auto cmd_list = draw_data->CmdLists[i];
 				for(int32_t j = 0; j < cmd_list->CmdBuffer.Size; j++) {

@@ -12,7 +12,7 @@ namespace wm {
 
 		template<class X>
 		ptr_view<X> convert() const {
-			return ptr_view<X>(static_cast<X*>(this->raw_pointer), this->id);
+			return ptr_view<X>(this->id);
 		}
 
 	};

@@ -15,12 +15,12 @@ namespace wm {
 		}
 
 		operator ptr_view<T>() const {
-			return ptr_view<T>(this->raw_pointer, this->id);
+			return ptr_view<T>(this->id);
 		}
 
 		template<class X>
 		ptr<X> convert() const {
-			return ptr<X>(static_cast<X*>(this->raw_pointer), this->id);
+			return ptr<X>(this->id);
 		}
 
 		void destroy() {

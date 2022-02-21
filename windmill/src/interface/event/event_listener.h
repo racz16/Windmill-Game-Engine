@@ -1,7 +1,5 @@
 #pragma once
 
-#include <functional>
-
 namespace wm {
 
 	template<class T>
