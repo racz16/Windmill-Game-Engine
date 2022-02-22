@@ -10,7 +10,6 @@ namespace wm {
 		static int32_t last_id;
 
 		void* raw_pointer;
-		bool valid = true;
 		int32_t reference_count = 1;
 		int32_t array_index = -1;
 		std::function<void ()> array_destroy_callback;
@@ -20,7 +19,6 @@ namespace wm {
 		static void remove(const int32_t id);
 
 		bool is_valid() const;
-		void invalidate();
 		void* get_raw_pointer() const;
 		void set_raw_pointer(void* raw_pointer);
 		int32_t get_array_index() const;

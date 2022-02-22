@@ -15,7 +15,6 @@ namespace wm {
 
 		void destroy(const int32_t id) {
 			auto& meta = ptr_meta::get(id);
-			meta.invalidate();
 			meta.set_raw_pointer(nullptr);
 
 			int32_t index = meta.get_array_index();
@@ -85,7 +84,6 @@ namespace wm {
 		virtual ~vector_array() {
 			for(auto pointer : pointers) {
 				auto& meta = ptr_meta::get(pointer.get_id());
-				meta.invalidate();
 				meta.set_raw_pointer(nullptr);
 			}
 			pointers.clear();

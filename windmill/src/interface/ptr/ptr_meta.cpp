@@ -22,11 +22,7 @@ namespace wm {
 	}
 
 	bool ptr_meta::is_valid() const {
-		return valid;
-	}
-
-	void ptr_meta::invalidate() {
-		valid = false;
+		return raw_pointer != nullptr;
 	}
 
 	void* ptr_meta::get_raw_pointer() const {
@@ -49,7 +45,7 @@ namespace wm {
 		return array_destroy_callback;
 	}
 
-	void ptr_meta::set_array_destroy_callback(std::function<void ()> array_destroy_callback) {
+	void ptr_meta::set_array_destroy_callback(std::function<void()> array_destroy_callback) {
 		this->array_destroy_callback = array_destroy_callback;
 	}
 

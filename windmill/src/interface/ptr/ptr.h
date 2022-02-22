@@ -24,7 +24,8 @@ namespace wm {
 		}
 
 		void destroy() {
-			base_ptr<T>::destroy();
+			auto& meta = ptr_meta::get(base_ptr<T>::id);
+			base_ptr<T>::destroy(meta);
 		}
 
 	};

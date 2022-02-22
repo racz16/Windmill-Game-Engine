@@ -14,20 +14,28 @@ namespace wm {
 			return static_cast<T*>(meta.get_raw_pointer());
 		}
 
-		bool is_valid(ptr_meta& meta) const {
-			return meta.get_raw_pointer() != nullptr && meta.is_valid();
+		void increase() const {
+			ptr_meta::get(id).increase_reference_count();
 		}
 
-		void destroy() {
+		void decrease() const {
 			auto& meta = ptr_meta::get(id);
-			if(is_valid(meta)) {
+			meta.decrease_reference_count();
+			if(meta.get_reference_count() <= 0) {
+				destroy(meta);
+				ptr_meta::remove(id);
+			}
+		}
+
+		void destroy(ptr_meta& meta) const {
+			if(meta.is_valid()) {
 				if(meta.get_array_index() == -1) {
 					delete get_raw_pointer(meta);
-					meta.invalidate();
-					meta.set_raw_pointer(nullptr);
 				} else {
 					meta.get_array_destroy_callback()();
 				}
+				meta.set_raw_pointer(nullptr);
+				meta.set_array_index(-1);
 			}
 		}
 
@@ -38,31 +46,23 @@ namespace wm {
 		}
 
 		base_ptr<T>(const int32_t id): id(id) {
-			ptr_meta::get(id).increase_reference_count();
+			increase();
 		}
 
-		base_ptr<T>(const base_ptr<T>& other_ptr): id(other_ptr.id) {
-			ptr_meta::get(id).increase_reference_count();
+		base_ptr<T>(const base_ptr<T>& other_ptr) : id(other_ptr.id) {
+			increase();
 		}
 
 		base_ptr<T>& operator=(const base_ptr<T>& other_ptr) {
-			auto& pm = ptr_meta::get(id);
-			pm.decrease_reference_count();
-			if(pm.get_reference_count() <= 0 && id != other_ptr.id) {
-				destroy();
-				ptr_meta::remove(id);
-			}
-
+			other_ptr.increase();
+			decrease();
 			id = other_ptr.id;
-
-			ptr_meta::get(id).increase_reference_count();
-
 			return *this;
 		}
 
 		T* operator->() const {
 			auto& meta = ptr_meta::get(id);
-			WM_ASSERT(is_valid(meta));
+			WM_ASSERT(meta.is_valid());
 			return get_raw_pointer(meta);
 		}
 
@@ -85,17 +85,11 @@ namespace wm {
 		}
 
 		bool is_valid() const {
-			auto& meta = ptr_meta::get(id);
-			return is_valid(meta);
+			return ptr_meta::get(id).is_valid();
 		}
 
 		~base_ptr<T>() {
-			auto& pm = ptr_meta::get(id);
-			pm.decrease_reference_count();
-			if(pm.get_reference_count() <= 0) {
-				destroy();
-				ptr_meta::remove(id);
-			}
+			decrease();
 		}
 
 	};
