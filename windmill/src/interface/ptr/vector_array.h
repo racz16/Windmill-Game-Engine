@@ -11,6 +11,8 @@ namespace wm {
 		std::vector<ptr<T>> pointers;
 		int32_t array_size;
 		std::function<void* (const int32_t)> allocation_function;
+		std::function<void(std::vector<T*>, const int32_t, const int32_t)> constructor_function;
+		std::function<void(std::vector<T*>, const int32_t, const int32_t, const int32_t, const int32_t)> switch_function;
 		std::function<void(T*)> deallocation_function;
 
 		void destroy(const int32_t id) {
@@ -19,15 +21,15 @@ namespace wm {
 
 			int32_t index = meta.get_array_index();
 			int32_t last_item_index = pointers.size() - 1;
-			int32_t vector_index2 = last_item_index / array_size;
-			int32_t array_index2 = last_item_index % array_size;
+			int32_t vector_index_2 = last_item_index / array_size;
+			int32_t array_index_2 = last_item_index % array_size;
 
 			if(index != last_item_index) {
 				int32_t vector_index = index / array_size;
 				int32_t array_index = index % array_size;
 
 				pointers.at(index) = pointers.at(last_item_index);
-				arrays.at(vector_index)[array_index] = arrays.at(vector_index2)[array_index2];
+				switch_function(arrays, vector_index, array_index, vector_index_2, array_index_2);
 
 				auto ptr2 = pointers.at(index);
 				auto& meta2 = ptr_meta::get(ptr2.get_id());
@@ -36,7 +38,7 @@ namespace wm {
 				meta2.set_array_index(index);
 			}
 			pointers.pop_back();
-			if(array_index2 == 0) {
+			if(array_index_2 == 0) {
 				deallocation_function(arrays.at(arrays.size() - 1));
 				arrays.pop_back();
 			}
@@ -44,8 +46,18 @@ namespace wm {
 
 	public:
 
-		vector_array(std::function<void* (const int32_t)> allocation_function, std::function<void(T*)> deallocation_function, const int32_t array_size = 1024):
-			allocation_function(allocation_function), deallocation_function(deallocation_function), array_size(array_size) {
+		vector_array(
+			std::function<void* (const int32_t array_size)> allocation_function,
+			std::function<void(std::vector<T*> arrays, const int32_t vector_index, const int32_t array_index)> constructor_function,
+			std::function<void(std::vector<T*> arrays, const int32_t vector_index, const int32_t array_index, const int32_t vector_index_2, const int32_t array_index_2)> switch_function,
+			std::function<void(T* array)> deallocation_function,
+			const int32_t array_size = 1024
+		):
+			allocation_function(allocation_function),
+			constructor_function(constructor_function),
+			switch_function(switch_function),
+			deallocation_function(deallocation_function),
+			array_size(array_size) {
 			WM_ASSERT(array_size > 0);
 		}
 
@@ -56,7 +68,7 @@ namespace wm {
 			}
 			int32_t vector_index = pointers.size() / array_size;
 			int32_t array_index = pointers.size() % array_size;
-			arrays.at(vector_index)[array_index] = T();
+			constructor_function(arrays, vector_index, array_index);
 			auto item = &arrays.at(vector_index)[array_index];
 			auto pointer = ptr<T>(item);
 			auto& meta = ptr_meta::get(pointer.get_id());

@@ -2,11 +2,13 @@
 
 #include "parameter_container.h"
 #include "../log/log_system.h"
+#include "../ptr/array_allocator_system.h"
+#include "../resource/resource_system.h"
 #include "../window/window_system.h"
 #include "../time/time_system.h"
 #include "../event/event_system.h"
+#include "../scene/scene_system.h"
 #include "../rendering/rendering_system.h"
-#include "../resource/resource_system.h"
 
 namespace wm {
 
@@ -55,11 +57,13 @@ namespace wm {
 		static void destroy();
 
 		static ptr<log_system> get_log_system();
+		static ptr<array_allocator_system> get_array_allocator_system();
+		static ptr<resource_system> get_resource_system();
 		static ptr<event_system> get_event_system();
 		static ptr<window_system> get_window_system();
 		static ptr<time_system> get_time_system();
+		static ptr<scene_system> get_scene_system();
 		static ptr<rendering_system> get_rendering_system();
-		static ptr<resource_system> get_resource_system();
 
 		static parameter_container& get_parameters();
 

@@ -33,6 +33,14 @@ namespace wm {
 		return get_system<log_system>(log_system::get_key());
 	}
 
+	ptr<array_allocator_system> engine::get_array_allocator_system() {
+		return get_system<array_allocator_system>(array_allocator_system::get_key());
+	}
+
+	ptr<resource_system> engine::get_resource_system() {
+		return get_system<resource_system>(resource_system::get_key());
+	}
+
 	ptr<event_system> engine::get_event_system() {
 		return get_system<event_system>(event_system::get_key());
 	}
@@ -45,12 +53,12 @@ namespace wm {
 		return get_system<time_system>(time_system::get_key());
 	}
 
-	ptr<rendering_system> engine::get_rendering_system() {
-		return get_system<rendering_system>(rendering_system::get_key());
+	ptr<scene_system> engine::get_scene_system() {
+		return get_system<scene_system>(scene_system::get_key());
 	}
 
-	ptr<resource_system> engine::get_resource_system() {
-		return get_system<resource_system>(resource_system::get_key());
+	ptr<rendering_system> engine::get_rendering_system() {
+		return get_system<rendering_system>(rendering_system::get_key());
 	}
 
 	void engine::destroy() {

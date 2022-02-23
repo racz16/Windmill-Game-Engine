@@ -43,7 +43,7 @@
 //
 //PTR
 //
-#include "../windmill/src/interface/ptr/array_allocator.h"
+#include "../windmill/src/interface/ptr/array_allocator_system.h"
 #include "../windmill/src/interface/ptr/base_ptr.h"
 #include "../windmill/src/interface/ptr/ptr.h"
 #include "../windmill/src/interface/ptr/ptr_meta.h"
@@ -53,6 +53,11 @@
 //RENDERING
 //
 #include "../windmill/src/interface/rendering/rendering_system.h"
+//
+//SCENE
+//
+#include "../windmill/src/interface/scene/node.h"
+#include "../windmill/src/interface/scene/scene_system.h"
 //
 //TIME
 //
