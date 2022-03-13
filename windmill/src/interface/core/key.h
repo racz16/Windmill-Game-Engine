@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utility.h"
+
 namespace wm {
 
 	template<class T>
@@ -10,7 +12,7 @@ namespace wm {
 	public:
 
 		key(const std::string& name) {
-			hash = static_cast<int32_t>(std::hash<std::string> {}(name));
+			hash = utility::hash(name);
 			this->name = name;
 		}
 

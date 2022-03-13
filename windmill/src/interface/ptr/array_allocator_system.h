@@ -37,11 +37,19 @@ namespace wm {
 		template<class T, class CT>
 		void add_type(const key<T> key) {
 			WM_ASSERT(!contains(key));
-			auto va = ptr<vector_array<T>>(new vector_array<T>(
-				[](const int32_t array_size) { return new CT[array_size]; },
-				[](std::vector<T*> arrays, const int32_t vector_index, const int32_t array_index) { arrays.at(vector_index)[array_index] = CT(); },
-				[](std::vector<T*> arrays, const int32_t vector_index, const int32_t array_index, const int32_t vector_index_2, const int32_t array_index_2) { arrays.at(vector_index)[array_index] = arrays.at(vector_index_2)[array_index_2]; },
-				[](T* array) { delete[] static_cast<CT*>(array); }
+			auto va = ptr<vector_array<T>>(new vector_array<T>([](const int32_t array_size) {
+				return new CT[array_size];
+			}, [](std::vector<T*> arrays, const int32_t vector_index, const int32_t array_index, const int32_t id) {
+				auto array = static_cast<CT*>(arrays.at(vector_index));
+				array[array_index] = CT(id);
+			}, [](std::vector<T*> arrays, const int32_t vector_index, const int32_t array_index) {
+				auto array = static_cast<CT*>(arrays.at(vector_index));
+				return &array[array_index];
+			}, [](std::vector<T*> arrays, const int32_t vector_index, const int32_t array_index, const int32_t vector_index_2, const int32_t array_index_2) {
+				arrays.at(vector_index)[array_index] = arrays.at(vector_index_2)[array_index_2];
+			}, [](T* array) {
+				delete[] static_cast<CT*>(array);
+			}
 			)).template convert<vector_array<void>>();
 			arrays.insert_or_assign(key.get_hash(), va);
 		}

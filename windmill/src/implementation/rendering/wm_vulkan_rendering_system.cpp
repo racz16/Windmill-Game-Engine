@@ -1285,13 +1285,23 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::update_uniform_buffer(const uint32_t image_index) const {
-		static const float ROTATION_SPEED = 0.001f;
+		static const float ROTATION_SPEED = 0.05f;
 		static float rotation = 0.0f;
 		const float delta_time = engine::get_time_system()->get_delta_time();
 		rotation += delta_time * ROTATION_SPEED;
 
+		auto parent = engine::get_scene_system()->get_node("parent");
+		if(parent.is_valid()) {
+			parent->get_transform()->set_relative_rotation(glm::vec3(0.0f, 1.0f, 0.0f), rotation);
+		}
+		glm::mat model_matrix = glm::mat4(1.0f);
+		auto child = engine::get_scene_system()->get_node("child");
+		if(child.is_valid()) {
+			child->get_transform()->set_absolute_rotation(glm::vec3(0.0f, 1.0f, 0.0f), 180.0f);
+			model_matrix = child->get_transform()->get_model_matrix();
+		}
 		uniform_buffer_object ubo {};
-		ubo.model = glm::rotate(glm::mat4(1.0f), rotation * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		ubo.model = model_matrix;
 		ubo.view = glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		ubo.projection = glm::perspective(glm::radians(45.0f), static_cast<float>(swap_chain_extent.width) / static_cast<float>(swap_chain_extent.height), 0.1f, 10.0f);
 
@@ -1854,7 +1864,7 @@ namespace wm {
 	void wm_vulkan_rendering_system::before_draw_imgui(const uint32_t image_index) {
 		ImGui::NewFrame();
 
-		ImVec2 position {20.0f, 50.0f};
+		ImVec2 position {20.0f, 20.0f};
 		ImGui::SetNextWindowPos(position);
 		ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_::ImGuiWindowFlags_NoNav);
 		ImGui::Text((std::to_string(engine::get_time_system()->get_fps()) + " FPS").c_str());
@@ -2040,7 +2050,7 @@ namespace wm {
 		}
 
 		WM_LOG_INFO_3("vulkan rendering system updated");
-	}
+}
 
 	wm_vulkan_rendering_system::~wm_vulkan_rendering_system() {
 		vkDeviceWaitIdle(device);

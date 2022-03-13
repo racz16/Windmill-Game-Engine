@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_set>
 #include <chrono>
 #include <any>
 
@@ -58,6 +59,7 @@
 //
 #include "../windmill/src/interface/scene/node.h"
 #include "../windmill/src/interface/scene/scene_system.h"
+#include "../windmill/src/interface/scene/transform.h"
 //
 //TIME
 //

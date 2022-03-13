@@ -32,6 +32,14 @@ class example_1_application: public wm::application {
 				wm::engine::get_window_system()->set_closing(true);
 			}
 		});
+
+		auto node = wm::node::create();
+		node->add_tag("parent");
+		auto node_2 = wm::node::create();
+		node_2->add_tag("child");
+		node->add_child(node_2);
+		node_2->get_transform()->set_relative_rotation(glm::vec3(0.0f, 1.0f, 0.0f), 90.0f);
+		node_2->get_transform()->set_relative_position(glm::vec3(2.0f, 0.0f, 0.0f));
 	}
 
 };
