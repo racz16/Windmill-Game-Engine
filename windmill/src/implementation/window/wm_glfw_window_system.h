@@ -2,12 +2,11 @@
 
 #include "window/window_system.h"
 
-#include "../core/wm_base_system.h"
 #include "input/wm_glfw_window_input_handler.h"
 
 namespace wm {
 
-	class wm_glfw_window_system: public wm_base_system, public window_system {
+	class wm_glfw_window_system: public window_system {
 	private:
 		static const int32_t DONT_CARE = -1;
 
@@ -84,11 +83,8 @@ namespace wm {
 		void set_cursor_shape(const standard_cursor_shape cursor_shape) override;
 		void set_cursor_shape(const std::string& file_path) override;
 		void set_icon(const std::string& file_path) const override;
-		ptr_view<window_input_handler> get_input_handler() override;
+		const ptr<window_input_handler> get_input_handler() const override;
 		~wm_glfw_window_system() override;
-
-		bool is_active() const override { return wm_base_system::is_active(); }
-		void set_active(const bool active) override { wm_base_system::set_active(active); }
 	};
 
 }

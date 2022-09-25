@@ -1,16 +1,12 @@
 #include "resource_system.h"
+#include "defines/code_generation_defines.h"
 
 #include "../../implementation/resource/wm_resource_system.h"
 
 namespace wm {
 
-	ptr<resource_system> resource_system::create() {
-		return ptr<resource_system>(new wm_resource_system());
-	}
+	WM_CREATE(resource_system, wm_resource_system);
 
-	key<resource_system> resource_system::get_key() {
-		static const key<resource_system> key("WM_RESOURCE_SYSTEM");
-		return key;
-	}
+	WM_GET_KEY(resource_system, "WM_RESOURCE_SYSTEM");
 
 }

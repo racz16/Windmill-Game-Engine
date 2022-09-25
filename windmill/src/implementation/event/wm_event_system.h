@@ -2,23 +2,25 @@
 
 #include "event/event_system.h"
 
-#include "../core/wm_base_system.h"
-
 namespace wm {
 
-	class wm_event_system: public wm_base_system, public event_system {
+	class wm_event_system: public event_system {
 	private:
-		std::unordered_map<int32_t, std::vector<std::pair<int32_t, std::any>>> event_listeners;
+		std::unordered_map<int32_t, std::vector<ptr<event_listener<event>>>> global_event_listeners;
+		std::unordered_map<int32_t, std::unordered_map<ptr<void>, std::vector<ptr<event_listener<event>>> >> local_event_listeners;
 	protected:
-		virtual void add_event_listener(const int32_t key, const int32_t event_listener_id, const std::any event_listener) override;
-		virtual bool contains_event_listener(const int32_t key, const int32_t event_listener_id) override;
-		virtual bool contains_key(const int32_t key) override;
-		virtual void remove_event_listener(const int32_t key, const int32_t event_listener_id) override;
-		virtual const std::vector<std::pair<int32_t, std::any>>& get_event_listeners(const int32_t key) const override;
-
-		void update() override { wm_base_system::update(); }
-		bool is_active() const override { return wm_base_system::is_active(); }
-		void set_active(const bool active) override { wm_base_system::set_active(active); }
+		void add_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener) override;
+		void add_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener, const ptr<void> source) override;
+		bool contains_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener) const override;
+		bool contains_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener, const ptr<void> source) const override;
+		bool contains_key(const int32_t key) const override;
+		bool contains_key(const int32_t key, const ptr<void> source) const;
+		bool contains_source(const int32_t key, const ptr<void> source) const override;
+		void remove_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener) override;
+		void remove_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener, const ptr<void> source) override;
+		const std::vector<ptr<event_listener<event>>>& get_event_listeners(const int32_t key) const override;
+		const std::vector<ptr<event_listener<event>>>& get_event_listeners(const int32_t key, const ptr<void> source) const override;
+		const std::vector<ptr<event_listener<event>>> get_event_listeners() const;
 	public:
 		wm_event_system();
 		~wm_event_system() override;

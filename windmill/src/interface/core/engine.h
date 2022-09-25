@@ -12,13 +12,15 @@
 
 namespace wm {
 
+	class event_system;
+
 	class WM_PUBLIC engine {
 	private:
 		static std::unordered_map<int32_t, ptr<system>> systems;
-		static std::vector<std::pair<int32_t, std::string>> order;
+		static std::vector<std::pair<int32_t, std::string>> system_orders;
 		static parameter_container parameters;
-		static std::string engine_name;
-		static glm::ivec3 engine_version;
+		const static std::string engine_name;
+		const static glm::ivec3 engine_version;
 
 		static int32_t index_of_order(const int32_t hash);
 
@@ -39,7 +41,7 @@ namespace wm {
 		static void set_system(const key<T> key, ptr<T> system) {
 			WM_ASSERT(system.is_valid());
 			if(index_of_order(key.get_hash()) == -1) {
-				order.push_back(std::pair<int32_t, std::string>(key.get_hash(), key.get_name()));
+				system_orders.push_back(std::pair<int32_t, std::string>(key.get_hash(), key.get_name()));
 			}
 			systems.insert_or_assign(key.get_hash(), system.template convert<wm::system>());
 		}
@@ -49,7 +51,7 @@ namespace wm {
 			if(contains_system(key)) {
 				systems.erase(key.get_hash());
 				const auto index = index_of_order(key.get_hash());
-				order.erase(order.begin() + index);
+				system_orders.erase(system_orders.begin() + index);
 			}
 		}
 

@@ -42,7 +42,7 @@ namespace wm {
 		axis_state get_gamepad_axis_state(const int32_t gamepad_index, gamepad_axis axis) const override;
 		button_state get_gamepad_button_state(const int32_t gamepad_index, gamepad_button button) const override;
 		std::string get_clipboard_text() const override;
-		void set_clipboard_text(const std::string& text) const override;
+		void set_clipboard_text(const std::string& text) override;
 	};
 
 }

@@ -44,7 +44,7 @@ namespace wm {
 	#ifdef WM_BUILD_DEBUG
 		const auto clw = log_writer::create_console_log_writer();
 		log_system->add_log_writer(clw);
-		const auto flw = log_writer::create_file_log_writer(log_level::info_3);
+		const auto flw = log_writer::create_file_log_writer(log_level::debug);
 		log_system->add_log_writer(flw);
 	#else
 		const auto flw = log_writer::create_file_log_writer(log_level::error);

@@ -1,11 +1,9 @@
 #include "gamepad_connection_event.h"
+#include "defines/code_generation_defines.h"
 
 namespace wm {
 
-	key<gamepad_connection_event> gamepad_connection_event::get_key() {
-		static const key<gamepad_connection_event> key("WM_GAMEPAD_CONNECTION_EVENT");
-		return key;
-	}
+	WM_GET_KEY(gamepad_connection_event, "WM_GAMEPAD_CONNECTION_EVENT");
 
 	gamepad_connection_event::gamepad_connection_event(const bool connected, const int32_t gamepad_index): event(true), connected(connected), gamepad_index(gamepad_index) {}
 

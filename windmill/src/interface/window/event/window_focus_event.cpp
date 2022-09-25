@@ -1,11 +1,9 @@
 #include "window_focus_event.h"
+#include "defines/code_generation_defines.h"
 
 namespace wm {
 
-	key<window_focus_event> window_focus_event::get_key() {
-		static const key<window_focus_event> key("WM_WINDOW_FOCUS_EVENT");
-		return key;
-	}
+	WM_GET_KEY(window_focus_event, "WM_WINDOW_FOCUS_EVENT");
 
 	window_focus_event::window_focus_event(const bool focus): event(true), focus(focus) { }
 

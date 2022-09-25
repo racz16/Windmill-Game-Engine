@@ -1,4 +1,5 @@
 #include "window/window_system.h"
+#include "defines/code_generation_defines.h"
 
 #include "../../implementation/window/wm_glfw_window_system.h"
 
@@ -8,9 +9,6 @@ namespace wm {
 		return ptr<window_system>(new wm_glfw_window_system(size, title, fullscreen, visible)).convert<window_system>();
 	}
 
-	key<window_system> window_system::get_key() {
-		static const key<window_system> key("WM_WINDOW_SYSTEM");
-		return key;
-	}
+	WM_GET_KEY(window_system, "WM_WINDOW_SYSTEM");
 
 }

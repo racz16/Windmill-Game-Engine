@@ -8,7 +8,6 @@ namespace wm {
 
 	class WM_PUBLIC array_allocator_system: public system {
 	private:
-		bool active = true;
 		std::unordered_map<int32_t, ptr<vector_array<void>>> arrays;
 
 		array_allocator_system();
@@ -62,14 +61,10 @@ namespace wm {
 		}
 
 		template<class T>
-		void destroy(const key<T> key, const ptr_view<T> ptr) {
+		void destroy(const key<T> key, const ptr<T> ptr) {
 			WM_ASSERT(contains(key));
 			arrays.at(key.get_hash()).template convert<vector_array<T>>()->destroy(ptr);
 		}
-
-		void update() override;
-		bool is_active() const override;
-		void set_active(const bool active) override;
 
 		~array_allocator_system();
 

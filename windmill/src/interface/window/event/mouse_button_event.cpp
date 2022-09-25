@@ -1,11 +1,9 @@
 #include "mouse_button_event.h"
+#include "defines/code_generation_defines.h"
 
 namespace wm {
 
-	key<mouse_button_event> mouse_button_event::get_key() {
-		static const key<mouse_button_event> key("WM_MOUSE_BUTTON_EVENT");
-		return key;
-	}
+	WM_GET_KEY(mouse_button_event, "WM_MOUSE_BUTTON_EVENT");
 
 	mouse_button_event::mouse_button_event(const mouse_button button, const bool press, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock):
 		event(true), button(button), press(press), shift(shift), ctrl(ctrl), alt(alt), super(super), caps_lock(caps_lock), num_lock(num_lock), button_name(get_button_name(button)) { }

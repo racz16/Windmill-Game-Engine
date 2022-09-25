@@ -1,11 +1,9 @@
 #include "keyboard_button_event.h"
+#include "defines/code_generation_defines.h"
 
 namespace wm {
 
-	key<keyboard_button_event> keyboard_button_event::get_key() {
-		static const key<keyboard_button_event> key("WM_KEYBOARD_BUTTON_EVENT");
-		return key;
-	}
+	WM_GET_KEY(keyboard_button_event, "WM_KEYBOARD_BUTTON_EVENT");
 
 	keyboard_button_event::keyboard_button_event(const keyboard_button button, const button_state state, const int32_t scancode, const bool shift, const bool ctrl, const bool alt, const bool super, const bool caps_lock, const bool num_lock):
 		event(true), button(button), state(state), scancode(scancode), shift(shift), ctrl(ctrl), alt(alt), super(super), caps_lock(caps_lock), num_lock(num_lock), button_name(get_button_name(button, scancode)) { }

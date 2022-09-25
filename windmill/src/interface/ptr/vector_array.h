@@ -92,7 +92,7 @@ namespace wm {
 			return pointers.size();
 		}
 
-		void destroy(const ptr_view<T> ptr) {
+		void destroy(const ptr<T> ptr) {
 			destroy(ptr.get_id());
 		}
 

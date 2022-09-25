@@ -1,16 +1,12 @@
 #include "scene_system.h"
+#include "defines/code_generation_defines.h"
 
 #include "../../implementation/scene/wm_simple_scene_system.h"
 
 namespace wm {
 
-	ptr<scene_system> scene_system::create() {
-		return ptr<scene_system>(new wm_simple_scene_system());
-	}
+	WM_CREATE(scene_system, wm_simple_scene_system);
 
-	key<scene_system> scene_system::get_key() {
-		static const key<scene_system> key("WM_SIMPLE_SCENE_SYSTEM");
-		return key;
-	}
+	WM_GET_KEY(scene_system, "WM_SCENE_SYSTEM");
 
 }

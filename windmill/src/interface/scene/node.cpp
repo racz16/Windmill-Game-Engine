@@ -1,24 +1,28 @@
 #include "node.h"
 #include "../core/engine.h"
+#include "defines/code_generation_defines.h"
 
 #include "../../implementation/scene/wm_node.h"
 
 namespace wm {
 
-	bool node::type_added = false;
+	WM_CREATE_WITH_INIT(node, wm_node);
 
-	ptr<node> node::create() {
-		auto array_allocator_system = engine::get_array_allocator_system();
-		if(!type_added) {
-			array_allocator_system->add_type<node, wm_node>(get_key());
-			type_added = true;
-		}
-		return array_allocator_system->create<node>(get_key());
+	WM_GET_KEY(node, "WM_NODE");
+
+	WM_GET_PTR(node, node);
+
+	void node::initialize(const int32_t id) {
+		this->id = id;
 	}
 
-	key<node> node::get_key() {
-		static const key<node> key("WM_NODE");
-		return key;
+	void node::initialize_node(const ptr<transform> transform) {
+		engine::get_scene_system()->initialize_node(get_ptr(), transform);
+	}
+
+	node::~node() {
+		auto node = get_ptr();
+		engine::get_scene_system()->cleanup(node);
 	}
 
 }

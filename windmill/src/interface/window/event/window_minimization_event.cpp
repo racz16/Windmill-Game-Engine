@@ -1,11 +1,9 @@
 #include "window_minimization_event.h"
+#include "defines/code_generation_defines.h"
 
 namespace wm {
 
-	key<window_minimization_event> window_minimization_event::get_key() {
-		static const key<window_minimization_event> key("WM_WINDOW_MINIMIZATION_EVENT");
-		return key;
-	}
+	WM_GET_KEY(window_minimization_event, "WM_WINDOW_MINIMIZATION_EVENT");
 
 	window_minimization_event::window_minimization_event(const bool minimized): event(true), minimized(minimized) { }
 

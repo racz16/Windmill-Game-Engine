@@ -14,7 +14,7 @@ namespace wm {
 		std::string function;
 		int32_t line;
 	public:
-		windmill_error(const std::string& message, const std::string function, const int32_t line);
+		windmill_error(const std::string& message, const std::string& function, const int32_t line);
 		std::string get_function() const;
 		int32_t get_line() const;
 	};

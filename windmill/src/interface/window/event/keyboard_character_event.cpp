@@ -1,11 +1,9 @@
 #include "keyboard_character_event.h"
+#include "defines/code_generation_defines.h"
 
 namespace wm {
 
-	key<keyboard_character_event> keyboard_character_event::get_key() {
-		static const key<keyboard_character_event> key("WM_KEYBOARD_CHARACTER_EVENT");
-		return key;
-	}
+	WM_GET_KEY(keyboard_character_event, "WM_KEYBOARD_CHARACTER_EVENT");
 
 	keyboard_character_event::keyboard_character_event(uint32_t utf_32_code_point): event(true), utf_32_code_point(utf_32_code_point) { }
 

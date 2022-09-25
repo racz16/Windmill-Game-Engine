@@ -4,7 +4,6 @@ namespace wm {
 
 	const int32_t utility::COLUMN_DISTANCE = 2;
 
-
 	std::array<keyboard_button, KEYBOARD_BUTTON_COUNT> utility::keyboard_buttons = {
 		keyboard_button::button_space,
 		keyboard_button::button_apostrophe,
