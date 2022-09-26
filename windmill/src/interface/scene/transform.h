@@ -3,12 +3,10 @@
 #include "../ptr/ptr.h"
 #include "../core/key.h"
 #include "../defines/general_defines.h"
-#include "../scene/node.h"
 
 namespace wm {
 
 	class node;
-	class scene_system;
 
 	class WM_PUBLIC transform {
 	protected:

@@ -3,6 +3,7 @@
 #include "../scene/node.h"
 #include "../event/event_listener.h"
 #include "../event/event.h"
+#include "event/component_changed_event.h"
 
 namespace wm {
 
@@ -13,7 +14,7 @@ namespace wm {
 	protected:
 		int32_t id = -1;
 		bool active = true;
-		ptr<event_listener<event>> component_changed_event_listener{nullptr}; // TODO
+		ptr<event_listener<component_changed_event>> component_changed_event_listener{nullptr}; // TODO
 
 		component();
 		virtual void initialize(const int32_t id);

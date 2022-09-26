@@ -7,7 +7,7 @@ namespace wm {
 	class WM_PUBLIC node_tag_changed_event: public node_event {
 	private:
 		bool added;
-		tag tag{""};
+		wm::tag tag{""};
 	public:
 		static key<node_tag_changed_event> get_key();
 

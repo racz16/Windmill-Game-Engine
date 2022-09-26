@@ -1,15 +1,16 @@
 #pragma once
 
 #include "component_event.h"
-#include "../../scene/node.h"
 
 namespace wm {
 
+	class node;
+
 	class WM_PUBLIC component_changed_event: public component_event {
-		private:
-			ptr<wm::node> node{nullptr};
-			key<wm::component> key;
-			bool added;
+	private:
+		ptr<wm::node> node{nullptr};
+		wm::key<wm::component> key;
+		bool added;
 	public:
 		static wm::key<component_changed_event> get_key();
 

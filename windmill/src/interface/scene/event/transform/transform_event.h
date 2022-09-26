@@ -7,7 +7,7 @@ namespace wm {
 
 	class WM_PUBLIC transform_event: public event {
 	private:
-		ptr<transform> transform;
+		ptr<wm::transform> transform;
 	public:
 		static key<transform_event> get_key();
 

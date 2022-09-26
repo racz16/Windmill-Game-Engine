@@ -1,13 +1,16 @@
 #pragma once
 
 #include "../../event/event.h"
-#include "../../component/component.h"
+#include "../../ptr/ptr.h"
+#include "../../core/key.h"
 
 namespace wm {
 
+	class component;
+
 	class WM_PUBLIC component_event: public event {
 	private:
-		ptr<component> component;
+		ptr<wm::component> component;
 	public:
 		static key<component_event> get_key();
 

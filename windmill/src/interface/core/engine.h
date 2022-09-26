@@ -12,8 +12,6 @@
 
 namespace wm {
 
-	class event_system;
-
 	class WM_PUBLIC engine {
 	private:
 		static std::unordered_map<int32_t, ptr<system>> systems;

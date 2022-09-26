@@ -4,14 +4,12 @@
 
 namespace wm {
 
-	class engine;
-
 	template<class T>
 	class event_listener {
 	private:
 		int32_t id = -1;
 		std::function<void(const T)> callback_function;
-		key<T> key;
+		wm::key<T> key;
 		ptr<void> source{nullptr};
 		bool has_source = false;
 
@@ -47,7 +45,7 @@ namespace wm {
 
 		template<class S>
 		static ptr<event_listener<T>> create(const std::function<void(const T)> callback_function, const wm::key<T> key, const ptr<S> source) {
-			auto raw_pointer = new event_listener<T>(callback_function, key, source.convert<void>());
+			auto raw_pointer = new event_listener<T>(callback_function, key, source.template convert<void>());
 			return create(raw_pointer);
 		}
 

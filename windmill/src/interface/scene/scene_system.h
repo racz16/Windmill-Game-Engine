@@ -6,8 +6,6 @@
 
 namespace wm {
 
-	class node;
-	class component;
 	class transform;
 
 	class WM_PUBLIC scene_system: public system {
@@ -19,12 +17,12 @@ namespace wm {
 		virtual void cleanup(const ptr<node> node) = 0;
 
 		//component
-		virtual ptr<node> get_node_by_component_impl(const ptr<component> component) const = 0;
+		virtual ptr<node> get_node_by_component_impl(const ptr<wm::component> component) const = 0;
 		virtual ptr<component> get_component_impl(const ptr<node> node, const key<component>& key) const = 0;
 		virtual const std::vector<ptr<component>> get_components_impl(const ptr<node> node, const key<component>& key) const = 0;
-		virtual void add_component_impl(const ptr<node> node, const ptr<component> component, const key<wm::component>& key) = 0;
-		virtual void remove_component_impl(const ptr<node> node, const ptr<component> component) = 0;
-		virtual void cleanup(const ptr<component> component) = 0;
+		virtual void add_component_impl(const ptr<node> node, const ptr<wm::component> component, const key<wm::component>& key) = 0;
+		virtual void remove_component_impl(const ptr<node> node, const ptr<wm::component> component) = 0;
+		virtual void cleanup(const ptr<wm::component> component) = 0;
 	public:
 		static ptr<scene_system> create();
 		static key<scene_system> get_key();
@@ -57,7 +55,7 @@ namespace wm {
 		//components
 		template<class T>
 		ptr<node> get_node_by_component(const ptr<T> component) const {
-			return get_node_by_component_impl(component.convert<wm::component>());
+			return get_node_by_component_impl(component.template convert<wm::component>());
 		}
 
 		template<class T>
@@ -66,7 +64,7 @@ namespace wm {
 			auto components = get_components_impl(node, new_key);
 			std::vector<ptr<T>> results;
 			for(auto component : components) {
-				results.push_back(component.convert<T>());
+				results.push_back(component.template convert<T>());
 			}
 			return results;
 		}
@@ -74,18 +72,18 @@ namespace wm {
 		template<class T>
 		ptr<T> get_component(const ptr<node> node, const key<T>& key) const {
 			wm::key<wm::component> new_key{key.get_name()};
-			return get_component_impl(node, new_key).convert<T>();
+			return get_component_impl(node, new_key).template convert<T>();
 		}
 
 		template<class T>
 		void add_component(const ptr<node> node, const ptr<T> component, const key<T>& key) {
 			wm::key<wm::component> new_key{key.get_name()};
-			add_component_impl(node, component.convert<wm::component>(), new_key);
+			add_component_impl(node, component.template convert<wm::component>(), new_key);
 		}
 
 		template<class T>
 		void remove_component(const ptr<node> node, const ptr<T> component) {
-			remove_component_impl(node, component.convert<wm::component>());
+			remove_component_impl(node, component.template convert<wm::component>());
 		}
 
 	};

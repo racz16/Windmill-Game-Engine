@@ -3,13 +3,14 @@
 #include "../core/key.h"
 #include "../ptr/ptr.h"
 #include "../core/system.h"
-#include "event_listener.h"
 #include "event.h"
 
 namespace wm {
 
 	template<class>
 	class event_listener;
+	class engine;
+	class scene_system;
 
 	class event_system: public system {
 	protected:
@@ -30,51 +31,51 @@ namespace wm {
 		template<class T>
 		ptr<event_listener<T>> add_event_listener(const key<T> key, const std::function<void(const T)> callback) {
 			auto el = ptr<event_listener<T>>(event_listener<T>::create(callback, key));
-			add_event_listener_impl(key.get_hash(), el.convert<event_listener<event>>());
+			add_event_listener_impl(key.get_hash(), el.template convert<event_listener<event>>());
 			return el;
 		}
 
 		template<class T, class S>
 		ptr<event_listener<T>> add_event_listener(const key<T> key, const std::function<void(const T)> callback, const ptr<S> source) {
 			auto el = ptr<event_listener<T>>(event_listener<T>::create(callback, key, source));
-			add_event_listener_impl(key.get_hash(), el.convert<event_listener<event>>(), source.convert<void>());
+			add_event_listener_impl(key.get_hash(), el.template convert<event_listener<event>>(), source.template convert<void>());
 			return el;
 		}
 
 		template<class T>
 		bool contains_event_listener(const key<T> key, const ptr<event_listener<T>> event_listener) {
-			return contains_event_listener_impl(key.get_hash(), event_listener.convert<wm::event_listener<event>>());
+			return contains_event_listener_impl(key.get_hash(), event_listener.template convert<wm::event_listener<event>>());
 		}
 
 		template<class T, class S>
 		bool contains_event_listener(const key<T> key, const ptr<event_listener<T>> event_listener, const ptr<S> source) {
-			return contains_event_listener_impl(key.get_hash(), event_listener.convert<wm::event_listener<event>>(), source.convert<void>());
+			return contains_event_listener_impl(key.get_hash(), event_listener.template convert<wm::event_listener<event>>(), source.template convert<void>());
 		}
 
 		template<class T>
 		void remove_event_listener(const key<T> key, const ptr<event_listener<T>> event_listener) {
-			remove_event_listener_impl(key.get_hash(), event_listener.convert<wm::event_listener<event>>());
+			remove_event_listener_impl(key.get_hash(), event_listener.template convert<wm::event_listener<event>>());
 		}
 
 		template<class T, class S>
 		void remove_event_listener(const key<T> key, const ptr<event_listener<T>> event_listener, const ptr<S> source) {
-			remove_event_listener_impl(key.get_hash(), event_listener.convert<wm::event_listener<event>>(), source.convert<void>());
+			remove_event_listener_impl(key.get_hash(), event_listener.template convert<wm::event_listener<event>>(), source.template convert<void>());
 		}
 
 		template<class T>
 		void emit_event(const key<T> key, const T event) {
 			if(contains_key(key.get_hash())) {
 				for(auto& event_listener : get_event_listeners(key.get_hash())) {
-					event_listener.convert<wm::event_listener<T>>()->callback(event);
+					event_listener.template convert<wm::event_listener<T>>()->callback(event);
 				}
 			}
 		}
 
 		template<class T, class S>
 		void emit_event(const key<T> key, const T event, const ptr<S> source) {
-			if(contains_source(key.get_hash(), source.convert<void>())) {
-				for(auto& event_listener : get_event_listeners(key.get_hash(), source.convert<void>())) {
-					event_listener.convert<wm::event_listener<T>>()->callback(event);
+			if(contains_source(key.get_hash(), source.template convert<void>())) {
+				for(auto& event_listener : get_event_listeners(key.get_hash(), source.template convert<void>())) {
+					event_listener.template convert<wm::event_listener<T>>()->callback(event);
 				}
 			}
 			emit_event<T>(key, event);

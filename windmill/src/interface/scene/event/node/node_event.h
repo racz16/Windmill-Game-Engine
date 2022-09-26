@@ -7,7 +7,7 @@ namespace wm {
 
 	class WM_PUBLIC node_event: public event {
 	private:
-		ptr<node> node;
+		ptr<wm::node> node;
 	public:
 		static key<node_event> get_key();
 

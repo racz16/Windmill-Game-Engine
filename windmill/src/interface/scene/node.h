@@ -48,18 +48,18 @@ namespace wm {
 
 		template<class T>
 		ptr<T> get_component(const key<T>& key) const {
-			return get_component_impl(key.get_name()).convert<T>();
+			return get_component_impl(key.get_name()).template convert<T>();
 		}
 
 		template<class T>
 		void add_component(const ptr<T> component, const key<T>& key) {
 			wm::key<wm::component> new_key{key.get_name()};
-			add_component_impl(component.convert<wm::component>(), new_key);
+			add_component_impl(component.template convert<wm::component>(), new_key);
 		}
 
 		template<class T>
 		void remove_component(const ptr<T> component) {
-			remove_component_impl(component.convert<wm::component>());
+			remove_component_impl(component.template convert<wm::component>());
 		}
 
 		virtual ~node();

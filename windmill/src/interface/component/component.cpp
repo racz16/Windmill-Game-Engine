@@ -1,6 +1,5 @@
 #include "component.h"
 #include "event/component_destroyed_event.h"
-#include "event/component_changed_event.h"
 #include "defines/log_defines.h"
 
 namespace wm {
@@ -15,7 +14,7 @@ namespace wm {
 			} else {
 				this->removed_from_node(event.get_node());
 			}
-		}, get_ptr_impl()).convert<event_listener<event>>();
+		}, get_ptr_impl());
 	}
 
 	const ptr<component> component::get_ptr_impl() const {

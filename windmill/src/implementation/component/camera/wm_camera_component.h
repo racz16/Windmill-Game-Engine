@@ -7,7 +7,7 @@ namespace wm {
 
 	class wm_camera_component: public camera_component {
 	private:
-		projection_mode projection_mode = projection_mode::perspective;
+		wm::projection_mode projection_mode = projection_mode::perspective;
 		float field_of_view = 75.0f;
 		float near_plane = 0.1f;
 		float far_plane = 100.0f;
