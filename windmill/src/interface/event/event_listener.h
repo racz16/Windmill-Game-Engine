@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../core/engine.h"
+#include "event_listener_base.h"
 
 namespace wm {
 
 	template<class T>
-	class event_listener {
+	class event_listener: public event_listener_base {
 	private:
 		int32_t id = -1;
 		std::function<void(const T)> callback_function;
@@ -55,9 +55,9 @@ namespace wm {
 
 		void unsubscribe() {
 			if(has_source) {
-				engine::get_event_system()->remove_event_listener(key, get_ptr(), source);
+				get_event_system()->remove_event_listener(key, get_ptr(), source);
 			} else {
-				engine::get_event_system()->remove_event_listener(key, get_ptr());
+				get_event_system()->remove_event_listener(key, get_ptr());
 			}
 		}
 

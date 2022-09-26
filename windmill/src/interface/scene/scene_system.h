@@ -2,11 +2,12 @@
 
 #include "../core/system.h"
 #include "../scene/node.h"
-#include "../component/component.h"
 
 namespace wm {
 
 	class transform;
+	class component;
+	class node;
 
 	class WM_PUBLIC scene_system: public system {
 	protected:
