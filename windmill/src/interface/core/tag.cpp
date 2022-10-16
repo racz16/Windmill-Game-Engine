@@ -2,10 +2,7 @@
 
 namespace wm {
 
-	tag::tag(const std::string& name) {
-		hash = utility::hash(name);
-		this->name = name;
-	}
+	tag::tag(const std::string& name): hash(utility::hash(name)), name(name) {}
 
 	tag::tag(const char* name): tag(std::string(name)) {}
 
