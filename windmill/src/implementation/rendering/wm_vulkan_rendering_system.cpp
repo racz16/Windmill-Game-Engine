@@ -123,7 +123,7 @@ namespace wm {
 		for(const auto& rl : required_layers) {
 			bool layer_found = false;
 			for(const auto& al : available_layers) {
-				if(strcmp(rl, al.layerName) == 0) {
+				if(std::strcmp(rl, al.layerName) == 0) {
 					layer_found = true;
 					break;
 				}
@@ -177,7 +177,7 @@ namespace wm {
 		for(const auto& re : required_extensions) {
 			bool extension_found = false;
 			for(const auto& ae : available_extensions) {
-				if(strcmp(re, ae.extensionName) == 0) {
+				if(std::strcmp(re, ae.extensionName) == 0) {
 					extension_found = true;
 					break;
 				}
@@ -399,7 +399,7 @@ namespace wm {
 		for(const auto& rde : required_device_extensions) {
 			bool device_extension_found = false;
 			for(const auto& ade : available_device_extensions) {
-				if(strcmp(rde, ade.extensionName) == 0) {
+				if(std::strcmp(rde, ade.extensionName) == 0) {
 					device_extension_found = true;
 					break;
 				}
@@ -887,7 +887,7 @@ namespace wm {
 
 		void* data;
 		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
-		memcpy(data, image->get_pixels(), static_cast<size_t>(size));
+		std::memcpy(data, image->get_pixels(), static_cast<size_t>(size));
 		vkUnmapMemory(device, staging_buffer_device_memory);
 
 		create_image(image->get_size(), texture_mipmap_level_count, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, VkFormat::VK_FORMAT_R8G8B8A8_SRGB, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image, texture_image_device_memory);
@@ -1191,7 +1191,7 @@ namespace wm {
 
 		void* data;
 		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
-		memcpy(data, vertices.data(), size);
+		std::memcpy(data, vertices.data(), size);
 		vkUnmapMemory(device, staging_buffer_device_memory);
 
 		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertex_buffer, vertex_buffer_device_memory);
@@ -1212,7 +1212,7 @@ namespace wm {
 
 		void* data;
 		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
-		memcpy(data, indices.data(), size);
+		std::memcpy(data, indices.data(), size);
 		vkUnmapMemory(device, staging_buffer_device_memory);
 
 		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index_buffer, index_buffer_device_memory);
@@ -1313,7 +1313,7 @@ namespace wm {
 
 		void* data;
 		WM_ASSERT_VULKAN(vkMapMemory(device, uniform_buffers_device_memories.at(image_index), 0, sizeof(ubo), 0, &data));
-		memcpy(data, &ubo, sizeof(ubo));
+		std::memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(device, uniform_buffers_device_memories.at(image_index));
 	}
 
@@ -1588,7 +1588,7 @@ namespace wm {
 
 		void* data;
 		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
-		memcpy(data, font_data, static_cast<size_t>(size));
+		std::memcpy(data, font_data, static_cast<size_t>(size));
 		vkUnmapMemory(device, staging_buffer_device_memory);
 
 		create_image(glm::ivec2(font_texture_width, font_texture_height), 1, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, VkFormat::VK_FORMAT_R8G8B8A8_UNORM, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, font_image, font_image_device_memory);
@@ -1894,7 +1894,7 @@ namespace wm {
 			ImDrawVert* vertex_data_address = static_cast<ImDrawVert*>(data);
 			for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
 				const ImDrawList* cmd_list = draw_data->CmdLists[i];
-				memcpy(vertex_data_address, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
+				std::memcpy(vertex_data_address, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
 				vertex_data_address += cmd_list->VtxBuffer.Size;
 			}
 			vkUnmapMemory(device, imgui_vertex_buffer_device_memories.at(image_index));
@@ -1913,7 +1913,7 @@ namespace wm {
 			ImDrawIdx* index_data_address = static_cast<ImDrawIdx*>(data);
 			for(int32_t i = 0; i < draw_data->CmdListsCount; i++) {
 				const ImDrawList* cmd_list = draw_data->CmdLists[i];
-				memcpy(index_data_address, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+				std::memcpy(index_data_address, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
 				index_data_address += cmd_list->IdxBuffer.Size;
 			}
 			vkUnmapMemory(device, imgui_index_buffer_device_memories.at(image_index));
