@@ -37,6 +37,7 @@ namespace wm {
 		add_window_system();
 		add_scene_system();
 		add_rendering_system();
+		add_audio_system();
 	}
 
 	void application::add_log_system() {
@@ -95,6 +96,12 @@ namespace wm {
 		const auto rendering_system = rendering_system::create();
 		engine::set_system(rendering_system::get_key(), rendering_system);
 		WM_LOG_INFO_1("rendering system added");
+	}
+
+	void application::add_audio_system() {
+		const auto audio_system = audio_system::create();
+		engine::set_system(audio_system::get_key(), audio_system);
+		WM_LOG_INFO_1("audio system added");
 	}
 
 	bool application::loop_condition() {

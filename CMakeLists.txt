@@ -47,6 +47,10 @@ set(WM_LIB_PATH_STB "${WM_SOURCE_DIR}/lib/stb")
 #IMGUI
 set(WM_LIB_PATH_IMGUI "${WM_SOURCE_DIR}/lib/imgui")
 
+#OPENAL
+set(WM_LIB_PATH_OPENAL "${WM_SOURCE_DIR}/lib/openal-soft")
+add_subdirectory("${WM_LIB_PATH_OPENAL}")
+
 #windmill
 add_subdirectory("windmill")
 

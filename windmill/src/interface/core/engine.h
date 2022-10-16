@@ -9,6 +9,7 @@
 #include "../event/event_system.h"
 #include "../scene/scene_system.h"
 #include "../rendering/rendering_system.h"
+#include "../audio/audio_system.h"
 
 namespace wm {
 
@@ -64,6 +65,7 @@ namespace wm {
 		static ptr<time_system> get_time_system();
 		static ptr<scene_system> get_scene_system();
 		static ptr<rendering_system> get_rendering_system();
+		static ptr<audio_system> get_audio_system();
 
 		static parameter_container& get_parameters();
 

@@ -61,6 +61,10 @@ namespace wm {
 		return get_system<rendering_system>(rendering_system::get_key());
 	}
 
+	ptr<audio_system> engine::get_audio_system() {
+		return get_system<audio_system>(audio_system::get_key());
+	}
+
 	void engine::destroy() {
 		for(int32_t i = static_cast<int32_t>(system_orders.size()) - 1; i >= 0; i--) {
 			const auto key = system_orders.at(i).first;

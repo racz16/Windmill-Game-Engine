@@ -46,5 +46,4 @@
 #	ifdef WM_PLATFORM_WINDOWS
 #		pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 #	endif
-	// TODO: GCC
 #endif

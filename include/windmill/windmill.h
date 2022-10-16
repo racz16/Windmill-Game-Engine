@@ -9,6 +9,10 @@
 #include <glm/ext.hpp>
 
 //
+//AUDIO
+//
+#include "../windmill/src/interface/audio/audio_system.h"
+//
 //COMPONENT
 //
 #include "../windmill/src/interface/component/component.h"
