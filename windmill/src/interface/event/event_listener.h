@@ -61,7 +61,7 @@ namespace wm {
 			}
 		}
 
-		~event_listener() {
+		virtual ~event_listener() {
 			unsubscribe();
 		}
 

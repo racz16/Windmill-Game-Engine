@@ -66,7 +66,7 @@ namespace wm {
 			arrays.at(key.get_hash()).template convert<vector_array<T>>()->destroy(ptr);
 		}
 
-		~array_allocator_system();
+		virtual ~array_allocator_system();
 
 	};
 

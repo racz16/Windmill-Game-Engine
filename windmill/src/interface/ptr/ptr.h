@@ -98,7 +98,7 @@ namespace wm {
 			destroy(meta);
 		}
 
-		~ptr<T>() {
+		virtual ~ptr<T>() {
 			decrease();
 		}
 
