@@ -11,7 +11,7 @@ namespace wm {
 		virtual void update();
 		virtual bool is_active() const;
 		virtual void set_active(const bool active);
-		virtual ~system();
+		virtual ~system() = default;
 	};
 
 }

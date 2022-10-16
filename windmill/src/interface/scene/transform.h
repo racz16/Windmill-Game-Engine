@@ -46,7 +46,7 @@ namespace wm {
 		virtual glm::vec3 get_right() = 0;
 		virtual glm::vec3 get_up() = 0;
 
-		virtual ~transform() {}
+		virtual ~transform() = default;
 	};
 
 }

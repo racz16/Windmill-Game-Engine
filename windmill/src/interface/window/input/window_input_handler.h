@@ -24,7 +24,7 @@ namespace wm {
 		virtual button_state get_gamepad_button_state(const int32_t gamepad_index, gamepad_button button) const = 0;
 		virtual std::string get_clipboard_text() const = 0;
 		virtual void set_clipboard_text(const std::string& text) = 0;
-		virtual ~window_input_handler() { }
+		virtual ~window_input_handler() = default;
 	};
 
 }

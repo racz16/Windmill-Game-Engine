@@ -12,7 +12,7 @@ namespace wm {
 		event(const bool built_in = false);
 		double get_time_point() const;
 		bool is_built_in() const;
-		virtual ~event() { }
+		virtual ~event() = default;
 	};
 
 }
