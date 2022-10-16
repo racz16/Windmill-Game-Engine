@@ -98,6 +98,21 @@ namespace wm {
 			return result;
 		}
 
+		template<class T>
+		static int32_t hash(T object) {
+			return static_cast<int32_t>(std::hash<T> {}(object));
+		}
+
+		template<class T>
+		static std::string to_string_axis_angle(const glm::qua<T, glm::defaultp>& quaternion, const std::string& message = "") {
+			auto axis = glm::axis(quaternion);
+			auto angle = glm::degrees(glm::angle(quaternion));
+			auto result = message != "" ? message + "\n" : "";
+			result += "angle:\n" + std::to_string(angle) + "°\n";
+			result += to_string(axis, "axis:");
+			return result;
+		}
+
 		static const std::array<keyboard_button, KEYBOARD_BUTTON_COUNT>& get_keyboard_buttons();
 		static const std::array<mouse_button, MOUSE_BUTTON_COUNT>& get_mouse_buttons();
 		static const std::array<gamepad_axis, GAMEPAD_AXIS_COUNT>& get_gamepad_axes();

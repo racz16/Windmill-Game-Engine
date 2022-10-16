@@ -1,11 +1,9 @@
 #include "window_closed_event.h"
+#include "defines/code_generation_defines.h"
 
 namespace wm {
 
-	key<window_closed_event> window_closed_event::get_key() {
-		static const key<window_closed_event> key("WM_WINDOW_CLOSED_EVENT");
-		return key;
-	}
+	WM_GET_KEY(window_closed_event, "WM_WINDOW_CLOSED_EVENT");
 
 	window_closed_event::window_closed_event(): event(true) { }
 

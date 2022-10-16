@@ -4,8 +4,7 @@
 
 namespace wm {
 
-	wm_scoped_time_logger::wm_scoped_time_logger(const std::string& name) {
-		this->name = name;
+	wm_scoped_time_logger::wm_scoped_time_logger(const std::string& name): name(name) {
 		stopwatch.start();
 	}
 

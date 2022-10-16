@@ -11,7 +11,7 @@ namespace wm {
 		virtual void start() = 0;
 		virtual void stop() = 0;
 		virtual double get_elapsed_time() const = 0;
-		virtual ~stopwatch() { }
+		virtual ~stopwatch() = default;
 	};
 
 }

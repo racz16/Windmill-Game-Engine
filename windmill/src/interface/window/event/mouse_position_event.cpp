@@ -1,11 +1,9 @@
 #include "mouse_position_event.h"
+#include "defines/code_generation_defines.h"
 
 namespace wm {
 
-	key<mouse_position_event> mouse_position_event::get_key() {
-		static const key<mouse_position_event> key("WM_MOUSE_POSITION_EVENT");
-		return key;
-	}
+	WM_GET_KEY(mouse_position_event, "WM_MOUSE_POSITION_EVENT");
 
 	mouse_position_event::mouse_position_event(const glm::dvec2& position): event(true), position(position) { }
 

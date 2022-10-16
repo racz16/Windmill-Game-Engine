@@ -1,27 +1,23 @@
 #pragma once
 
+#include "tag.h"
+
+
 namespace wm {
 
 	template<class T>
-	class key {
-	private:
-		int32_t hash;
-		std::string name;
-	public:
-
-		key(const std::string& name) {
-			hash = static_cast<int32_t>(std::hash<std::string> {}(name));
-			this->name = name;
-		}
-
-		int32_t get_hash() const {
-			return hash;
-		}
-
-		std::string get_name() const {
-			return name;
-		}
-
+	class key: public tag {
+		using tag::tag;
 	};
 
 }
+
+template<class T>
+class WM_PUBLIC std::hash<wm::key<T>> {
+public:
+
+	size_t operator()(const wm::key<T>& key) const {
+		return key.get_hash();
+	}
+
+};

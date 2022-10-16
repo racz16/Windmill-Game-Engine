@@ -4,10 +4,15 @@
 
 #include "defines/debug_defines.h"
 #include "resource/vertex.h"
+#include "defines/log_defines.h"
 
 #include "wm_resource_system.h"
 
 namespace wm {
+
+	wm_resource_system::wm_resource_system() {
+		WM_LOG_INFO_1("resource system created");
+	}
 
 	ptr<image> wm_resource_system::get_image(const std::string& file_path) {
 		int32_t width;
@@ -15,6 +20,7 @@ namespace wm {
 		int32_t channel_count;
 		auto pixels = stbi_load(file_path.c_str(), &width, &height, &channel_count, STBI_rgb_alpha);
 		WM_ASSERT(pixels);
+		WM_LOG_INFO_2("image " + file_path + " loaded");
 		return ptr<image>(new image(glm::ivec2(width, height), channel_count, pixels));
 	}
 
@@ -41,13 +47,18 @@ namespace wm {
 			vertices.push_back(vertex(position, normal, texture_coordinate));
 		}
 		for(int32_t i = 0; i < a_mesh->mNumFaces; i++) {
-			auto a_face = a_mesh->mFaces[i];
+			auto& a_face = a_mesh->mFaces[i];
 			for(int32_t j = 0; j < a_face.mNumIndices; j++) {
 				indices.push_back(a_face.mIndices[j]);
 			}
 		}
 
+		WM_LOG_INFO_2("mesh " + file_path + " loaded");
 		return ptr<mesh>(new mesh(vertices, indices, has_texture_coordinates));
+	}
+
+	wm_resource_system::~wm_resource_system() {
+		WM_LOG_INFO_1("resource system destroyed");
 	}
 
 }

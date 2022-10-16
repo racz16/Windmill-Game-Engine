@@ -2,8 +2,6 @@
 
 #include "rendering/rendering_system.h"
 
-#include "../core/wm_base_system.h"
-
 namespace wm {
 
 	struct gpu_vertex {
@@ -14,6 +12,7 @@ namespace wm {
 
 	struct uniform_buffer_object {
 		glm::mat4 model;
+		glm::mat3 inverse_model;
 		glm::mat4 view;
 		glm::mat4 projection;
 	};
@@ -23,13 +22,12 @@ namespace wm {
 		glm::vec2 translate;
 	};
 
-	class wm_vulkan_rendering_system: public wm_base_system, public rendering_system {
+	class wm_vulkan_rendering_system: public rendering_system {
 	private:
 		static const int32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 		static std::vector<gpu_vertex> vertices;
 		static std::vector<uint32_t> indices;
-
 		VkInstance instance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT debug_utils_messenger = VK_NULL_HANDLE;
 		//device
@@ -204,9 +202,6 @@ namespace wm {
 		wm_vulkan_rendering_system();
 		void update() override;
 		~wm_vulkan_rendering_system();
-
-		bool is_active() const override { return wm_base_system::is_active(); }
-		void set_active(const bool active) override { wm_base_system::set_active(active); }
 	};
 
 }

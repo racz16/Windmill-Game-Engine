@@ -2,6 +2,7 @@
 
 #include "vertex.h"
 #include "../defines/general_defines.h"
+#include "../ptr/ptr.h"
 
 namespace wm {
 
@@ -11,9 +12,9 @@ namespace wm {
 		std::vector<uint32_t> indices;
 		bool texture_coordinates;
 	public:
-		mesh(const std::vector<vertex>& vertices, const std::vector<uint32_t> indices, const bool texture_coordinates);
-		const std::vector<vertex>& get_vertices() const;
-		const std::vector<uint32_t>& get_indices() const;
+		mesh(const std::vector<vertex>& vertices, const std::vector<uint32_t>& indices, const bool texture_coordinates);
+		const std::vector<vertex> get_vertices() const;
+		const std::vector<uint32_t> get_indices() const;
 		bool has_texture_coordinates() const;
 	};
 

@@ -4,10 +4,10 @@ To build the source code, you have to clone the repository (with submodules), in
 
 Required versions:
 
-- CMake 3.16+ (tested with 3.19.2)
-- Vulkan SDK 1.2+ (tested with 1.2.189.2)
-- Visual Studio 2017+ (tested with 2019)
-- GCC 8+ (tested with 9.3.0)
+- CMake 3.16+ (tested with 3.22.1)
+- Vulkan SDK 1.2+ (tested with 1.3.224.1)
+- Visual Studio 2017+ (tested with 2022)
+- GCC 8+ (tested with 11.2.0)
 
 ## Windows
 
@@ -59,15 +59,15 @@ Required versions:
     ```
 
     ```bash
-    sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.2.189-focal.list https://packages.lunarg.com/vulkan/1.2.189/lunarg-vulkan-1.2.189-focal.list
+    sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-1.3.224-focal.list https://packages.lunarg.com/vulkan/1.3.224/lunarg-vulkan-1.3.224-focal.list
     ```
 
     ```bash
-    sudo apt-get update
+    sudo apt update
     ```
 
     ```bash
-    sudo apt-get install vulkan-sdk
+    sudo apt install vulkan-sdk
     ```
 
 7. Clone the repository
@@ -78,19 +78,19 @@ Required versions:
 
     Don't forget the --recursive option to download the necessary dependencies
 
-8. Run the shader compiler script
+8. Go inside the repository's root folder
+
+    ```bash
+    cd Windmill-Game-Engine
+    ```
+
+9. Run the shader compiler script
 
     ```bash
     ./compile_shaders.sh
     ```
 
     You have to repeat this step every time you create or edit a shader
-
-9. Go inside the repository's root folder
-
-    ```bash
-    cd Windmill-Game-Engine
-    ```
 
 10. Run CMake
 

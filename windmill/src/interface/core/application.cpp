@@ -30,10 +30,12 @@ namespace wm {
 
 	void application::initialize() {
 		add_log_system();
+		add_array_allocator_system();
 		add_resource_system();
 		add_event_system();
 		add_time_system();
 		add_window_system();
+		add_scene_system();
 		add_rendering_system();
 	}
 
@@ -42,7 +44,7 @@ namespace wm {
 	#ifdef WM_BUILD_DEBUG
 		const auto clw = log_writer::create_console_log_writer();
 		log_system->add_log_writer(clw);
-		const auto flw = log_writer::create_file_log_writer(log_level::info_3);
+		const auto flw = log_writer::create_file_log_writer(log_level::debug);
 		log_system->add_log_writer(flw);
 	#else
 		const auto flw = log_writer::create_file_log_writer(log_level::error);
@@ -50,6 +52,18 @@ namespace wm {
 	#endif
 		engine::set_system(log_system::get_key(), log_system);
 		WM_LOG_INFO_1("log system added");
+	}
+
+	void application::add_array_allocator_system() {
+		const auto array_allocator_system = array_allocator_system::create();
+		engine::set_system(array_allocator_system::get_key(), array_allocator_system);
+		WM_LOG_INFO_1("array allocator system added");
+	}
+
+	void application::add_resource_system() {
+		const auto resource_system = resource_system::create();
+		engine::set_system(resource_system::get_key(), resource_system);
+		WM_LOG_INFO_1("resource system added");
 	}
 
 	void application::add_event_system() {
@@ -71,16 +85,16 @@ namespace wm {
 		WM_LOG_INFO_1("window system added");
 	}
 
+	void application::add_scene_system() {
+		const auto scene_system = scene_system::create();
+		engine::set_system(scene_system::get_key(), scene_system);
+		WM_LOG_INFO_1("scene system added");
+	}
+
 	void application::add_rendering_system() {
 		const auto rendering_system = rendering_system::create();
 		engine::set_system(rendering_system::get_key(), rendering_system);
 		WM_LOG_INFO_1("rendering system added");
-	}
-
-	void application::add_resource_system() {
-		const auto resource_system = resource_system::create();
-		engine::set_system(resource_system::get_key(), resource_system);
-		WM_LOG_INFO_1("resource system added");
 	}
 
 	bool application::loop_condition() {

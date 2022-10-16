@@ -1,11 +1,9 @@
 #include "window_maximization_event.h"
+#include "defines/code_generation_defines.h"
 
 namespace wm {
 
-	key<window_maximization_event> window_maximization_event::get_key() {
-		static const key<window_maximization_event> key("WM_WINDOW_MAXIMIZATION_EVENT");
-		return key;
-	}
+	WM_GET_KEY(window_maximization_event, "WM_WINDOW_MAXIMIZATION_EVENT");
 
 	window_maximization_event::window_maximization_event(const bool maximized):event(true), maximized(maximized) { }
 

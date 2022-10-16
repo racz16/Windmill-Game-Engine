@@ -1,6 +1,7 @@
 #pragma once
 
 #include "key.h"
+#include "../defines/debug_defines.h"
 
 namespace wm {
 
@@ -16,6 +17,7 @@ namespace wm {
 
 		template<class T>
 		T get(const key<T> key) const {
+			WM_ASSERT(contains(key));
 			return std::any_cast<T>(parameters.at(key.get_hash()));
 		}
 

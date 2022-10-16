@@ -3,10 +3,11 @@
 #include "general_defines.h"
 #include "../core/windmill_error.h"
 
-//	WM_BREAKPOINT			compiler specific debugger breakpoint
-//	WM_THROW_ERROR			throws an exception
-//	WM_ASSERT				throws an exception if the given expression evaluates to false
-//	WM_ASSERT				throws an exception if the given expression doesn't evaluate to VK_SUCCESS
+//	WM_BREAKPOINT						compiler specific debugger breakpoint
+//	WM_THROW_ERROR						throws an exception
+//	WM_ASSERT							throws an exception if the given expression evaluates to false
+//	WM_ASSERT_VULKAN					throws an exception if the given expression doesn't evaluate to VK_SUCCESS
+//	WM_HIDE_CONSOLE_IN_RELEASE_MODE		if defined, the engine hides the consolse window in release mode (currently only Windows)
 
 #ifdef WM_BUILD_DEBUG
 #	ifdef WM_PLATFORM_WINDOWS
@@ -37,4 +38,13 @@
 #else
 #	define WM_ASSERT(expression)
 #	define WM_ASSERT_VULKAN(expression) expression
+#endif
+
+
+
+#if defined WM_HIDE_CONSOLE_IN_RELEASE_MODE && defined WM_BUILD_RELEASE
+#	ifdef WM_PLATFORM_WINDOWS
+#		pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+#	endif
+	// TODO: GCC
 #endif

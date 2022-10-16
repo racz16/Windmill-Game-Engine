@@ -8,7 +8,7 @@ namespace wm {
 	public:
 		static std::unique_ptr<scoped_time_logger> create();
 
-		virtual ~scoped_time_logger() { }
+		virtual ~scoped_time_logger() = default;
 	};
 
 }

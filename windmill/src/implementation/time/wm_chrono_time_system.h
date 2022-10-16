@@ -2,13 +2,11 @@
 
 #include "time/time_system.h"
 
-#include "../core/wm_base_system.h"
-
 using namespace std::chrono_literals;
 
 namespace wm {
 
-	class wm_chrono_time_system: public wm_base_system, public time_system {
+	class wm_chrono_time_system: public time_system {
 	private:
 		static const double DEFAULT_FRAME_TIME;
 
@@ -36,9 +34,6 @@ namespace wm {
 		double get_average_frame_time() const override;
 		int32_t get_frame_index() const override;
 		~wm_chrono_time_system() override;
-
-		bool is_active() const override { return wm_base_system::is_active(); }
-		void set_active(const bool active) override { wm_base_system::set_active(active); }
 	};
 
 }

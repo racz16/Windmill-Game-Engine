@@ -17,7 +17,7 @@
 #include "window/event/mouse_button_event.h"
 #include "window/event/mouse_scroll_event.h"
 #include "window/event/window_drag_and_drop_event.h"
-#include "window/event/mouse_enter_leave_event.h"
+#include "window/event/mouse_hover_event.h"
 
 #include "wm_glfw_window_system.h"
 
@@ -155,8 +155,8 @@ namespace wm {
 			engine::get_event_system()->emit_event<mouse_position_event>(mouse_position_event::get_key(), event);
 		});
 		glfwSetCursorEnterCallback(window_handler, [](GLFWwindow* window, int entered) {
-			const auto event = mouse_enter_leave_event(entered);
-			engine::get_event_system()->emit_event<mouse_enter_leave_event>(mouse_enter_leave_event::get_key(), event);
+			const auto event = mouse_hover_event(entered);
+			engine::get_event_system()->emit_event<mouse_hover_event>(mouse_hover_event::get_key(), event);
 		});
 		glfwSetMouseButtonCallback(window_handler, [](GLFWwindow* window, int button, int action, int mods) {
 			const auto keyboard_button = static_cast<wm::mouse_button>(button);
@@ -456,7 +456,7 @@ namespace wm {
 
 	void wm_glfw_window_system::set_cursor_shape(const std::string& file_path) {
 		auto image = engine::get_resource_system()->get_image(file_path);
-		GLFWimage glfw_image {image->get_size().x, image->get_size().y, image->get_pixels()};
+		GLFWimage glfw_image{image->get_size().x, image->get_size().y, image->get_pixels()};
 		destroy_cursor();
 		cursor_shape = cursor_shape::custom;
 		cursor = glfwCreateCursor(&glfw_image, 0, 0);
@@ -474,14 +474,14 @@ namespace wm {
 
 	void wm_glfw_window_system::set_icon(const std::string& file_path) const {
 		auto image = engine::get_resource_system()->get_image(file_path);
-		GLFWimage glfw_image {image->get_size().x, image->get_size().y, image->get_pixels()};
+		GLFWimage glfw_image{image->get_size().x, image->get_size().y, image->get_pixels()};
 
 		glfwSetWindowIcon(window_handler, 1, &glfw_image);
 
 		image.destroy();
 	}
 
-	ptr_view<window_input_handler> wm_glfw_window_system::get_input_handler() {
+	const ptr<window_input_handler> wm_glfw_window_system::get_input_handler() const {
 		return input_handler.convert<window_input_handler>();
 	}
 
