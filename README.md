@@ -2,4 +2,20 @@
 [![build](https://github.com/racz16/Windmill-Game-Engine/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/racz16/Windmill-Game-Engine/actions)
 
 # Windmill-Game-Engine
+
 A C++ and Vulkan based game engine mainly for learning purposes.
+
+## Features
+
+- Windows and Linux
+- Scene System
+- Event System
+- Logging System
+- Window System and input handling
+- Loading various 3D mesh and texture files
+- Time System
+- Vulkan based rendering System (WIP)
+- Own array allocation on the heap (WIP)
+- Audio System (WIP)
+- Own smart pointer
+- Utility classes like stopwatch
