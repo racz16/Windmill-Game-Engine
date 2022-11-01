@@ -7,7 +7,7 @@ namespace wm {
 	class wm_openal_audio_buffer: public audio_buffer {
 	private:
 		ALuint id;
-		ptr<sound> sound{nullptr};
+		ptr<wm::sound> sound{nullptr};
 	public:
 		wm_openal_audio_buffer();
 		std::any get_native_id() const override;
