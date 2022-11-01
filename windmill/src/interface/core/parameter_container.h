@@ -40,6 +40,8 @@ namespace wm {
 			parameters.erase(key.get_hash());
 		}
 
+		void clear();
+
 	};
 
 }

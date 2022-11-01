@@ -11,11 +11,20 @@
 //
 //AUDIO
 //
+#include "../windmill/src/interface/audio/audio_buffer.h"
+#include "../windmill/src/interface/audio/audio_context.h"
+#include "../windmill/src/interface/audio/audio_distance_model.h"
+#include "../windmill/src/interface/audio/audio_listener.h"
+#include "../windmill/src/interface/audio/audio_source.h"
+#include "../windmill/src/interface/audio/audio_source_state.h"
 #include "../windmill/src/interface/audio/audio_system.h"
 //
 //COMPONENT
 //
 #include "../windmill/src/interface/component/component.h"
+//audio
+#include "../windmill/src/interface/component/audio/audio_listener_component.h"
+#include "../windmill/src/interface/component/audio/audio_source_component.h"
 //camera
 #include "../windmill/src/interface/component/camera/camera_component.h"
 #include "../windmill/src/interface/component/camera/projection_mode.h"
@@ -70,6 +79,14 @@
 //RENDERING
 //
 #include "../windmill/src/interface/rendering/rendering_system.h"
+//
+//RESOURCE
+//
+#include "../windmill/src/interface/resource/image.h"
+#include "../windmill/src/interface/resource/mesh.h"
+#include "../windmill/src/interface/resource/resource_system.h"
+#include "../windmill/src/interface/resource/sound.h"
+#include "../windmill/src/interface/resource/vertex.h"
 //
 //SCENE
 //

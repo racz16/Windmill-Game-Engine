@@ -1,5 +1,4 @@
 #include "camera_component.h"
-#include "../../core/engine.h"
 #include "defines/code_generation_defines.h"
 
 #include "../../../implementation/component/camera/wm_camera_component.h"

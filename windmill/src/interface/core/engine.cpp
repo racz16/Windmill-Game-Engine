@@ -73,6 +73,7 @@ namespace wm {
 		}
 		systems.clear();
 		system_orders.clear();
+		parameters.clear();
 	}
 
 	parameter_container& engine::get_parameters() {

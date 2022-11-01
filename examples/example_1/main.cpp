@@ -54,6 +54,22 @@ class example_1_application: public wm::application {
 		WM_LOG_INFO_1("log system added");
 	}
 
+	void add_audio_listener(const wm::ptr<wm::node> node) {
+		auto audio_listener_component = wm::audio_listener_component::create();
+		node->add_component(audio_listener_component, wm::audio_listener_component::get_key());
+		wm::engine::get_parameters().set(wm::audio_listener_component::get_main_audio_listener_key(), audio_listener_component);
+	}
+
+	void add_audio_source(const wm::ptr<wm::node> node) {
+		auto sound = wm::engine::get_resource_system()->get_sound("res/audio/Waterloo.wav");
+		auto audio_buffer = wm::audio_buffer::create();
+		audio_buffer->set_sound(sound);
+		auto audio_source_component = wm::audio_source_component::create();
+		audio_source_component->set_buffer(audio_buffer);
+		node->add_component(audio_source_component, wm::audio_source_component::get_key());
+		audio_source_component->play();
+	}
+
 	void initialize() override {
 		wm::application::initialize();
 
@@ -78,6 +94,9 @@ class example_1_application: public wm::application {
 		camera_node->add_tag("camera");
 		auto camera_component = wm::camera_component::create();
 		camera_node->add_component(camera_component, wm::camera_component::get_key());
+
+		add_audio_listener(camera_node);
+		add_audio_source(node_2);
 
 		wm::engine::get_event_system()->add_event_listener<wm::keyboard_button_event>(wm::keyboard_button_event::get_key(), [camera_node](const wm::keyboard_button_event event) {
 			if(event.get_button() == wm::keyboard_button::button_escape) {
