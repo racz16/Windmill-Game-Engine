@@ -2,7 +2,6 @@
 
 #include "tag.h"
 
-
 namespace wm {
 
 	template<class T>

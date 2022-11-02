@@ -9,6 +9,7 @@ namespace wm {
 		wm_resource_system();
 		ptr<image> get_image(const std::string& file_path) override;
 		ptr<mesh> get_mesh(const std::string& file_path) override;
+		ptr<sound> get_sound(const std::string& file_path) override;
 		~wm_resource_system();
 	};
 

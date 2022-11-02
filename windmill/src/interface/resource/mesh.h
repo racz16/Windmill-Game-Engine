@@ -2,7 +2,6 @@
 
 #include "vertex.h"
 #include "../defines/general_defines.h"
-#include "../ptr/ptr.h"
 
 namespace wm {
 
