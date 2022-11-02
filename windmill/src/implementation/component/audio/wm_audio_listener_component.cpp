@@ -3,9 +3,7 @@
 
 namespace wm {
 
-	wm_audio_listener_component::wm_audio_listener_component() {
-		listener = audio_listener::create();
-	}
+	wm_audio_listener_component::wm_audio_listener_component(): listener(audio_listener::create()) {}
 
 	void wm_audio_listener_component::update() {
 		auto node = get_node();

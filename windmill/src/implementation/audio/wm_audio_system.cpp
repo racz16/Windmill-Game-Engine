@@ -3,8 +3,7 @@
 
 namespace wm {
 
-	wm_audio_system::wm_audio_system() {
-		context = audio_context::create();
+	wm_audio_system::wm_audio_system(): context(audio_context::create()) {
 		WM_LOG_INFO_1("audio system created");
 	}
 
