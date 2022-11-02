@@ -61,7 +61,7 @@ class example_1_application: public wm::application {
 	}
 
 	void add_audio_source(const wm::ptr<wm::node> node) {
-		auto sound = wm::engine::get_resource_system()->get_sound("res/audio/Waterloo.wav");
+		auto sound = wm::engine::get_resource_system()->get_sound("res/audio/test.wav");
 		auto audio_buffer = wm::audio_buffer::create();
 		audio_buffer->set_sound(sound);
 		auto audio_source_component = wm::audio_source_component::create();

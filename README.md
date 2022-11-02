@@ -16,6 +16,6 @@ A C++ and Vulkan based game engine mainly for learning purposes.
 - Time System
 - Vulkan based Rendering System (WIP)
 - Own array allocation on the heap (WIP)
-- Audio System (WIP)
+- Audio System
 - Own smart pointer
 - Utility classes like stopwatch
