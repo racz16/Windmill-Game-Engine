@@ -481,7 +481,7 @@ namespace wm {
 		image.destroy();
 	}
 
-	const ptr<window_input_handler> wm_glfw_window_system::get_input_handler() const {
+	ptr_view<window_input_handler> wm_glfw_window_system::get_input_handler() const {
 		return input_handler.convert<window_input_handler>();
 	}
 

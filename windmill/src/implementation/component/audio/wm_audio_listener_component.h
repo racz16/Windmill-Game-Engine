@@ -11,7 +11,7 @@ namespace wm {
 		ptr<audio_listener> listener{nullptr};
 		glm::vec3 previous_position;
 	protected:
-		const ptr<audio_listener_component> get_ptr() const;
+		ptr<audio_listener_component> get_ptr() const;
 	public:
 		wm_audio_listener_component();
 		void update() override;

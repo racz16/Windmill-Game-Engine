@@ -29,7 +29,7 @@ namespace wm {
 		}
 	}
 
-	const ptr<audio_source_component> wm_audio_source_component::get_ptr() const {
+	ptr<audio_source_component> wm_audio_source_component::get_ptr() const {
 		return get_ptr_impl().convert<audio_source_component>();
 	}
 

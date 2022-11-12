@@ -11,7 +11,7 @@ namespace wm {
 		ptr<audio_source> source{nullptr};
 		glm::vec3 previous_position;
 	protected:
-		const ptr<audio_source_component> get_ptr() const;
+		ptr<audio_source_component> get_ptr() const;
 		void added_to_node(const ptr<node> node);
 		void removed_from_node(const ptr<node> node);
 	public:

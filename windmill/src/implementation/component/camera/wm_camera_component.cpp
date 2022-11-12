@@ -8,7 +8,7 @@
 
 namespace wm {
 
-	const ptr<camera_component> wm_camera_component::get_ptr() const {
+	ptr<camera_component> wm_camera_component::get_ptr() const {
 		return get_ptr_impl().convert<camera_component>();
 	}
 

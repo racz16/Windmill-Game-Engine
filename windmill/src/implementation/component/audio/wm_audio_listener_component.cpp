@@ -17,7 +17,7 @@ namespace wm {
 		}
 	}
 
-	const ptr<audio_listener_component> wm_audio_listener_component::get_ptr() const {
+	ptr<audio_listener_component> wm_audio_listener_component::get_ptr() const {
 		return get_ptr_impl().convert<audio_listener_component>();
 	}
 

@@ -29,13 +29,13 @@ namespace wm {
 		void refresh(const bool is_absolute_set = false);
 		void refresh_model_matrix_based_on_relative();
 		void refresh_absolute_values();
-		void refresh_based_on_absolute(const ptr<transform> parent_transform);
+		void refresh_based_on_absolute(const ptr_view<transform> parent_transform);
 		void refresh_model_matrix_based_on_absolute();
-		void refresh_relative_values(const ptr<transform> parent_transform);
+		void refresh_relative_values(const ptr_view<transform> parent_transform);
 		void refresh_inverse_model_matrix();
 		void refresh_direction_vectors();
 		void set_position_rotation_scale(const glm::mat4& matrix, glm::vec3& position, glm::quat& rotation, glm::vec3& scale);
-		ptr<transform> get_parent_transform() const;
+		ptr_view<transform> get_parent_transform() const;
 		void emit_event(const transform_changed_type type) const;
 		void handle_node_hierarchy_changes(const node_parent_changed_event event);
 		void handle_parent_transform_changes();

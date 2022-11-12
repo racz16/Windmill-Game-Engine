@@ -17,7 +17,7 @@
 	} \
 
 #define WM_GET_PTR(interface, class) \
-	const ptr<interface> class::get_ptr() const { \
+	ptr<interface> class::get_ptr() const { \
 		if(id == -1) { \
 			return ptr<interface>(nullptr); \
 		} else { \

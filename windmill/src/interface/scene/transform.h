@@ -12,7 +12,7 @@ namespace wm {
 	protected:
 		int32_t id = -1;
 
-		virtual const ptr<transform> get_ptr() const;
+		virtual ptr<transform> get_ptr() const;
 	public:
 		static key<transform> get_key();
 

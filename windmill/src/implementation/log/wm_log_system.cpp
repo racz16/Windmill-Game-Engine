@@ -4,16 +4,16 @@
 
 namespace wm {
 
-	void wm_log_system::add_log_writer(const ptr<log_writer> writer) {
+	void wm_log_system::add_log_writer(const ptr_view<log_writer> writer) {
 		WM_ASSERT(writer.is_valid());
 		log_writers.push_back(writer);
 	}
 
-	const std::vector<ptr<log_writer>> wm_log_system::get_log_writers() const {
+	std::vector<ptr_view<log_writer>> wm_log_system::get_log_writers() const {
 		return log_writers;
 	}
 
-	void wm_log_system::remove_log_writer(const ptr<log_writer> log_writer) {
+	void wm_log_system::remove_log_writer(const ptr_view<log_writer> log_writer) {
 		for(int32_t i = 0; i < log_writers.size(); i++) {
 			if(log_writers.at(i) == log_writer) {
 				log_writers.erase(log_writers.begin() + i);

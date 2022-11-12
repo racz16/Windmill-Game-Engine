@@ -19,11 +19,11 @@ namespace wm {
 		WM_LOG_INFO_2("node created");
 	}
 
-	bool wm_node::is_ancestor_of(const ptr<node> node) const {
+	bool wm_node::is_ancestor_of(const ptr_view<node> node) const {
 		return engine::get_scene_system()->is_descendant_of(node, get_ptr());
 	}
 
-	bool wm_node::is_descendant_of(const ptr<node> node) const {
+	bool wm_node::is_descendant_of(const ptr_view<node> node) const {
 		return engine::get_scene_system()->is_descendant_of(get_ptr(), node);
 	}
 
@@ -41,7 +41,7 @@ namespace wm {
 		return engine::get_scene_system()->get_parent(get_ptr());
 	}
 
-	const std::vector<ptr<node>> wm_node::get_children() const {
+	std::vector<ptr<node>> wm_node::get_children() const {
 		return engine::get_scene_system()->get_children(get_ptr());
 	}
 
@@ -61,7 +61,7 @@ namespace wm {
 		}
 	}
 
-	const ptr<wm::transform> wm_node::get_transform() const {
+	ptr_view<wm::transform> wm_node::get_transform() const {
 		return engine::get_scene_system()->get_transform(get_ptr());
 	}
 
@@ -69,7 +69,7 @@ namespace wm {
 		return engine::get_scene_system()->contains_tag(get_ptr(), tag);
 	}
 
-	const std::vector<tag> wm_node::get_tags() const {
+	std::vector<tag> wm_node::get_tags() const {
 		return engine::get_scene_system()->get_tags(get_ptr());
 	}
 
@@ -81,7 +81,7 @@ namespace wm {
 		return engine::get_scene_system()->remove_tag(get_ptr(), tag);
 	}
 
-	const std::vector<ptr<component>> wm_node::get_components_impl(const key<component>& key) const {
+	std::vector<ptr<component>> wm_node::get_components_impl(const key<component>& key) const {
 		return engine::get_scene_system()->get_components(get_ptr(), key);
 	}
 

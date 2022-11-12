@@ -20,7 +20,7 @@ namespace wm {
 		virtual void initialize(const int32_t id);
 		virtual void added_to_node(const ptr<node> node);
 		virtual void removed_from_node(const ptr<node> node);
-		virtual const ptr<component> get_ptr_impl() const;
+		virtual ptr<component> get_ptr_impl() const;
 	public:
 		virtual ptr<node> get_node() const;
 		virtual bool is_active() const;
