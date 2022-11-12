@@ -17,7 +17,7 @@ namespace wm {
 		}, get_ptr_impl());
 	}
 
-	const ptr<component> component::get_ptr_impl() const {
+	ptr<component> component::get_ptr_impl() const {
 		if(id == -1) {
 			return ptr<component>(nullptr);
 		} else {

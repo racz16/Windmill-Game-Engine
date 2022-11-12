@@ -17,7 +17,7 @@ namespace wm {
 		WM_LOG_INFO_1("simple scene system created");
 	}
 
-	bool wm_simple_scene_system::is_descendant_of(const ptr<node> descendant, const ptr<node> ancestor) const {
+	bool wm_simple_scene_system::is_descendant_of(const ptr_view<node> descendant, const ptr_view<node> ancestor) const {
 		auto parent = get_parent(descendant);
 		while(parent.is_valid()) {
 			if(parent == ancestor) {
@@ -28,22 +28,22 @@ namespace wm {
 		return false;
 	}
 
-	ptr<node> wm_simple_scene_system::get_parent(const ptr<node> node) const {
-		auto find_parent = child_parent.find(node);
+	ptr<node> wm_simple_scene_system::get_parent(const ptr_view<node> node) const {
+		auto find_parent = child_parent.find(node.get_id());
 		return find_parent == child_parent.end() ? ptr<wm::node>(nullptr) : find_parent->second;
 	}
 
-	const std::vector<ptr<node>> wm_simple_scene_system::get_children(const ptr<node> node) const {
-		auto find_children = parent_children.find(node);
+	std::vector<ptr<node>> wm_simple_scene_system::get_children(const ptr_view<node> node) const {
+		auto find_children = parent_children.find(node.get_id());
 		return find_children == parent_children.end() ? std::vector<ptr<wm::node>>{} : find_children->second;
 	}
 
-	ptr<node> wm_simple_scene_system::get_node_by_transform(const ptr<transform> transform) const {
-		auto find_node = transform_node.find(transform);
+	ptr<node> wm_simple_scene_system::get_node_by_transform(const ptr_view<transform> transform) const {
+		auto find_node = transform_node.find(transform.get_id());
 		return find_node == transform_node.end() ? ptr<node>(nullptr) : find_node->second;
 	}
 
-	const std::vector<ptr<node>> wm_simple_scene_system::get_nodes() const {
+	std::vector<ptr<node>> wm_simple_scene_system::get_nodes() const {
 		std::vector<ptr<node>> nodes{};
 		for(auto& node_and_transform : node_transform) {
 			nodes.push_back(node_and_transform.first);
@@ -90,8 +90,12 @@ namespace wm {
 	}
 
 	// transform
-	ptr<transform> wm_simple_scene_system::get_transform(const ptr<node> node) const {
-		auto find_transform = node_transform.find(node);
+	ptr_view<transform> wm_simple_scene_system::get_transform(const ptr_view<node> node) const {
+		return get_transform_impl(node);
+	}
+
+	ptr<transform> wm_simple_scene_system::get_transform_impl(const ptr_view<node> node) const {
+		auto find_transform = node_transform.find(node.get_id());
 		return find_transform == node_transform.end() ? ptr<wm::transform>(nullptr) : find_transform->second;
 	}
 
@@ -125,8 +129,7 @@ namespace wm {
 			child.destroy();
 		}
 
-		// transform
-		auto transform = get_transform(node);
+		auto transform = get_transform_impl(node);
 		node_transform.erase(node);
 		transform_node.erase(transform);
 		transform.destroy();
@@ -140,18 +143,18 @@ namespace wm {
 	}
 
 	// tags
-	bool wm_simple_scene_system::contains_any_tags(const ptr<node> node) const {
-		return node_tags.find(node) != node_tags.end();
+	bool wm_simple_scene_system::contains_any_tags(const ptr_view<node> node) const {
+		return node_tags.find(node.get_id()) != node_tags.end();
 	}
 
-	bool wm_simple_scene_system::contains_tag(const ptr<node> node, const tag& tag) const {
-		auto& tags = get_tags(node);
+	bool wm_simple_scene_system::contains_tag(const ptr_view<node> node, const tag& tag) const {
+		auto tags = get_tags(node);
 		return std::find(tags.begin(), tags.end(), tag) == tags.end();
 	}
 
-	const std::vector<tag> wm_simple_scene_system::get_tags(const ptr<node> node) const {
+	std::vector<tag> wm_simple_scene_system::get_tags(const ptr_view<node> node) const {
 		if(contains_any_tags(node)) {
-			return node_tags.at(node);
+			return node_tags.at(node.get_id());
 		} else {
 			return std::vector<tag>{};
 		}
@@ -209,7 +212,7 @@ namespace wm {
 		return tag_nodes.find(tag) != tag_nodes.end();
 	}
 
-	bool wm_simple_scene_system::contains_node_by_tag(const ptr<node> node, const tag& tag) const {
+	bool wm_simple_scene_system::contains_node_by_tag(const ptr_view<node> node, const tag& tag) const {
 		if(contains_any_nodes_by_tag(tag)) {
 			auto& nodes = tag_nodes.at(tag);
 			return std::find(nodes.begin(), nodes.end(), node) != nodes.end();
@@ -218,7 +221,7 @@ namespace wm {
 		}
 	}
 
-	const std::vector<ptr<node>> wm_simple_scene_system::get_nodes_by_tag(const tag& tag) const {
+	std::vector<ptr<node>> wm_simple_scene_system::get_nodes_by_tag(const tag& tag) const {
 		if(contains_any_nodes_by_tag(tag)) {
 			return tag_nodes.at(tag);
 		} else {
@@ -226,7 +229,7 @@ namespace wm {
 		}
 	}
 
-	const std::vector<ptr<node>> wm_simple_scene_system::get_nodes_by_tags(std::function<bool(const std::vector<tag>& tags)> func) const {
+	std::vector<ptr<node>> wm_simple_scene_system::get_nodes_by_tags(std::function<bool(const std::vector<tag>& tags)> func) const {
 		std::vector<ptr<node>> result;
 		for(auto& nt : node_tags) {
 			if(func(nt.second)) {
@@ -254,9 +257,9 @@ namespace wm {
 	}
 
 	// components
-	ptr<component> wm_simple_scene_system::get_component_impl(const ptr<node> node, const key<component>& key) const {
-		if(node_components.find(node) != node_components.end()) {
-			auto& key_components = node_components.at(node);
+	ptr<component> wm_simple_scene_system::get_component_impl(const ptr_view<node> node, const key<component>& key) const {
+		if(node_components.find(node.get_id()) != node_components.end()) {
+			auto& key_components = node_components.at(node.get_id());
 			if(key_components.find(key) != key_components.end()) {
 				return key_components.at(key).at(0);
 			}
@@ -264,9 +267,9 @@ namespace wm {
 		return ptr<component>(nullptr);
 	}
 
-	const std::vector<ptr<component>> wm_simple_scene_system::get_components_impl(const ptr<node> node, const key<component>& key) const {
-		if(node_components.find(node) != node_components.end()) {
-			auto& key_components = node_components.at(node);
+	std::vector<ptr<component>> wm_simple_scene_system::get_components_impl(const ptr_view<node> node, const key<component>& key) const {
+		if(node_components.find(node.get_id()) != node_components.end()) {
+			auto& key_components = node_components.at(node.get_id());
 			if(key_components.find(key) != key_components.end()) {
 				return key_components.at(key);
 			}
@@ -274,15 +277,15 @@ namespace wm {
 		return std::vector<ptr<component>>{};
 	}
 
-	ptr<node> wm_simple_scene_system::get_node_by_component_impl(const ptr<component> component) const {
-		auto find_node = component_node_and_key.find(component);
+	ptr<node> wm_simple_scene_system::get_node_by_component_impl(const ptr_view<component> component) const {
+		auto find_node = component_node_and_key.find(component.get_id());
 		return find_node == component_node_and_key.end() ? ptr<node>(nullptr) : find_node->second.first;
 	}
 
-	std::vector<ptr<component>> wm_simple_scene_system::get_components(const ptr<node> node) const {
+	std::vector<ptr<component>> wm_simple_scene_system::get_components(const ptr_view<node> node) const {
 		std::vector<ptr<component>> components;
-		if(node_components.find(node) != node_components.end()) {
-			auto& key_components = node_components.at(node);
+		if(node_components.find(node.get_id()) != node_components.end()) {
+			auto& key_components = node_components.at(node.get_id());
 			for(auto& key_component : key_components) {
 				components.insert(components.end(), key_component.second.begin(), key_component.second.end());
 			}

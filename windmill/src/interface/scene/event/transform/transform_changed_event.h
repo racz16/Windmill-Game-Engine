@@ -11,7 +11,7 @@ namespace wm {
 	public:
 		static key<transform_changed_event> get_key();
 
-		transform_changed_event(const transform_changed_type type, const ptr<wm::transform> transform);
+		transform_changed_event(const transform_changed_type type, const ptr_view<wm::transform> transform);
 		transform_changed_type get_type() const;
 	};
 

@@ -95,8 +95,8 @@ class example_1_application: public wm::application {
 		auto camera_component = wm::camera_component::create();
 		camera_node->add_component(camera_component, wm::camera_component::get_key());
 
-		add_audio_listener(camera_node);
-		add_audio_source(node_2);
+		//add_audio_listener(camera_node);
+		//add_audio_source(node_2);
 
 		wm::engine::get_event_system()->add_event_listener<wm::keyboard_button_event>(wm::keyboard_button_event::get_key(), [camera_node](const wm::keyboard_button_event event) {
 			if(event.get_button() == wm::keyboard_button::button_escape) {

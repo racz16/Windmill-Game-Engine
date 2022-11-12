@@ -66,7 +66,8 @@ namespace wm {
 			case keyboard_button::button_up: return "UP";
 			case keyboard_button::button_kp_enter: return "KEYPAD ENTER";
 			default:
-				const auto name = glfwGetKeyName(static_cast<int>(button), scancode);
+				const auto button_code = static_cast<int>(button);
+				const auto name = button_code == GLFW_KEY_UNKNOWN && scancode == 256 ? nullptr :glfwGetKeyName(button_code, scancode);
 				return name == nullptr ? "UNKNOWN KEYBOARD BUTTON" : name;
 		}
 	}

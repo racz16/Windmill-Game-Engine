@@ -20,10 +20,10 @@ namespace wm {
 		}
 	}
 
-	void wm_event_system::add_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener, const ptr<void> source) {
+	void wm_event_system::add_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener, const ptr_view<void> source) {
 		if(!contains_event_listener_impl(key, event_listener, source)) {
 			if(!contains_key(key, source)) {
-				std::unordered_map<ptr<void>, std::vector<ptr<wm::event_listener<event>>>> source_level_map;
+				std::unordered_map<ptr_view<void>, std::vector<ptr<wm::event_listener<event>>>> source_level_map;
 				local_event_listeners.insert_or_assign(key, source_level_map);
 			}
 			auto& source_level_map = local_event_listeners.at(key);
@@ -48,7 +48,7 @@ namespace wm {
 		return false;
 	}
 
-	bool wm_event_system::contains_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener, const ptr<void> source) const {
+	bool wm_event_system::contains_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener, const ptr_view<void> source) const {
 		if(contains_source(key, source)) {
 			for(auto& el : get_event_listeners(key, source)) {
 				if(el == event_listener) {
@@ -63,11 +63,11 @@ namespace wm {
 		return global_event_listeners.find(key) != global_event_listeners.end();
 	}
 
-	bool wm_event_system::contains_key(const int32_t key, const ptr<void> source) const {
+	bool wm_event_system::contains_key(const int32_t key, const ptr_view<void> source) const {
 		return local_event_listeners.find(key) != local_event_listeners.end();
 	}
 
-	bool wm_event_system::contains_source(const int32_t key, const ptr<void> source) const {
+	bool wm_event_system::contains_source(const int32_t key, const ptr_view<void> source) const {
 		return contains_key(key, source) ? local_event_listeners.at(key).find(source) != local_event_listeners.at(key).end() : false;
 	}
 
@@ -87,7 +87,7 @@ namespace wm {
 		}
 	}
 
-	void wm_event_system::remove_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener, const ptr<void> source) {
+	void wm_event_system::remove_event_listener_impl(const int32_t key, const ptr<event_listener<event>> event_listener, const ptr_view<void> source) {
 		if(contains_event_listener_impl(key, event_listener, source)) {
 			auto& event_listeners_vector = local_event_listeners.at(key).at(source);
 			for(int32_t i = 0; i < event_listeners_vector.size(); i++) {
@@ -110,11 +110,11 @@ namespace wm {
 		return global_event_listeners.at(key);
 	}
 
-	const std::vector<ptr<event_listener<event>>>& wm_event_system::get_event_listeners(const int32_t key, const ptr<void> source) const {
+	const std::vector<ptr<event_listener<event>>>& wm_event_system::get_event_listeners(const int32_t key, const ptr_view<void> source) const {
 		return local_event_listeners.at(key).at(source);
 	}
 
-	const std::vector<ptr<event_listener<event>>> wm_event_system::get_event_listeners() const {
+	std::vector<ptr<event_listener<event>>> wm_event_system::get_event_listeners() const {
 		std::vector<ptr<event_listener<event>>> result{};
 		for(auto& event_listeners : global_event_listeners) {
 			for(auto event_listener : event_listeners.second) {

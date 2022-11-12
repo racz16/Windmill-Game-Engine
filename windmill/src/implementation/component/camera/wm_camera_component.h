@@ -19,7 +19,7 @@ namespace wm {
 
 		void refresh();
 	protected:
-		const ptr<camera_component> get_ptr() const;
+		ptr<camera_component> get_ptr() const;
 		void added_to_node(const ptr<node> node) override;
 		void removed_from_node(const ptr<node> node) override;
 	public:

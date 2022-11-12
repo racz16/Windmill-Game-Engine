@@ -77,7 +77,7 @@ namespace wm {
 		}
 	}
 
-	void wm_transform::refresh_based_on_absolute(const ptr<transform> parent_transform) {
+	void wm_transform::refresh_based_on_absolute(const ptr_view<transform> parent_transform) {
 		refresh_model_matrix_based_on_absolute();
 		refresh_relative_values(parent_transform);
 		refresh_inverse_model_matrix();
@@ -91,7 +91,7 @@ namespace wm {
 		model_matrix = glm::scale(model_matrix, absolute_scale);
 	}
 
-	void wm_transform::refresh_relative_values(const ptr<transform> parent_transform) {
+	void wm_transform::refresh_relative_values(const ptr_view<transform> parent_transform) {
 		glm::mat4 local_model_matrix = parent_transform->get_inverse_model_matrix() * model_matrix;
 		set_position_rotation_scale(local_model_matrix, relative_position, relative_rotation, relative_scale);
 	}
@@ -118,13 +118,13 @@ namespace wm {
 		return engine::get_scene_system()->get_node_by_transform(get_ptr());
 	}
 
-	ptr<transform> wm_transform::get_parent_transform() const {
+	ptr_view<transform> wm_transform::get_parent_transform() const {
 		auto node = get_node();
 		auto parent = node->get_parent();
 		if(parent.is_valid()) {
 			return parent->get_transform();
 		}
-		return ptr<transform>(nullptr);
+		return ptr_view<transform>(nullptr);
 	}
 
 	glm::vec3 wm_transform::get_relative_position() const {

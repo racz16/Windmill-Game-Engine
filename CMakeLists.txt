@@ -49,6 +49,7 @@ set(WM_LIB_PATH_IMGUI "${WM_SOURCE_DIR}/lib/imgui")
 
 #OPENAL
 set(WM_LIB_PATH_OPENAL "${WM_SOURCE_DIR}/lib/openal-soft")
+set(ALSOFT_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory("${WM_LIB_PATH_OPENAL}")
 
 #LIBSNDFILE
