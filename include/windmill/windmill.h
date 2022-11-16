@@ -78,6 +78,7 @@
 //
 //RENDERING
 //
+#include "../windmill/src/interface/rendering/rendering_api.h"
 #include "../windmill/src/interface/rendering/rendering_system.h"
 //
 //RESOURCE
@@ -116,6 +117,7 @@
 #include "../windmill/src/interface/window/cursor_shape.h"
 #include "../windmill/src/interface/window/standard_cursor_shape.h"
 #include "../windmill/src/interface/window/video_mode.h"
+#include "../windmill/src/interface/window/vsync_mode.h"
 #include "../windmill/src/interface/window/window_system.h"
 //event
 #include "../windmill/src/interface/window/event/gamepad_connection_event.h"

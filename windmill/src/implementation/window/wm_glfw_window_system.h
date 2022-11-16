@@ -20,6 +20,7 @@ namespace wm {
 		int32_t refresh_rate = DONT_CARE;
 		wm::cursor_shape cursor_shape = cursor_shape::normal;
 		ptr<wm_glfw_window_input_handler> input_handler;
+		vsync_mode sync_mode = vsync_mode::every_frame;
 
 		void set_error_callback() const;
 		void initialize_glfw() const;
@@ -33,9 +34,15 @@ namespace wm {
 		void destroy_window();
 	protected:
 		void create_surface(const void* context, void* surface) override;
+		void swap_buffers() override;
+		vsync_mode get_vsync_mode() const override;
+		void set_vsync_mode(const vsync_mode mode) override;
+		void make_context_current() override;
+		get_function_address_t get_function_address() const override;
 	public:
 		wm_glfw_window_system(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible);
 		void update() override;
+		std::any get_native_id() const override;
 		video_mode get_current_video_mode() const override;
 		std::vector<video_mode> get_all_video_modes() const override;
 		std::vector<const char*> get_required_extensions() const override;

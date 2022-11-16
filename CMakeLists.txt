@@ -27,6 +27,7 @@ set(ASSIMP_NO_EXPORT ON CACHE STRING "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE STRING "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE STRING "" FORCE)
 set(ASSIMP_ERROR_MAX ON CACHE STRING "" FORCE)
+set(ASSIMP_BUILD_SAMPLES OFF CACHE STRING "" FORCE)
 add_subdirectory("${WM_LIB_PATH_ASSIMP}")
 
 #GLFW
@@ -55,6 +56,11 @@ add_subdirectory("${WM_LIB_PATH_OPENAL}")
 #LIBSNDFILE
 set(WM_LIB_PATH_LIBSNDFILE "${WM_SOURCE_DIR}/lib/libsndfile")
 add_subdirectory("${WM_LIB_PATH_LIBSNDFILE}")
+
+#GLAD
+set(WM_LIB_PATH_GLAD "${WM_SOURCE_DIR}/lib/glad")
+set(GLAD_PROFILE "core" CACHE STRING "" FORCE)
+add_subdirectory("${WM_LIB_PATH_GLAD}")
 
 #windmill
 add_subdirectory("windmill")

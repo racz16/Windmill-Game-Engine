@@ -18,7 +18,6 @@ namespace wm {
 	std::vector<gpu_vertex> wm_vulkan_rendering_system::vertices;
 	std::vector<uint32_t> wm_vulkan_rendering_system::indices;
 
-
 	wm_vulkan_rendering_system::wm_vulkan_rendering_system() {
 		create_instance();
 	#ifdef WM_BUILD_DEBUG
@@ -49,7 +48,7 @@ namespace wm {
 		create_semaphores();
 		initialize_imgui();
 
-		WM_LOG_INFO_1("vulkan rendering system created");
+		WM_LOG_INFO_1("Vulkan rendering system created");
 	}
 
 	void wm_vulkan_rendering_system::create_instance() {
@@ -608,11 +607,11 @@ namespace wm {
 	}
 
 	void wm_vulkan_rendering_system::create_pipeline() {
-		auto verteex_shader_code = read_file("res/shader/shader.vert.spv");
+		auto vertex_shader_code = read_file("res/shader/shader.vert.spv");
 		WM_LOG_INFO_2("Lambertian vertex shader loaded");
 		auto fragment_shader_code = read_file("res/shader/shader.frag.spv");
 		WM_LOG_INFO_2("Lambertian fragment shader loaded");
-		auto vertex_shader_module = create_shader_module(verteex_shader_code);
+		auto vertex_shader_module = create_shader_module(vertex_shader_code);
 		auto fragment_shader_module = create_shader_module(fragment_shader_code);
 
 		VkPipelineShaderStageCreateInfo pipeline_vertex_shader_stage_create_info{};
@@ -1537,6 +1536,9 @@ namespace wm {
 	void wm_vulkan_rendering_system::create_imgui() {
 		ImGui::CreateContext();
 
+		//ImGui::StyleColorsLight();
+		//ImGui::StyleColorsDark();
+
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_::ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_::ImGuiConfigFlags_NavEnableGamepad;
 
@@ -1870,12 +1872,15 @@ namespace wm {
 	void wm_vulkan_rendering_system::before_draw_imgui(const uint32_t image_index) {
 		ImGui::NewFrame();
 
+		//ImGui::ShowDemoWindow();
+
 		ImVec2 position{20.0f, 20.0f};
 		ImGui::SetNextWindowPos(position);
 		ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_::ImGuiWindowFlags_NoNav);
 		ImGui::Text((std::to_string(engine::get_time_system()->get_fps()) + " FPS").c_str());
 		ImGui::Text((std::to_string(engine::get_time_system()->get_frame_time()) + " ms").c_str());
 		ImGui::Text((std::string("Resolution: ") + std::to_string(swap_chain_extent.width) + " x " + std::to_string(swap_chain_extent.height) + " px").c_str());
+		ImGui::Text("Vulkan");
 		ImGui::End();
 		ImGui::Render();
 
@@ -2103,7 +2108,7 @@ namespace wm {
 		instance = VK_NULL_HANDLE;
 		WM_LOG_INFO_2("Vulkan instance destroyed");
 
-		WM_LOG_INFO_1("vulkan rendering system destroyed");
+		WM_LOG_INFO_1("Vulkan rendering system destroyed");
 	}
 
 }
