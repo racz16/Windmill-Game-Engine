@@ -78,6 +78,7 @@ namespace wm {
 		glfwWindowHint(GLFW_VISIBLE, visible);
 		auto selected_api = rendering_system::get_rendering_api();
 		if(selected_api == rendering_api::vulkan) {
+			WM_ASSERT(glfwVulkanSupported());
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		} else if(selected_api == rendering_api::opengl) {
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
