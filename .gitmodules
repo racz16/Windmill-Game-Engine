@@ -19,3 +19,6 @@
 [submodule "lib/libsndfile"]
 	path = lib/libsndfile
 	url = https://github.com/libsndfile/libsndfile.git
+[submodule "lib/glad"]
+	path = lib/glad
+	url = https://github.com/Dav1dde/glad.git

@@ -76,7 +76,18 @@ namespace wm {
 
 	void wm_glfw_window_system::set_window_hints(const bool visible) {
 		glfwWindowHint(GLFW_VISIBLE, visible);
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		auto selected_api = rendering_system::get_rendering_api();
+		if(selected_api == rendering_api::vulkan) {
+			WM_ASSERT(glfwVulkanSupported());
+			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		} else if(selected_api == rendering_api::opengl) {
+			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+			glfwWindowHint(GLFW_SAMPLES, 8);
+		#ifdef WM_BUILD_DEBUG
+			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+		#endif
+		}
 	}
 
 	void wm_glfw_window_system::create_window(const glm::ivec2& size) {
@@ -188,6 +199,10 @@ namespace wm {
 		glfwPollEvents();
 		input_handler->update();
 		WM_LOG_INFO_3("GLFW window system updated");
+	}
+
+	std::any wm_glfw_window_system::get_native_id() const {
+		return window_handler;
 	}
 
 	bool wm_glfw_window_system::is_closing() const {
@@ -494,6 +509,27 @@ namespace wm {
 	void wm_glfw_window_system::create_surface(const void* context, void* surface) {
 		WM_ASSERT_VULKAN(glfwCreateWindowSurface(*reinterpret_cast<const VkInstance*>(context), window_handler, nullptr, reinterpret_cast<VkSurfaceKHR*>(surface)));
 		WM_LOG_INFO_2("GLFW window Vulkan surface created");
+	}
+
+	void wm_glfw_window_system::swap_buffers() {
+		glfwSwapBuffers(window_handler);
+	}
+
+	vsync_mode wm_glfw_window_system::get_vsync_mode() const {
+		return sync_mode;
+	}
+
+	void wm_glfw_window_system::set_vsync_mode(const vsync_mode mode) {
+		glfwSwapInterval(static_cast<int>(mode));
+		sync_mode = mode;
+	}
+
+	void wm_glfw_window_system::make_context_current() {
+		glfwMakeContextCurrent(window_handler);
+	}
+
+	window_system::get_function_address_t wm_glfw_window_system::get_function_address() const {
+		return (window_system::get_function_address_t) glfwGetProcAddress;
 	}
 
 	video_mode wm_glfw_window_system::get_current_video_mode() const {

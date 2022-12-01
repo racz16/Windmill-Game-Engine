@@ -71,6 +71,7 @@ class example_1_application: public wm::application {
 	}
 
 	void initialize() override {
+		//wm::rendering_system::set_rendering_api(wm::rendering_api::opengl);
 		wm::application::initialize();
 
 		wm::key<player_control_system> key("WM_PLAYER_CONTROL_SYSTEM");

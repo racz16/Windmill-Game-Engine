@@ -8,16 +8,27 @@
 #include "standard_cursor_shape.h"
 #include "cursor_mode.h"
 #include "input/window_input_handler.h"
+#include "vsync_mode.h"
 
 namespace wm {
 
 	class WM_PUBLIC window_system: public system {
 	protected:
 		friend class rendering_system;
+
+		typedef void* (*get_function_address_t)(const char*);
+
 		virtual void create_surface(const void* context, void* surface) = 0;
+		virtual void swap_buffers() = 0;
+		virtual vsync_mode get_vsync_mode() const = 0;
+		virtual void set_vsync_mode(const vsync_mode mode) = 0;
+		virtual void make_context_current() = 0;
+		virtual get_function_address_t get_function_address() const = 0;
 	public:
 		static ptr<window_system> create(const glm::ivec2& size, const std::string& title, const bool fullscreen = false, const bool visible = true);
 		static key<window_system> get_key();
+
+		virtual std::any get_native_id() const = 0;
 
 		virtual video_mode get_current_video_mode() const = 0;
 		virtual std::vector<video_mode> get_all_video_modes() const = 0;
