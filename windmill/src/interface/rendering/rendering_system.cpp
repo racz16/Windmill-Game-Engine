@@ -2,8 +2,8 @@
 #include "core/engine.h"
 #include "defines/code_generation_defines.h"
 
-#include "../../implementation/rendering/wm_vulkan_rendering_system.h"
-#include "../../implementation/rendering/wm_opengl_rendering_system.h"
+#include "../../implementation/rendering/vulkan/wm_vulkan_rendering_system.h"
+#include "../../implementation/rendering/opengl/wm_opengl_rendering_system.h"
 
 namespace wm {
 

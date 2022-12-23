@@ -1,32 +1,20 @@
 #pragma once
 
-#include "rendering/rendering_system.h"
+#include "rendering/rendering_context.h"
+#include "../wm_gpu_vertex.h"
 
 namespace wm {
-
-	struct gpu_vertex {
-		glm::vec3 position;
-		glm::vec3 normal;
-		glm::vec2 texture_coordinates;
-	};
-
-	struct uniform_buffer_object {
-		glm::mat4 model;
-		glm::mat3 inverse_model;
-		glm::mat4 view;
-		glm::mat4 projection;
-	};
 
 	struct push_constatnt_block {
 		glm::vec2 scale;
 		glm::vec2 translate;
 	};
 
-	class wm_vulkan_rendering_system: public rendering_system {
+	class wm_vulkan_rendering_context: public rendering_context {
 	private:
 		static const int32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-		static std::vector<gpu_vertex> vertices;
+		static std::vector<wm_gpu_vertex> vertices;
 		static std::vector<uint32_t> indices;
 		VkInstance instance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT debug_utils_messenger = VK_NULL_HANDLE;
@@ -199,9 +187,9 @@ namespace wm {
 		void draw_imgui(const uint32_t uimage_index);
 		void destroy_imgui();
 	public:
-		wm_vulkan_rendering_system();
+		void initialize() override;
 		void update() override;
-		~wm_vulkan_rendering_system();
+		void destroy() override;
 	};
 
 }

@@ -1,27 +1,16 @@
 #pragma once
 
+#include "rendering/rendering_context.h"
+
 #include <glad/glad.h>
 
-#include "rendering/rendering_system.h"
+#include "../wm_gpu_vertex.h"
 
 namespace wm {
 
-	struct gpu_vertex_2 {
-		glm::vec3 position;
-		glm::vec3 normal;
-		glm::vec2 texture_coordinates;
-	};
-
-	struct uniform_buffer_object_2 {
-		glm::mat4 model;
-		glm::mat3 inverse_model;
-		glm::mat4 view;
-		glm::mat4 projection;
-	};
-
-	class wm_opengl_rendering_system: public rendering_system {
+	class wm_opengl_rendering_context: public rendering_context {
 	private:
-		std::vector<gpu_vertex_2> vertices;
+		std::vector<wm_gpu_vertex> vertices;
 		std::vector<uint32_t> indices;
 
 		GLuint shader_program;
@@ -35,11 +24,11 @@ namespace wm {
 		static std::string get_message_source(const GLenum source);
 		static std::string get_message_type(const GLenum type);
 		static std::string get_message_severity(const GLenum severity);
-		
-		void create_debug_message_callback() const;
+
+		static void create_debug_message_callback();
 
 		void initialize_opengl();
-		void initialize_imgui() const;
+		void initialize_imgui();
 
 		//buffer
 		void load_mesh(const std::string& file_name);
@@ -51,16 +40,15 @@ namespace wm {
 		void create_sampler();
 
 		//shader
-		GLuint create_shader(const std::string& path, const GLenum type) const;
+		GLuint create_shader(const std::string& path, const GLenum type);
 		void create_shader_program(const std::string& vertex_path, const std::string& fragment_path);
-		std::vector<char> read_binary_file(const std::string& file_name) const;
-		std::string read_text_file(const std::string& file_name) const;
-		void load_uniforms() const;
+		std::vector<char> read_binary_file(const std::string& file_name);
+		std::string read_text_file(const std::string& file_name);
+		void load_uniforms();
 	public:
-		wm_opengl_rendering_system();
+		void initialize() override;
 		void update() override;
-		~wm_opengl_rendering_system();
+		void destroy() override;
 	};
-
 
 }

@@ -1,15 +1,18 @@
-#include "wm_opengl_rendering_system.h"
+#include "wm_opengl_rendering_context.h"
 
-#include <sstream>
-
-#include "defines/log_defines.h"
-#include "component/camera/camera_component.h"
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
+#include <sstream>
+
+#include "defines/debug_defines.h"
+#include "defines/log_defines.h"
+#include "component/camera/camera_component.h"
+
+#include "../wm_gpu_matrices_ubo.h"
 
 namespace wm {
 
-	wm_opengl_rendering_system::wm_opengl_rendering_system() {
+	void wm_opengl_rendering_context::initialize() {
 		initialize_opengl();
 	#ifdef WM_BUILD_DEBUG
 		create_debug_message_callback();
@@ -20,14 +23,12 @@ namespace wm {
 		create_sampler();
 		create_ubo();
 		create_shader_program("res/shader/shader.vert.spv", "res/shader/shader.frag.spv");
-
-		WM_LOG_INFO_1("OpenGL rendering system created");
 	}
 
-	void wm_opengl_rendering_system::initialize_opengl() {
+	void wm_opengl_rendering_context::initialize_opengl() {
 		make_context_current();
 		set_vsync_mode(vsync_mode::off);
-		int result = gladLoadGLLoader(rendering_system::get_function_address());
+		int result = gladLoadGLLoader(get_function_address());
 		WM_ASSERT(result);
 
 		glEnable(GL_DEPTH_TEST);
@@ -36,14 +37,14 @@ namespace wm {
 		glEnable(GL_MULTISAMPLE);
 	}
 
-	void wm_opengl_rendering_system::initialize_imgui() const {
+	void wm_opengl_rendering_context::initialize_imgui() {
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGui_ImplGlfw_InitForOpenGL(std::any_cast<GLFWwindow*>(engine::get_window_system()->get_native_id()), true);
 		ImGui_ImplOpenGL3_Init("#version 460");
 	}
 
-	std::string wm_opengl_rendering_system::get_message_source(const GLenum source) {
+	std::string wm_opengl_rendering_context::get_message_source(const GLenum source) {
 		switch(source) {
 			case GL_DEBUG_SOURCE_API: return "API";
 			case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WINDOW SYSTEM";
@@ -55,7 +56,7 @@ namespace wm {
 		}
 	}
 
-	std::string wm_opengl_rendering_system::get_message_type(const GLenum type) {
+	std::string wm_opengl_rendering_context::get_message_type(const GLenum type) {
 		switch(type) {
 			case GL_DEBUG_TYPE_ERROR: return "ERROR";
 			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
@@ -68,7 +69,7 @@ namespace wm {
 		}
 	}
 
-	std::string wm_opengl_rendering_system::get_message_severity(const GLenum severity) {
+	std::string wm_opengl_rendering_context::get_message_severity(const GLenum severity) {
 		switch(severity) {
 			case GL_DEBUG_SEVERITY_NOTIFICATION: return "NOTIFICATION";
 			case GL_DEBUG_SEVERITY_LOW: return "LOW";
@@ -78,7 +79,7 @@ namespace wm {
 		}
 	}
 
-	void wm_opengl_rendering_system::create_debug_message_callback() const {
+	void wm_opengl_rendering_context::create_debug_message_callback() {
 		int flags;
 		glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
 		if(flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
@@ -86,24 +87,24 @@ namespace wm {
 			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 			glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param) {
 				auto src_str = get_message_source(source);
-				auto type_str = get_message_type(type);
-				auto severity_str = get_message_severity(severity);
-				if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
-					WM_LOG_INFO_3("OpenGL info 3: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
-				} else if(severity == GL_DEBUG_SEVERITY_LOW) {
-					WM_LOG_INFO_1("OpenGL info 1: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
-				} else if(severity == GL_DEBUG_SEVERITY_MEDIUM) {
-					WM_LOG_WARNING("OpenGL warning: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
-				} else {
-					WM_LOG_ERROR("OpenGL error: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message, __FUNCTION__, __LINE__);
-				}
+			auto type_str = get_message_type(type);
+			auto severity_str = get_message_severity(severity);
+			if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
+				WM_LOG_INFO_3("OpenGL info 3: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
+			} else if(severity == GL_DEBUG_SEVERITY_LOW) {
+				WM_LOG_INFO_1("OpenGL info 1: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
+			} else if(severity == GL_DEBUG_SEVERITY_MEDIUM) {
+				WM_LOG_WARNING("OpenGL warning: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
+			} else {
+				WM_LOG_ERROR("OpenGL error: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message, __FUNCTION__, __LINE__);
+			}
 			}, nullptr);
 		}
 
 		WM_LOG_INFO_2("OpenGL debug message callback created");
 	}
 
-	void wm_opengl_rendering_system::load_mesh(const std::string& file_name) {
+	void wm_opengl_rendering_context::load_mesh(const std::string& file_name) {
 		auto mesh = engine::get_resource_system()->get_mesh(file_name);
 		for(auto& v : mesh->get_vertices()) {
 			vertices.push_back({v.get_position(), v.get_normal(), v.get_texture_coordinate()});
@@ -111,7 +112,7 @@ namespace wm {
 		indices = mesh->get_indices();
 	}
 
-	std::vector<char> wm_opengl_rendering_system::read_binary_file(const std::string& file_name) const {
+	std::vector<char> wm_opengl_rendering_context::read_binary_file(const std::string& file_name) {
 		std::ifstream file(file_name, std::ios::ate | std::ios::binary);
 		WM_ASSERT(file.is_open());
 
@@ -124,7 +125,7 @@ namespace wm {
 		return buffer;
 	}
 
-	std::string wm_opengl_rendering_system::read_text_file(const std::string& file_name) const {
+	std::string wm_opengl_rendering_context::read_text_file(const std::string& file_name) {
 		std::stringstream stringstream;
 		try {
 			std::fstream filestream;
@@ -137,12 +138,12 @@ namespace wm {
 		return stringstream.str();
 	}
 
-	GLuint wm_opengl_rendering_system::create_shader(const std::string& path, const GLenum type) const {
+	GLuint wm_opengl_rendering_context::create_shader(const std::string& path, const GLenum type) {
 		GLuint shader = glCreateShader(type);
 		if(path.substr(path.size() - 4) == ".spv") {
 			auto buffer = read_binary_file(path);
 			glShaderBinary(1, &shader, GL_SHADER_BINARY_FORMAT_SPIR_V, &buffer[0], buffer.size());
-			glSpecializeShader(shader, "main", 0, 0, 0);
+			glSpecializeShader(shader, "main", 0, nullptr, nullptr);
 		} else {
 			auto code = read_text_file(path);
 			auto c_string_code = code.c_str();
@@ -164,7 +165,7 @@ namespace wm {
 		return shader;
 	}
 
-	void wm_opengl_rendering_system::create_shader_program(const std::string& vertex_path, const std::string& fragment_path) {
+	void wm_opengl_rendering_context::create_shader_program(const std::string& vertex_path, const std::string& fragment_path) {
 		auto vertex_shader = create_shader(vertex_path, GL_VERTEX_SHADER);
 		auto fragment_shader = create_shader(fragment_path, GL_FRAGMENT_SHADER);
 
@@ -190,29 +191,29 @@ namespace wm {
 		WM_LOG_INFO_2("OpenGL shader program created");
 	}
 
-	void wm_opengl_rendering_system::create_vao(const std::string& file_name) {
+	void wm_opengl_rendering_context::create_vao(const std::string& file_name) {
 		load_mesh(file_name);
 
 		glCreateBuffers(1, &vbo);
-		glNamedBufferStorage(vbo, sizeof(gpu_vertex_2) * vertices.size(), &vertices[0], GL_NONE);
+		glNamedBufferStorage(vbo, sizeof(wm_gpu_vertex) * vertices.size(), &vertices[0], GL_NONE);
 		WM_LOG_INFO_2("OpenGL vertex buffer created");
 
 		glCreateVertexArrays(1, &vao);
-		glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(gpu_vertex_2));
+		glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(wm_gpu_vertex));
 		//position
 		GLuint position_attrib_index = 0;
 		glEnableVertexArrayAttrib(vao, position_attrib_index);
-		glVertexArrayAttribFormat(vao, position_attrib_index, 3, GL_FLOAT, GL_FALSE, offsetof(gpu_vertex_2, position));
+		glVertexArrayAttribFormat(vao, position_attrib_index, 3, GL_FLOAT, GL_FALSE, offsetof(wm_gpu_vertex, position));
 		glVertexArrayAttribBinding(vao, position_attrib_index, 0);
 		//normal
 		GLuint normal_attrib_index = 1;
 		glEnableVertexArrayAttrib(vao, normal_attrib_index);
-		glVertexArrayAttribFormat(vao, normal_attrib_index, 3, GL_FLOAT, GL_FALSE, offsetof(gpu_vertex_2, normal));
+		glVertexArrayAttribFormat(vao, normal_attrib_index, 3, GL_FLOAT, GL_FALSE, offsetof(wm_gpu_vertex, normal));
 		glVertexArrayAttribBinding(vao, normal_attrib_index, 0);
 		//texture
 		GLuint texture_attrib_index = 2;
 		glEnableVertexArrayAttrib(vao, texture_attrib_index);
-		glVertexArrayAttribFormat(vao, texture_attrib_index, 2, GL_FLOAT, GL_FALSE, offsetof(gpu_vertex_2, texture_coordinates));
+		glVertexArrayAttribFormat(vao, texture_attrib_index, 2, GL_FLOAT, GL_FALSE, offsetof(wm_gpu_vertex, texture_coordinates));
 		glVertexArrayAttribBinding(vao, texture_attrib_index, 0);
 
 		glCreateBuffers(1, &ebo);
@@ -223,14 +224,14 @@ namespace wm {
 		WM_LOG_INFO_2("OpenGL vertex array created");
 	}
 
-	void wm_opengl_rendering_system::create_ubo() {
+	void wm_opengl_rendering_context::create_ubo() {
 		glCreateBuffers(1, &ubo);
-		glNamedBufferStorage(ubo, sizeof(uniform_buffer_object_2), nullptr, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(ubo, sizeof(wm_gpu_matrices_ubo), nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 		WM_LOG_INFO_2("OpenGL uniform buffer created");
 	}
 
-	void wm_opengl_rendering_system::create_texture(const std::string& file_name) {
+	void wm_opengl_rendering_context::create_texture(const std::string& file_name) {
 		auto image = engine::get_resource_system()->get_image(file_name);
 
 		glCreateTextures(GL_TEXTURE_2D, 1, &texture);
@@ -247,7 +248,7 @@ namespace wm {
 		glBindTextureUnit(1, texture);
 	}
 
-	void wm_opengl_rendering_system::create_sampler() {
+	void wm_opengl_rendering_context::create_sampler() {
 		glCreateSamplers(1, &sampler);
 
 		WM_LOG_INFO_2("OpenGL sampler created");
@@ -255,7 +256,7 @@ namespace wm {
 		glBindSampler(1, sampler);
 	}
 
-	void wm_opengl_rendering_system::load_uniforms() const {
+	void wm_opengl_rendering_context::load_uniforms() {
 		static const float ROTATION_SPEED = 0.05f;
 		static float rotation = 0.0f;
 		const float delta_time = engine::get_time_system()->get_delta_time();
@@ -273,7 +274,7 @@ namespace wm {
 			model_matrix = child->get_transform()->get_model_matrix();
 			inverse_model_matrix = child->get_transform()->get_inverse_model_matrix();
 		}
-		uniform_buffer_object_2 ubo{};
+		wm_gpu_matrices_ubo ubo{};
 		ubo.model = model_matrix;
 		ubo.inverse_model = inverse_model_matrix;
 
@@ -281,11 +282,11 @@ namespace wm {
 		ubo.view = camera->get_view_matrix();
 		ubo.projection = camera->get_projection_matrix();
 
-		glNamedBufferSubData(this->ubo, 0, sizeof(uniform_buffer_object_2), &ubo);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, this->ubo);
+		glNamedBufferSubData(wm_opengl_rendering_context::ubo, 0, sizeof(wm_gpu_matrices_ubo), &ubo);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, wm_opengl_rendering_context::ubo);
 	}
 
-	void wm_opengl_rendering_system::update() {
+	void wm_opengl_rendering_context::update() {
 		auto viewport = engine::get_window_system()->get_framebuffer_size();
 		glViewport(0, 0, viewport.x, viewport.y);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -315,7 +316,7 @@ namespace wm {
 		swap_buffers();
 	}
 
-	wm_opengl_rendering_system::~wm_opengl_rendering_system() {
+	void wm_opengl_rendering_context::destroy() {
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
@@ -334,8 +335,6 @@ namespace wm {
 		WM_LOG_INFO_2("OpenGL sampler destroyed");
 		glDeleteTextures(1, &texture);
 		WM_LOG_INFO_2("OpenGL texture destroyed");
-
-		WM_LOG_INFO_1("OpenGL rendering system destroyed");
 	}
 
 }

@@ -18,6 +18,7 @@ public:
 		auto input_handler = wm::engine::get_window_system()->get_input_handler();
 		auto forward_movement = delta_time * movement_speed * camera_transform->get_forward();
 		auto right_movement = delta_time * movement_speed * camera_transform->get_right();
+		auto rotation = delta_time * rotation_speed;
 		auto up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 		if(input_handler->get_keyboard_button_state(wm::keyboard_button::button_w).is_down()) {
@@ -33,10 +34,10 @@ public:
 			camera_transform->move(right_movement);
 		}
 		if(input_handler->get_keyboard_button_state(wm::keyboard_button::button_q).is_down()) {
-			camera_transform->rotate(up, rotation_speed);
+			camera_transform->rotate(up, rotation);
 		}
 		if(input_handler->get_keyboard_button_state(wm::keyboard_button::button_e).is_down()) {
-			camera_transform->rotate(up, -rotation_speed);
+			camera_transform->rotate(up, -rotation);
 		}
 	}
 
@@ -71,7 +72,7 @@ class example_1_application: public wm::application {
 	}
 
 	void initialize() override {
-		//wm::rendering_system::set_rendering_api(wm::rendering_api::opengl);
+		wm::rendering_system::set_rendering_api(wm::rendering_api::opengl);
 		wm::application::initialize();
 
 		wm::key<player_control_system> key("WM_PLAYER_CONTROL_SYSTEM");

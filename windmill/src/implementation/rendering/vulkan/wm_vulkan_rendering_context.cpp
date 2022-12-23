@@ -1,3 +1,5 @@
+#include "wm_vulkan_rendering_context.h"
+
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -11,14 +13,15 @@
 #include "window/event/keyboard_character_event.h"
 
 #include "wm_vulkan_rendering_system.h"
-#include "../resource/wm_resource_system.h"
+#include "../../resource/wm_resource_system.h"
+#include "../wm_gpu_matrices_ubo.h"
 
 namespace wm {
 
-	std::vector<gpu_vertex> wm_vulkan_rendering_system::vertices;
-	std::vector<uint32_t> wm_vulkan_rendering_system::indices;
+	std::vector<wm_gpu_vertex> wm_vulkan_rendering_context::vertices;
+	std::vector<uint32_t> wm_vulkan_rendering_context::indices;
 
-	wm_vulkan_rendering_system::wm_vulkan_rendering_system() {
+	void wm_vulkan_rendering_context::initialize() {
 		create_instance();
 	#ifdef WM_BUILD_DEBUG
 		create_debug_utils_messenger();
@@ -51,7 +54,7 @@ namespace wm {
 		WM_LOG_INFO_1("Vulkan rendering system created");
 	}
 
-	void wm_vulkan_rendering_system::create_instance() {
+	void wm_vulkan_rendering_context::create_instance() {
 		const auto layers = get_layers();
 		const auto extensions = get_extensions();
 
@@ -61,7 +64,7 @@ namespace wm {
 		application_info.engineVersion = utility::to_vulkan_version(engine::get_engine_version());
 		application_info.pApplicationName = engine::get_app_name().c_str();
 		application_info.applicationVersion = utility::to_vulkan_version(engine::get_app_version());
-		application_info.apiVersion = VK_API_VERSION_1_2;
+		application_info.apiVersion = VK_API_VERSION_1_1;
 
 		VkInstanceCreateInfo instance_create_info{};
 		instance_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -81,7 +84,7 @@ namespace wm {
 
 
 	//layers
-	std::vector<const char*> wm_vulkan_rendering_system::get_layers() const {
+	std::vector<const char*> wm_vulkan_rendering_context::get_layers() const {
 		const auto required_layers = get_required_layers();
 	#ifdef WM_BUILD_DEBUG
 		const auto available_layers = get_available_layers();
@@ -91,7 +94,7 @@ namespace wm {
 		return required_layers;
 	}
 
-	std::vector<const char*> wm_vulkan_rendering_system::get_required_layers() const {
+	std::vector<const char*> wm_vulkan_rendering_context::get_required_layers() const {
 	#ifdef WM_BUILD_DEBUG
 		return std::vector<const char*>(1, "VK_LAYER_KHRONOS_validation");
 	#else
@@ -99,7 +102,7 @@ namespace wm {
 	#endif
 	}
 
-	std::vector<VkLayerProperties> wm_vulkan_rendering_system::get_available_layers() const {
+	std::vector<VkLayerProperties> wm_vulkan_rendering_context::get_available_layers() const {
 		uint32_t layer_count;
 		WM_ASSERT_VULKAN(vkEnumerateInstanceLayerProperties(&layer_count, nullptr));
 		std::vector<VkLayerProperties> available_layers(layer_count);
@@ -107,7 +110,7 @@ namespace wm {
 		return available_layers;
 	}
 
-	void wm_vulkan_rendering_system::log_available_layers(const std::vector<VkLayerProperties>& available_layers) const {
+	void wm_vulkan_rendering_context::log_available_layers(const std::vector<VkLayerProperties>& available_layers) const {
 		std::string result_string = "Available Vulkan layers:\r\n";
 		for(uint32_t i = 0; i < available_layers.size(); i++) {
 			result_string += std::string("\t") + available_layers.at(i).layerName;
@@ -118,7 +121,7 @@ namespace wm {
 		WM_LOG_INFO_3(result_string);
 	}
 
-	void wm_vulkan_rendering_system::validate_layers(const std::vector<const char*>& required_layers, const std::vector<VkLayerProperties>& available_layers) const {
+	void wm_vulkan_rendering_context::validate_layers(const std::vector<const char*>& required_layers, const std::vector<VkLayerProperties>& available_layers) const {
 		for(const auto& rl : required_layers) {
 			bool layer_found = false;
 			for(const auto& al : available_layers) {
@@ -135,7 +138,7 @@ namespace wm {
 
 
 	//instance extensions
-	std::vector<const char*> wm_vulkan_rendering_system::get_extensions() const {
+	std::vector<const char*> wm_vulkan_rendering_context::get_extensions() const {
 		const auto required_extensions = get_required_extensions();
 	#ifdef WM_BUILD_DEBUG
 		const auto available_extensions = get_available_extensions();
@@ -145,7 +148,7 @@ namespace wm {
 		return required_extensions;
 	}
 
-	std::vector<const char*> wm_vulkan_rendering_system::get_required_extensions() const {
+	std::vector<const char*> wm_vulkan_rendering_context::get_required_extensions() const {
 		auto required_extensions = engine::get_window_system()->get_required_extensions();
 	#ifdef WM_BUILD_DEBUG
 		required_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -153,7 +156,7 @@ namespace wm {
 		return required_extensions;
 	}
 
-	std::vector<VkExtensionProperties> wm_vulkan_rendering_system::get_available_extensions() const {
+	std::vector<VkExtensionProperties> wm_vulkan_rendering_context::get_available_extensions() const {
 		uint32_t extension_count;
 		WM_ASSERT_VULKAN(vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr));
 		std::vector<VkExtensionProperties> available_extensions(extension_count);
@@ -161,7 +164,7 @@ namespace wm {
 		return available_extensions;
 	}
 
-	void wm_vulkan_rendering_system::log_available_extensions(const std::vector<VkExtensionProperties>& available_extensions) const {
+	void wm_vulkan_rendering_context::log_available_extensions(const std::vector<VkExtensionProperties>& available_extensions) const {
 		std::string result_string = "Available Vulkan instance extensions:\r\n";
 		for(uint32_t i = 0; i < available_extensions.size(); i++) {
 			result_string += std::string("\t") + available_extensions.at(i).extensionName;
@@ -172,7 +175,7 @@ namespace wm {
 		WM_LOG_INFO_3(result_string);
 	}
 
-	void wm_vulkan_rendering_system::validate_extensions(const std::vector<const char*>& required_extensions, const std::vector<VkExtensionProperties>& available_extensions) const {
+	void wm_vulkan_rendering_context::validate_extensions(const std::vector<const char*>& required_extensions, const std::vector<VkExtensionProperties>& available_extensions) const {
 		for(const auto& re : required_extensions) {
 			bool extension_found = false;
 			for(const auto& ae : available_extensions) {
@@ -221,7 +224,7 @@ namespace wm {
 		return VK_FALSE;
 	}
 
-	VkDebugUtilsMessengerCreateInfoEXT wm_vulkan_rendering_system::create_debug_utils_messenger_create_info() const {
+	VkDebugUtilsMessengerCreateInfoEXT wm_vulkan_rendering_context::create_debug_utils_messenger_create_info() const {
 		VkDebugUtilsMessengerCreateInfoEXT debug_utils_messenger_create_info{};
 		debug_utils_messenger_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 		debug_utils_messenger_create_info.messageSeverity =
@@ -236,7 +239,7 @@ namespace wm {
 		return debug_utils_messenger_create_info;
 	}
 
-	void wm_vulkan_rendering_system::create_debug_utils_messenger() {
+	void wm_vulkan_rendering_context::create_debug_utils_messenger() {
 		const auto debug_utils_messenger_create_info = create_debug_utils_messenger_create_info();
 		auto vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 		WM_ASSERT(vkCreateDebugUtilsMessengerEXT != nullptr);
@@ -244,7 +247,7 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan debug messenger created");
 	}
 
-	void wm_vulkan_rendering_system::destroy_debug_utils_messenger() {
+	void wm_vulkan_rendering_context::destroy_debug_utils_messenger() {
 		auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 		WM_ASSERT(vkDestroyDebugUtilsMessengerEXT != nullptr);
 		vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
@@ -254,7 +257,7 @@ namespace wm {
 
 
 	//device
-	void wm_vulkan_rendering_system::create_device() {
+	void wm_vulkan_rendering_context::create_device() {
 		get_physical_device();
 
 		std::vector<VkDeviceQueueCreateInfo> device_queue_create_infos{};
@@ -305,7 +308,7 @@ namespace wm {
 		vkGetDeviceQueue(device, presentation_queue_family_index, 0, &presentation_queue);
 	}
 
-	void wm_vulkan_rendering_system::get_physical_device() {
+	void wm_vulkan_rendering_context::get_physical_device() {
 		const auto required_device_extensions = get_required_device_extensions();
 		uint32_t physical_device_count;
 		WM_ASSERT_VULKAN(vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr));
@@ -381,12 +384,12 @@ namespace wm {
 
 
 	//device extensions
-	std::vector<const char*> wm_vulkan_rendering_system::get_required_device_extensions() const {
+	std::vector<const char*> wm_vulkan_rendering_context::get_required_device_extensions() const {
 		std::vector<const char*> required_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 		return required_extensions;
 	}
 
-	std::vector<VkExtensionProperties> wm_vulkan_rendering_system::get_available_device_extensions(const VkPhysicalDevice physical_device) const {
+	std::vector<VkExtensionProperties> wm_vulkan_rendering_context::get_available_device_extensions(const VkPhysicalDevice physical_device) const {
 		uint32_t device_extension_count;
 		WM_ASSERT_VULKAN(vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, nullptr));
 		std::vector<VkExtensionProperties> available_device_extensions(device_extension_count);
@@ -394,7 +397,7 @@ namespace wm {
 		return available_device_extensions;
 	}
 
-	bool wm_vulkan_rendering_system::are_device_extensions_supported(const std::vector<const char*>& required_device_extensions, const std::vector<VkExtensionProperties>& available_device_extensions) const {
+	bool wm_vulkan_rendering_context::are_device_extensions_supported(const std::vector<const char*>& required_device_extensions, const std::vector<VkExtensionProperties>& available_device_extensions) const {
 		for(const auto& rde : required_device_extensions) {
 			bool device_extension_found = false;
 			for(const auto& ade : available_device_extensions) {
@@ -412,21 +415,21 @@ namespace wm {
 
 
 	//swap chain
-	void wm_vulkan_rendering_system::register_event_handlers() {
+	void wm_vulkan_rendering_context::register_event_handlers() {
 		engine::get_event_system()->add_event_listener<window_framebuffer_size_event>(window_framebuffer_size_event::get_key(), [this](const window_framebuffer_size_event event) {
 			this->framebuffer_resized = true;
-			this->minimized = event.get_new_size().x == 0 || event.get_new_size().y == 0;
+		this->minimized = event.get_new_size().x == 0 || event.get_new_size().y == 0;
 		});
 		engine::get_event_system()->add_event_listener<mouse_scroll_event>(mouse_scroll_event::get_key(), [this](const mouse_scroll_event event) {
 			this->mouse_scroll = event.get_offset();
 		});
 		engine::get_event_system()->add_event_listener<keyboard_character_event>(keyboard_character_event::get_key(), [this](const keyboard_character_event event) {
 			ImGuiIO& io = ImGui::GetIO();
-			io.AddInputCharacter(event.get_utf_32_code_point());
+		io.AddInputCharacter(event.get_utf_32_code_point());
 		});
 	}
 
-	void wm_vulkan_rendering_system::create_swap_chain() {
+	void wm_vulkan_rendering_context::create_swap_chain() {
 		surface_format = get_surface_format();
 		auto surface_presentation_mode = get_surface_presentation_mode();
 		auto surface_capabilities = get_surface_capabilities();
@@ -470,7 +473,7 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan swap chain created");
 	}
 
-	void wm_vulkan_rendering_system::recreate_swap_chain() {
+	void wm_vulkan_rendering_context::recreate_swap_chain() {
 		framebuffer_resized = false;
 		WM_ASSERT_VULKAN(vkDeviceWaitIdle(device));
 
@@ -488,7 +491,7 @@ namespace wm {
 		create_command_buffers();
 	}
 
-	VkSurfaceFormatKHR wm_vulkan_rendering_system::get_surface_format() const {
+	VkSurfaceFormatKHR wm_vulkan_rendering_context::get_surface_format() const {
 		uint32_t surface_format_count;
 		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr));
 		std::vector<VkSurfaceFormatKHR> surface_formats(surface_format_count);
@@ -506,7 +509,7 @@ namespace wm {
 		return surface_formats.at(0);
 	}
 
-	VkPresentModeKHR wm_vulkan_rendering_system::get_surface_presentation_mode() const {
+	VkPresentModeKHR wm_vulkan_rendering_context::get_surface_presentation_mode() const {
 		uint32_t surface_presentation_mode_count;
 		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &surface_presentation_mode_count, nullptr));
 		std::vector<VkPresentModeKHR> surface_presentation_modes(surface_presentation_mode_count);
@@ -520,13 +523,13 @@ namespace wm {
 		return VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	VkSurfaceCapabilitiesKHR wm_vulkan_rendering_system::get_surface_capabilities() const {
+	VkSurfaceCapabilitiesKHR wm_vulkan_rendering_context::get_surface_capabilities() const {
 		VkSurfaceCapabilitiesKHR surface_capabilities;
 		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_capabilities));
 		return surface_capabilities;
 	}
 
-	VkExtent2D wm_vulkan_rendering_system::get_swap_chain_extent(const VkSurfaceCapabilitiesKHR surface_capabilities) const {
+	VkExtent2D wm_vulkan_rendering_context::get_swap_chain_extent(const VkSurfaceCapabilitiesKHR surface_capabilities) const {
 		if(surface_capabilities.currentExtent.width != UINT_MAX) {
 			return surface_capabilities.currentExtent;
 		} else {
@@ -538,14 +541,14 @@ namespace wm {
 		}
 	}
 
-	void wm_vulkan_rendering_system::create_swap_chain_image_views() {
+	void wm_vulkan_rendering_context::create_swap_chain_image_views() {
 		swap_chain_image_views.resize(swap_chain_images.size());
 		for(int32_t i = 0; i < swap_chain_images.size(); i++) {
 			swap_chain_image_views.at(i) = create_image_view(swap_chain_images.at(i), surface_format.format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		}
 	}
 
-	void wm_vulkan_rendering_system::cleanup_swap_chain() {
+	void wm_vulkan_rendering_context::cleanup_swap_chain() {
 		vkDestroyImageView(device, color_image_view, nullptr);
 		vkDestroyImage(device, color_image, nullptr);
 		vkFreeMemory(device, color_image_device_memory, nullptr);
@@ -582,7 +585,7 @@ namespace wm {
 
 
 	//pipeline
-	void wm_vulkan_rendering_system::create_descriptor_set_layout() {
+	void wm_vulkan_rendering_context::create_descriptor_set_layout() {
 		VkDescriptorSetLayoutBinding uniform_buffer_descriptor_set_layout_binding{};
 		uniform_buffer_descriptor_set_layout_binding.binding = 0;
 		uniform_buffer_descriptor_set_layout_binding.descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -606,7 +609,7 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkCreateDescriptorSetLayout(device, &descriptor_set_layout_create_info, nullptr, &descriptor_set_layout));
 	}
 
-	void wm_vulkan_rendering_system::create_pipeline() {
+	void wm_vulkan_rendering_context::create_pipeline() {
 		auto vertex_shader_code = read_file("res/shader/shader.vert.spv");
 		WM_LOG_INFO_2("Lambertian vertex shader loaded");
 		auto fragment_shader_code = read_file("res/shader/shader.frag.spv");
@@ -630,7 +633,7 @@ namespace wm {
 
 		VkVertexInputBindingDescription binding_description{};
 		binding_description.binding = 0;
-		binding_description.stride = sizeof(gpu_vertex);
+		binding_description.stride = sizeof(wm_gpu_vertex);
 		binding_description.inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX;
 		std::array<VkVertexInputBindingDescription, 1> binding_descriptions = {binding_description};
 
@@ -638,19 +641,19 @@ namespace wm {
 		position_attribute_description.binding = 0;
 		position_attribute_description.location = 0;
 		position_attribute_description.format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
-		position_attribute_description.offset = offsetof(gpu_vertex, position);
+		position_attribute_description.offset = offsetof(wm_gpu_vertex, position);
 
 		VkVertexInputAttributeDescription texture_coordinates_attribute_description;
 		texture_coordinates_attribute_description.binding = 0;
 		texture_coordinates_attribute_description.location = 1;
 		texture_coordinates_attribute_description.format = VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
-		texture_coordinates_attribute_description.offset = offsetof(gpu_vertex, normal);
+		texture_coordinates_attribute_description.offset = offsetof(wm_gpu_vertex, normal);
 
 		VkVertexInputAttributeDescription color_attribute_description;
 		color_attribute_description.binding = 0;
 		color_attribute_description.location = 2;
 		color_attribute_description.format = VkFormat::VK_FORMAT_R32G32_SFLOAT;
-		color_attribute_description.offset = offsetof(gpu_vertex, texture_coordinates);
+		color_attribute_description.offset = offsetof(wm_gpu_vertex, texture_coordinates);
 
 		std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions{position_attribute_description, texture_coordinates_attribute_description, color_attribute_description};
 
@@ -749,7 +752,7 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan graphics pipeline created");
 	}
 
-	void wm_vulkan_rendering_system::create_render_pass() {
+	void wm_vulkan_rendering_context::create_render_pass() {
 		VkSubpassDependency subpass_dependency{};
 		subpass_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		subpass_dependency.dstSubpass = 0;
@@ -827,7 +830,7 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan renderpass created");
 	}
 
-	void wm_vulkan_rendering_system::create_framebuffers() {
+	void wm_vulkan_rendering_context::create_framebuffers() {
 		swap_chain_framebuffers.resize(swap_chain_image_views.size());
 
 		for(int32_t i = 0; i < static_cast<int32_t>(swap_chain_image_views.size()); i++) {
@@ -849,7 +852,7 @@ namespace wm {
 
 
 	//shader
-	std::vector<char> wm_vulkan_rendering_system::read_file(const std::string& file_name) const {
+	std::vector<char> wm_vulkan_rendering_context::read_file(const std::string& file_name) const {
 		std::ifstream file(file_name, std::ios::ate | std::ios::binary);
 		WM_ASSERT(file.is_open());
 
@@ -862,7 +865,7 @@ namespace wm {
 		return buffer;
 	}
 
-	VkShaderModule wm_vulkan_rendering_system::create_shader_module(const std::vector<char>& code) const {
+	VkShaderModule wm_vulkan_rendering_context::create_shader_module(const std::vector<char>& code) const {
 		VkShaderModuleCreateInfo shader_module_create_info{};
 		shader_module_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		shader_module_create_info.codeSize = code.size();
@@ -875,7 +878,7 @@ namespace wm {
 
 
 	//texture
-	void wm_vulkan_rendering_system::create_texture_image() {
+	void wm_vulkan_rendering_context::create_texture_image() {
 		auto image = engine::get_resource_system()->get_image("res/mesh/helmet.jpg");
 		texture_mipmap_level_count = static_cast<uint32_t>(std::floor(std::log2(std::max(image->get_size().x, image->get_size().y)))) + 1;
 		VkDeviceSize size = image->get_size().x * image->get_size().y * 4;
@@ -902,11 +905,11 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan texture created");
 	}
 
-	void wm_vulkan_rendering_system::create_texture_image_view() {
+	void wm_vulkan_rendering_context::create_texture_image_view() {
 		texture_image_view = create_image_view(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_UNORM, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, texture_mipmap_level_count);
 	}
 
-	void wm_vulkan_rendering_system::create_image(const glm::ivec2& size, const uint32_t mipmap_level_count, const VkSampleCountFlagBits sample_count, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory) {
+	void wm_vulkan_rendering_context::create_image(const glm::ivec2& size, const uint32_t mipmap_level_count, const VkSampleCountFlagBits sample_count, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory) {
 		VkImageCreateInfo image_create_info{};
 		image_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		image_create_info.imageType = VkImageType::VK_IMAGE_TYPE_2D;
@@ -946,7 +949,7 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkBindImageMemory(device, texture_image, texture_image_device_memory, 0));
 	}
 
-	VkImageView wm_vulkan_rendering_system::create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags, const uint32_t mipmap_level_count) {
+	VkImageView wm_vulkan_rendering_context::create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags, const uint32_t mipmap_level_count) {
 		VkImageViewCreateInfo image_view_create_info{};
 		image_view_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		image_view_create_info.image = image;
@@ -964,11 +967,11 @@ namespace wm {
 		return image_view;
 	}
 
-	void wm_vulkan_rendering_system::create_texture_sampler() {
+	void wm_vulkan_rendering_context::create_texture_sampler() {
 		create_sampler(texture_mipmap_level_count, max_anisotropy, texture_sampler);
 	}
 
-	void wm_vulkan_rendering_system::create_sampler(const uint32_t mipmap_level_count, const float max_anisotropy, VkSampler& sampler) {
+	void wm_vulkan_rendering_context::create_sampler(const uint32_t mipmap_level_count, const float max_anisotropy, VkSampler& sampler) {
 		VkSamplerCreateInfo sampler_create_info{};
 		sampler_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 		sampler_create_info.magFilter = VkFilter::VK_FILTER_LINEAR;
@@ -989,7 +992,7 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkCreateSampler(device, &sampler_create_info, nullptr, &sampler));
 	}
 
-	void wm_vulkan_rendering_system::transition_image_layout(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, const uint32_t mipmap_level_count) {
+	void wm_vulkan_rendering_context::transition_image_layout(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, const uint32_t mipmap_level_count) {
 		VkCommandBuffer command_buffer = begin_single_time_commands();
 
 		VkPipelineStageFlags source_stage;
@@ -1028,7 +1031,7 @@ namespace wm {
 		end_single_time_commands(command_buffer);
 	}
 
-	void wm_vulkan_rendering_system::copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
+	void wm_vulkan_rendering_context::copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
 		VkCommandBuffer command_buffer = begin_single_time_commands();
 
 		VkBufferImageCopy buffer_image_copy{};
@@ -1049,7 +1052,7 @@ namespace wm {
 		end_single_time_commands(command_buffer);
 	}
 
-	void wm_vulkan_rendering_system::generate_mipmaps(VkImage image, const VkFormat format, const glm::vec2& size, const uint32_t mipmap_level_count) {
+	void wm_vulkan_rendering_context::generate_mipmaps(VkImage image, const VkFormat format, const glm::vec2& size, const uint32_t mipmap_level_count) {
 		VkFormatProperties format_properties;
 		vkGetPhysicalDeviceFormatProperties(physical_device, format, &format_properties);
 		WM_ASSERT((format_properties.optimalTilingFeatures & VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT);
@@ -1117,13 +1120,13 @@ namespace wm {
 
 
 	//color texture
-	void wm_vulkan_rendering_system::create_color_resources() {
+	void wm_vulkan_rendering_context::create_color_resources() {
 		VkFormat format = surface_format.format;
 		create_image(glm::vec2(swap_chain_extent.width, swap_chain_extent.height), 1, msaa_sample_count, format, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, color_image, color_image_device_memory);
 		color_image_view = create_image_view(color_image, format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	}
 
-	VkSampleCountFlagBits wm_vulkan_rendering_system::get_msaa_sample_count(const VkPhysicalDeviceProperties physical_device_properties) const {
+	VkSampleCountFlagBits wm_vulkan_rendering_context::get_msaa_sample_count(const VkPhysicalDeviceProperties physical_device_properties) const {
 		VkSampleCountFlags counts = physical_device_properties.limits.framebufferColorSampleCounts & physical_device_properties.limits.framebufferDepthSampleCounts;
 		if(counts & VkSampleCountFlagBits::VK_SAMPLE_COUNT_64_BIT) {
 			return VkSampleCountFlagBits::VK_SAMPLE_COUNT_64_BIT;
@@ -1144,17 +1147,17 @@ namespace wm {
 
 
 	//depth texture
-	void wm_vulkan_rendering_system::create_depth_resources() {
+	void wm_vulkan_rendering_context::create_depth_resources() {
 		VkFormat depth_format = get_depth_format();
 		create_image(glm::vec2(swap_chain_extent.width, swap_chain_extent.height), 1, msaa_sample_count, depth_format, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth_image, depth_image_device_memory);
 		depth_image_view = create_image_view(depth_image, depth_format, VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 	}
 
-	VkFormat wm_vulkan_rendering_system::get_depth_format() const {
+	VkFormat wm_vulkan_rendering_context::get_depth_format() const {
 		return get_depth_format({VkFormat::VK_FORMAT_D32_SFLOAT, VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT, VkFormat::VK_FORMAT_D24_UNORM_S8_UINT}, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	}
 
-	VkFormat wm_vulkan_rendering_system::get_depth_format(const std::vector<VkFormat>& formats, const VkImageTiling image_tiling, const VkFormatFeatureFlags format_features) const {
+	VkFormat wm_vulkan_rendering_context::get_depth_format(const std::vector<VkFormat>& formats, const VkImageTiling image_tiling, const VkFormatFeatureFlags format_features) const {
 		for(VkFormat format : formats) {
 			VkFormatProperties format_properties;
 			vkGetPhysicalDeviceFormatProperties(physical_device, format, &format_properties);
@@ -1167,13 +1170,13 @@ namespace wm {
 		WM_THROW_ERROR("Can't find appropirate depth format");
 	}
 
-	bool wm_vulkan_rendering_system::depth_has_stencil_component(const VkFormat format) const {
+	bool wm_vulkan_rendering_context::depth_has_stencil_component(const VkFormat format) const {
 		return format == VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT || format == VkFormat::VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 
 
 	//vertex buffer
-	void wm_vulkan_rendering_system::load_mesh() {
+	void wm_vulkan_rendering_context::load_mesh() {
 		auto mesh = engine::get_resource_system()->get_mesh("res/mesh/helmet.obj");
 		for(auto& v : mesh->get_vertices()) {
 			vertices.push_back({v.get_position(), v.get_normal(), v.get_texture_coordinate()});
@@ -1181,7 +1184,7 @@ namespace wm {
 		indices = mesh->get_indices();
 	}
 
-	void wm_vulkan_rendering_system::create_vertex_buffer() {
+	void wm_vulkan_rendering_context::create_vertex_buffer() {
 		const size_t size = sizeof(vertices.at(0)) * vertices.size();
 
 		VkBuffer staging_buffer;
@@ -1202,7 +1205,7 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan vertex buffer created");
 	}
 
-	void wm_vulkan_rendering_system::create_index_buffer() {
+	void wm_vulkan_rendering_context::create_index_buffer() {
 		const size_t size = sizeof(indices.at(0)) * indices.size();
 
 		VkBuffer staging_buffer;
@@ -1223,7 +1226,7 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan index buffer created");
 	}
 
-	void wm_vulkan_rendering_system::create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& device_memory) const {
+	void wm_vulkan_rendering_context::create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& device_memory) const {
 		VkBufferCreateInfo buffer_create_info{};
 		buffer_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		buffer_create_info.size = size;
@@ -1254,7 +1257,7 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkBindBufferMemory(device, buffer, device_memory, 0));
 	}
 
-	void wm_vulkan_rendering_system::copy_buffer(const VkBuffer source_buffer, const VkBuffer destination_buffer, const size_t size) {
+	void wm_vulkan_rendering_context::copy_buffer(const VkBuffer source_buffer, const VkBuffer destination_buffer, const size_t size) {
 		VkCommandBuffer command_buffer = begin_single_time_commands();
 
 		VkBufferCopy buffer_copy{};
@@ -1266,8 +1269,8 @@ namespace wm {
 
 
 	//uniform buffers
-	void wm_vulkan_rendering_system::create_uniform_buffers() {
-		size_t buffer_size = sizeof(uniform_buffer_object);
+	void wm_vulkan_rendering_context::create_uniform_buffers() {
+		size_t buffer_size = sizeof(wm_gpu_matrices_ubo);
 
 		uniform_buffers.resize(swap_chain_images.size());
 		uniform_buffers_device_memories.resize(swap_chain_images.size());
@@ -1284,7 +1287,7 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan uniform buffers created");
 	}
 
-	void wm_vulkan_rendering_system::update_uniform_buffer(const uint32_t image_index) const {
+	void wm_vulkan_rendering_context::update_uniform_buffer(const uint32_t image_index) const {
 		static const float ROTATION_SPEED = 0.05f;
 		static float rotation = 0.0f;
 		const float delta_time = engine::get_time_system()->get_delta_time();
@@ -1302,7 +1305,7 @@ namespace wm {
 			model_matrix = child->get_transform()->get_model_matrix();
 			inverse_model_matrix = child->get_transform()->get_inverse_model_matrix();
 		}
-		uniform_buffer_object ubo{};
+		wm_gpu_matrices_ubo ubo{};
 		ubo.model = model_matrix;
 		ubo.inverse_model = inverse_model_matrix;
 
@@ -1316,7 +1319,7 @@ namespace wm {
 		vkUnmapMemory(device, uniform_buffers_device_memories.at(image_index));
 	}
 
-	void wm_vulkan_rendering_system::create_descriptor_pool() {
+	void wm_vulkan_rendering_context::create_descriptor_pool() {
 		VkDescriptorPoolSize uniform_buffer_descriptor_pool_size{};
 		uniform_buffer_descriptor_pool_size.type = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uniform_buffer_descriptor_pool_size.descriptorCount = static_cast<uint32_t>(swap_chain_images.size());
@@ -1336,7 +1339,7 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkCreateDescriptorPool(device, &descriptor_pool_create_info, nullptr, &descriptor_pool));
 	}
 
-	void wm_vulkan_rendering_system::create_descriptor_sets() {
+	void wm_vulkan_rendering_context::create_descriptor_sets() {
 		std::vector<VkDescriptorSetLayout> descriptor_set_layouts(swap_chain_images.size(), descriptor_set_layout);
 		VkDescriptorSetAllocateInfo descriptor_set_allocation_info{};
 		descriptor_set_allocation_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -1351,7 +1354,7 @@ namespace wm {
 			VkDescriptorBufferInfo descriptor_buffer_info{};
 			descriptor_buffer_info.buffer = uniform_buffers.at(i);
 			descriptor_buffer_info.offset = 0;
-			descriptor_buffer_info.range = sizeof(uniform_buffer_object);
+			descriptor_buffer_info.range = sizeof(wm_gpu_matrices_ubo);
 			std::array<VkDescriptorBufferInfo, 1> descriptor_buffer_infos = {descriptor_buffer_info};
 
 			VkDescriptorImageInfo descriptor_image_info{};
@@ -1386,7 +1389,7 @@ namespace wm {
 
 
 	//command buffers
-	void wm_vulkan_rendering_system::create_command_pool() {
+	void wm_vulkan_rendering_context::create_command_pool() {
 		VkCommandPoolCreateInfo command_pool_create_info{};
 		command_pool_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		command_pool_create_info.queueFamilyIndex = graphics_queue_family_index;
@@ -1395,7 +1398,7 @@ namespace wm {
 		WM_ASSERT_VULKAN(vkCreateCommandPool(device, &command_pool_create_info, nullptr, &command_pool));
 	}
 
-	void wm_vulkan_rendering_system::create_command_buffers() {
+	void wm_vulkan_rendering_context::create_command_buffers() {
 		command_buffers.resize(swap_chain_framebuffers.size());
 		VkCommandBufferAllocateInfo command_buffer_allocation_info{};
 		command_buffer_allocation_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1408,7 +1411,7 @@ namespace wm {
 		WM_LOG_INFO_2("Vulkan command buffers allocated");
 	}
 
-	VkCommandBuffer wm_vulkan_rendering_system::begin_single_time_commands() {
+	VkCommandBuffer wm_vulkan_rendering_context::begin_single_time_commands() {
 		VkCommandBufferAllocateInfo command_buffer_allocate_info{};
 		command_buffer_allocate_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		command_buffer_allocate_info.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -1427,7 +1430,7 @@ namespace wm {
 		return command_buffer;
 	}
 
-	void wm_vulkan_rendering_system::end_single_time_commands(const VkCommandBuffer command_buffer) {
+	void wm_vulkan_rendering_context::end_single_time_commands(const VkCommandBuffer command_buffer) {
 		WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffer));
 
 		VkSubmitInfo submit_info{};
@@ -1443,8 +1446,8 @@ namespace wm {
 		vkFreeCommandBuffers(device, command_pool, static_cast<uint32_t>(command_buffers.size()), command_buffers.data());
 	}
 
-	void wm_vulkan_rendering_system::update_command_buffer(const uint32_t image_index) {
-		vkResetCommandBuffer(command_buffers.at(image_index), VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+	void wm_vulkan_rendering_context::update_command_buffer(const uint32_t image_index) {
+		vkResetCommandBuffer(command_buffers.at(image_index), 0 /*VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT*/);
 
 		VkCommandBufferBeginInfo command_buffer_begin_info{};
 		command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1504,7 +1507,7 @@ namespace wm {
 
 
 	//sync
-	void wm_vulkan_rendering_system::create_semaphores() {
+	void wm_vulkan_rendering_context::create_semaphores() {
 		image_is_available.resize(MAX_FRAMES_IN_FLIGHT);
 		rendering_is_finished.resize(MAX_FRAMES_IN_FLIGHT);
 		in_flight.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1526,14 +1529,14 @@ namespace wm {
 
 
 	//imgui
-	void wm_vulkan_rendering_system::initialize_imgui() {
+	void wm_vulkan_rendering_context::initialize_imgui() {
 		create_imgui();
 		create_imgui_font_image();
 		create_imgui_descriptor_sets();
 		create_imgui_pipeline();
 	}
 
-	void wm_vulkan_rendering_system::create_imgui() {
+	void wm_vulkan_rendering_context::create_imgui() {
 		ImGui::CreateContext();
 
 		//ImGui::StyleColorsLight();
@@ -1573,7 +1576,7 @@ namespace wm {
 		}
 	}
 
-	void wm_vulkan_rendering_system::create_imgui_font_image() {
+	void wm_vulkan_rendering_context::create_imgui_font_image() {
 		ImGuiIO& io = ImGui::GetIO();
 		io.DisplaySize = ImVec2(swap_chain_extent.width, swap_chain_extent.height);
 		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
@@ -1606,7 +1609,7 @@ namespace wm {
 		create_sampler(1, 0.0f, font_sampler);
 	}
 
-	void wm_vulkan_rendering_system::create_imgui_descriptor_sets() {
+	void wm_vulkan_rendering_context::create_imgui_descriptor_sets() {
 		VkDescriptorPoolSize descriptor_pool_size{};
 		descriptor_pool_size.type = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		descriptor_pool_size.descriptorCount = static_cast<uint32_t>(swap_chain_images.size());
@@ -1666,7 +1669,7 @@ namespace wm {
 		}
 	}
 
-	void wm_vulkan_rendering_system::create_imgui_pipeline() {
+	void wm_vulkan_rendering_context::create_imgui_pipeline() {
 		VkPushConstantRange push_constant_range{};
 		push_constant_range.stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
 		push_constant_range.offset = 0;
@@ -1811,7 +1814,7 @@ namespace wm {
 		vkDestroyShaderModule(device, fragment_shader_module, nullptr);
 	}
 
-	void wm_vulkan_rendering_system::prepare_imgui() {
+	void wm_vulkan_rendering_context::prepare_imgui() {
 		ImGuiIO& io = ImGui::GetIO();
 
 		io.DisplaySize = ImVec2(swap_chain_extent.width, swap_chain_extent.height);
@@ -1869,7 +1872,7 @@ namespace wm {
 		mouse_scroll = glm::dvec2(0.0);
 	}
 
-	void wm_vulkan_rendering_system::before_draw_imgui(const uint32_t image_index) {
+	void wm_vulkan_rendering_context::before_draw_imgui(const uint32_t image_index) {
 		ImGui::NewFrame();
 
 		//ImGui::ShowDemoWindow();
@@ -1925,7 +1928,7 @@ namespace wm {
 		}
 	}
 
-	void wm_vulkan_rendering_system::draw_imgui(const uint32_t image_index) {
+	void wm_vulkan_rendering_context::draw_imgui(const uint32_t image_index) {
 		ImGuiIO& io = ImGui::GetIO();
 
 		vkCmdBindDescriptorSets(command_buffers.at(image_index), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, imgui_pipeline_layout, 0, 1, &imgui_descriptor_sets.at(image_index), 0, nullptr);
@@ -1969,7 +1972,7 @@ namespace wm {
 		}
 	}
 
-	void wm_vulkan_rendering_system::destroy_imgui() {
+	void wm_vulkan_rendering_context::destroy_imgui() {
 		ImGui::DestroyContext();
 		for(int32_t i = 0; i < swap_chain_images.size(); i++) {
 			vkDestroyBuffer(device, imgui_vertex_buffers.at(i), nullptr);
@@ -1990,7 +1993,7 @@ namespace wm {
 	}
 
 	//drawing
-	void wm_vulkan_rendering_system::update() {
+	void wm_vulkan_rendering_context::update() {
 		if(engine::get_window_system()->is_closing() || minimized) {
 			return;
 		}
@@ -2058,7 +2061,7 @@ namespace wm {
 		WM_LOG_INFO_3("vulkan rendering system updated");
 	}
 
-	wm_vulkan_rendering_system::~wm_vulkan_rendering_system() {
+	void wm_vulkan_rendering_context::destroy() {
 		vkDeviceWaitIdle(device);
 
 		destroy_imgui();
