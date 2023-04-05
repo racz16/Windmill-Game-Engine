@@ -10,7 +10,7 @@ jobs:
       - uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: 1.3.224.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
       - run: cmake .
       - run: cmake --build .
@@ -23,7 +23,7 @@ jobs:
       - uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: 1.3.224.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
       - run: cmake .
       - run: cmake --build . --config Release
@@ -38,7 +38,7 @@ jobs:
       - uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: 1.3.224.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
       - run: cmake .
       - run: cmake --build .
@@ -53,14 +53,7 @@ jobs:
       - uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: 1.3.224.1
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
       - run: cmake .
       - run: cmake --build . --config Release
-  build-shaders:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: sudo apt-get update
-      - run: sudo apt-get install glslang-tools
-      - run: ./compile_shaders.sh

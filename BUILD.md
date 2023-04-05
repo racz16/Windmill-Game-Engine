@@ -1,10 +1,10 @@
 # Build instructions
 
-To build the source code, you have to clone the repository (with submodules), install the Vulkan SDK and compile the code with a compiler which supports C++17. On Linux you have to install X11. It is also necessary to compile the shaders with the appropirate compile_shaders script in the root folder. You have to repeat the shader compilation every time you create or edit a shader. If you have trouble building the code, take a look at the following step-by-step build instructions.
+To build the source code, you have to clone the repository (with submodules), install the Vulkan SDK and compile the code with a compiler which supports C++17. On Linux you have to install X11. If you have trouble building the code, take a look at the following step-by-step build instructions.
 
 Required versions:
 
-- CMake 3.16+ (tested with 3.22.1)
+- CMake 3.21+ (tested with 3.22.1)
 - Vulkan SDK 1.2+ (tested with 1.3.224.1)
 - Visual Studio 2017+ (tested with 2022)
 - GCC 8+ (tested with 11.2.0)
@@ -20,12 +20,10 @@ Required versions:
 5. Open Visual Studio and select the __Clone a repository__ option in the Start Window
 6. Enter __<https://github.com/racz16/Windmill-Game-Engine.git>__ into the Repository location
 7. Click on the __Clone__ button
-8. Run the __compile_shaders.ps1__ script (right click, Run with PowerShell)
-   - You have to repeat this step every time you create or edit a shader
-9. Click on the __Switch between solutions and available views__ button (top of the Solution Explorer)
-10. Select the __example_1.exe__ (or any other) Debug Target (click on the little arrow pointing downwards next to the button Select Startup Item...)
+8. Click on the __Switch between solutions and available views__ button (top of the Solution Explorer)
+9. Select the __example_1.exe__ Debug Target (click on the little arrow pointing downwards next to the button Select Startup Item...)
     - You can switch between the __debug-win__ and the __release-win__ configurations
-11. Click on the __example_1.exe__ button
+10. Click on the __example_1.exe__ button
 
 ## Linux
 
@@ -86,21 +84,13 @@ Required versions:
     cd Windmill-Game-Engine
     ```
 
-9. Run the shader compiler script
-
-    ```bash
-    ./compile_shaders.sh
-    ```
-
-    You have to repeat this step every time you create or edit a shader
-
-10. Run CMake
+9. Run CMake
 
     ```bash
     cmake .
     ```
 
-11. Build the code
+10. Build the code
 
     ```bash
     cmake --build .
@@ -112,7 +102,7 @@ Required versions:
     cmake --build . --config Release
     ```
 
-12. Run one of the examples
+11. Run one of the examples
 
     ```bash
     ./example_1
