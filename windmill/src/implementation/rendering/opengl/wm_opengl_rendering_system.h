@@ -7,7 +7,7 @@ namespace wm {
 
 	class wm_opengl_rendering_system: public rendering_system {
 	private:
-		ptr<rendering_context> rendering_context{nullptr};
+		ptr<wm::rendering_context> rendering_context{nullptr};
 	public:
 		wm_opengl_rendering_system();
 		void update() override;
