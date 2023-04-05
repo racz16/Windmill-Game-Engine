@@ -216,8 +216,6 @@ add_library("${WM_WINDMILL}" SHARED
 	"src/implementation/rendering/vulkan/wm_vulkan_rendering_context.cpp" 	
 	"src/implementation/rendering/wm_gpu_matrices_ubo.h" 	
 	"src/implementation/rendering/wm_gpu_vertex.h" 	
-	"src/interface/component/mesh/mesh_component.h" 	
-	"src/interface/rendering/gpu_mesh.h"
 
 	"../lib/imgui/imgui.cpp"
 	"../lib/imgui/imgui_demo.cpp"
