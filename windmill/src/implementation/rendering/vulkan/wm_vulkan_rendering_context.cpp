@@ -73,10 +73,15 @@ namespace wm {
 		instance_create_info.ppEnabledExtensionNames = extensions.data();
 		instance_create_info.enabledLayerCount = static_cast<uint32_t>(layers.size());
 		instance_create_info.ppEnabledLayerNames = layers.data();
-	#ifdef WM_BUILD_DEBUG
-		const auto debug_utils_messenger_create_info = create_debug_utils_messenger_create_info();
-		instance_create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debug_utils_messenger_create_info;
-	#endif
+	//#ifdef WM_BUILD_DEBUG
+	//	VkValidationFeaturesEXT validation_features{};
+	//	validation_features.sType = VkStructureType::VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+	//	std::array<VkValidationFeatureEnableEXT, 1>  validation_feature_enable = {VkValidationFeatureEnableEXT::VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT};
+	//	validation_features.enabledValidationFeatureCount = static_cast<uint32_t>(validation_feature_enable.size());
+	//	validation_features.pEnabledValidationFeatures = validation_feature_enable.data();
+
+	//	instance_create_info.pNext = &validation_features;
+	//#endif
 
 		WM_ASSERT_VULKAN(vkCreateInstance(&instance_create_info, nullptr, &instance));
 		WM_LOG_INFO_2("Vulkan instance created");
@@ -214,9 +219,11 @@ namespace wm {
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debug_utils_message_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_type, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data) {
 		std::string severity = vulkan_message_severity_to_string(message_severity);
 		std::string type = vulkan_message_type_to_string(message_type);
-		if(message_severity <= VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-			WM_LOG_INFO_3("Vulkan info: " + severity + ", " + type + ", " + callback_data->pMessage);
-		} else if(message_severity == VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+		if(message_severity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
+			WM_LOG_INFO_3("Vulkan verbose: " + severity + ", " + type + ", " + callback_data->pMessage);
+		} else if(message_severity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+			WM_LOG_INFO_2("Vulkan info: " + severity + ", " + type + ", " + callback_data->pMessage);
+		} else if(message_severity & VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
 			WM_LOG_WARNING("Vulkan warning: " + severity + ", " + type + ", " + callback_data->pMessage);
 		} else {
 			WM_LOG_ERROR("Vulkan error: " + severity + ", " + type + ", " + callback_data->pMessage, __FUNCTION__, __LINE__);
@@ -228,27 +235,28 @@ namespace wm {
 		VkDebugUtilsMessengerCreateInfoEXT debug_utils_messenger_create_info{};
 		debug_utils_messenger_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 		debug_utils_messenger_create_info.messageSeverity =
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+			VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+			VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+			VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+			VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 		debug_utils_messenger_create_info.messageType =
-			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+			VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+			VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+			VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		debug_utils_messenger_create_info.pfnUserCallback = debug_utils_message_callback;
 		return debug_utils_messenger_create_info;
 	}
 
 	void wm_vulkan_rendering_context::create_debug_utils_messenger() {
 		const auto debug_utils_messenger_create_info = create_debug_utils_messenger_create_info();
-		auto vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+		auto vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 		WM_ASSERT(vkCreateDebugUtilsMessengerEXT != nullptr);
 		WM_ASSERT_VULKAN(vkCreateDebugUtilsMessengerEXT(instance, &debug_utils_messenger_create_info, nullptr, &debug_utils_messenger));
 		WM_LOG_INFO_2("Vulkan debug messenger created");
 	}
 
 	void wm_vulkan_rendering_context::destroy_debug_utils_messenger() {
-		auto vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+		auto vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
 		WM_ASSERT(vkDestroyDebugUtilsMessengerEXT != nullptr);
 		vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
 		debug_utils_messenger = VK_NULL_HANDLE;
@@ -386,6 +394,9 @@ namespace wm {
 	//device extensions
 	std::vector<const char*> wm_vulkan_rendering_context::get_required_device_extensions() const {
 		std::vector<const char*> required_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+	//#ifdef WM_BUILD_DEBUG
+	//	required_extensions.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
+	//#endif
 		return required_extensions;
 	}
 
@@ -418,14 +429,14 @@ namespace wm {
 	void wm_vulkan_rendering_context::register_event_handlers() {
 		engine::get_event_system()->add_event_listener<window_framebuffer_size_event>(window_framebuffer_size_event::get_key(), [this](const window_framebuffer_size_event event) {
 			this->framebuffer_resized = true;
-		this->minimized = event.get_new_size().x == 0 || event.get_new_size().y == 0;
+			this->minimized = event.get_new_size().x == 0 || event.get_new_size().y == 0;
 		});
 		engine::get_event_system()->add_event_listener<mouse_scroll_event>(mouse_scroll_event::get_key(), [this](const mouse_scroll_event event) {
 			this->mouse_scroll = event.get_offset();
 		});
 		engine::get_event_system()->add_event_listener<keyboard_character_event>(keyboard_character_event::get_key(), [this](const keyboard_character_event event) {
 			ImGuiIO& io = ImGui::GetIO();
-		io.AddInputCharacter(event.get_utf_32_code_point());
+			io.AddInputCharacter(event.get_utf_32_code_point());
 		});
 	}
 
@@ -833,7 +844,7 @@ namespace wm {
 	void wm_vulkan_rendering_context::create_framebuffers() {
 		swap_chain_framebuffers.resize(swap_chain_image_views.size());
 
-		for(int32_t i = 0; i < static_cast<int32_t>(swap_chain_image_views.size()); i++) {
+		for(int32_t i = 0; i < swap_chain_image_views.size(); i++) {
 			std::array<VkImageView, 3> attachments = {color_image_view, depth_image_view, swap_chain_image_views.at(i)};
 
 			VkFramebufferCreateInfo framebuffer_create_info{};
@@ -868,7 +879,7 @@ namespace wm {
 	VkShaderModule wm_vulkan_rendering_context::create_shader_module(const std::vector<char>& code) const {
 		VkShaderModuleCreateInfo shader_module_create_info{};
 		shader_module_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		shader_module_create_info.codeSize = code.size();
+		shader_module_create_info.codeSize = static_cast<uint32_t>(code.size());
 		shader_module_create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
 		VkShaderModule shader_module;
@@ -1055,7 +1066,7 @@ namespace wm {
 	void wm_vulkan_rendering_context::generate_mipmaps(VkImage image, const VkFormat format, const glm::vec2& size, const uint32_t mipmap_level_count) {
 		VkFormatProperties format_properties;
 		vkGetPhysicalDeviceFormatProperties(physical_device, format, &format_properties);
-		WM_ASSERT((format_properties.optimalTilingFeatures & VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT);
+		WM_ASSERT((format_properties.optimalTilingFeatures & VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) & VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT);
 
 		VkCommandBuffer command_buffer = begin_single_time_commands();
 
