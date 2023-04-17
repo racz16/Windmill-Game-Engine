@@ -8,6 +8,7 @@
 #include "core/utility.h"
 #include "defines/log_defines.h"
 #include "defines/general_defines.h"
+#include "defines/code_generation_defines.h"
 #include "window/event/window_framebuffer_size_event.h"
 #include "window/event/mouse_scroll_event.h"
 #include "window/event/keyboard_character_event.h"
@@ -17,6 +18,18 @@
 #include "../wm_gpu_matrices_ubo.h"
 
 namespace wm {
+
+#ifdef WM_BUILD_DEBUG
+#define VK_LABEL(type, object, name) set_object_label(type, reinterpret_cast<uint64_t>(object), name)
+#define VK_GROUP_START(name, command_buffer) start_group(name, command_buffer)
+#define VK_GROUP_STOP(command_buffer) stop_group(command_buffer)
+#define VK_MARKER(name, command_buffer) set_marker(name, command_buffer)
+#else
+#define VK_LABEL(type, object, name)
+#define VK_GROUP_START(name, command_buffer)
+#define VK_GROUP_STOP(command_buffer)
+#define VK_MARKER(name, command_buffer)
+#endif
 
 	std::vector<wm_gpu_vertex> wm_vulkan_rendering_context::vertices;
 	std::vector<uint32_t> wm_vulkan_rendering_context::indices;
@@ -50,8 +63,6 @@ namespace wm {
 		create_command_buffers();
 		create_semaphores();
 		initialize_imgui();
-
-		WM_LOG_INFO_1("Vulkan rendering system created");
 	}
 
 	void wm_vulkan_rendering_context::create_instance() {
@@ -73,15 +84,15 @@ namespace wm {
 		instance_create_info.ppEnabledExtensionNames = extensions.data();
 		instance_create_info.enabledLayerCount = static_cast<uint32_t>(layers.size());
 		instance_create_info.ppEnabledLayerNames = layers.data();
-	//#ifdef WM_BUILD_DEBUG
-	//	VkValidationFeaturesEXT validation_features{};
-	//	validation_features.sType = VkStructureType::VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
-	//	std::array<VkValidationFeatureEnableEXT, 1>  validation_feature_enable = {VkValidationFeatureEnableEXT::VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT};
-	//	validation_features.enabledValidationFeatureCount = static_cast<uint32_t>(validation_feature_enable.size());
-	//	validation_features.pEnabledValidationFeatures = validation_feature_enable.data();
+		//#ifdef WM_BUILD_DEBUG
+		//	VkValidationFeaturesEXT validation_features{};
+		//	validation_features.sType = VkStructureType::VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+		//	std::array<VkValidationFeatureEnableEXT, 1>  validation_feature_enable = {VkValidationFeatureEnableEXT::VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT};
+		//	validation_features.enabledValidationFeatureCount = static_cast<uint32_t>(validation_feature_enable.size());
+		//	validation_features.pEnabledValidationFeatures = validation_feature_enable.data();
 
-	//	instance_create_info.pNext = &validation_features;
-	//#endif
+		//	instance_create_info.pNext = &validation_features;
+		//#endif
 
 		WM_ASSERT_VULKAN(vkCreateInstance(&instance_create_info, nullptr, &instance));
 		WM_LOG_INFO_2("Vulkan instance created");
@@ -250,17 +261,84 @@ namespace wm {
 	void wm_vulkan_rendering_context::create_debug_utils_messenger() {
 		const auto debug_utils_messenger_create_info = create_debug_utils_messenger_create_info();
 		auto vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-		WM_ASSERT(vkCreateDebugUtilsMessengerEXT != nullptr);
+		WM_ASSERT(vkCreateDebugUtilsMessengerEXT);
 		WM_ASSERT_VULKAN(vkCreateDebugUtilsMessengerEXT(instance, &debug_utils_messenger_create_info, nullptr, &debug_utils_messenger));
 		WM_LOG_INFO_2("Vulkan debug messenger created");
 	}
 
 	void wm_vulkan_rendering_context::destroy_debug_utils_messenger() {
 		auto vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-		WM_ASSERT(vkDestroyDebugUtilsMessengerEXT != nullptr);
+		WM_ASSERT(vkDestroyDebugUtilsMessengerEXT);
 		vkDestroyDebugUtilsMessengerEXT(instance, debug_utils_messenger, nullptr);
 		debug_utils_messenger = VK_NULL_HANDLE;
 		WM_LOG_INFO_2("Vulkan debug messenger destroyed");
+	}
+
+	std::string wm_vulkan_rendering_context::get_object_type(const VkObjectType object_type) const {
+		switch(object_type) {
+			case VkObjectType::VK_OBJECT_TYPE_UNKNOWN: return "UNKNOWN";
+			case VkObjectType::VK_OBJECT_TYPE_INSTANCE: return "INSTANCE";
+			case VkObjectType::VK_OBJECT_TYPE_PHYSICAL_DEVICE: return "PHYSICAL DEVICE";
+			case VkObjectType::VK_OBJECT_TYPE_DEVICE: return "DEVICE";
+			case VkObjectType::VK_OBJECT_TYPE_QUEUE: return "QUEUE";
+			case VkObjectType::VK_OBJECT_TYPE_SEMAPHORE: return "SEMAPHORE";
+			case VkObjectType::VK_OBJECT_TYPE_COMMAND_BUFFER: return "COMMAND BUFFER";
+			case VkObjectType::VK_OBJECT_TYPE_FENCE: return "FENCE";
+			case VkObjectType::VK_OBJECT_TYPE_DEVICE_MEMORY: return "DEVICE MEMORY";
+			case VkObjectType::VK_OBJECT_TYPE_BUFFER: return "BUFFER";
+			case VkObjectType::VK_OBJECT_TYPE_IMAGE: return "IMAGE";
+			case VkObjectType::VK_OBJECT_TYPE_EVENT: return "EVENT";
+			case VkObjectType::VK_OBJECT_TYPE_QUERY_POOL: return "QUERY POOL";
+			case VkObjectType::VK_OBJECT_TYPE_BUFFER_VIEW: return "BUFFER VIEW";
+			case VkObjectType::VK_OBJECT_TYPE_IMAGE_VIEW: return "IMAGE VIEW";
+			case VkObjectType::VK_OBJECT_TYPE_SHADER_MODULE: return "SHADER MODULE";
+			case VkObjectType::VK_OBJECT_TYPE_PIPELINE_CACHE: return "PIPELINE CACHE";
+			case VkObjectType::VK_OBJECT_TYPE_PIPELINE_LAYOUT: return "PIPELINE LAYOUT";
+			case VkObjectType::VK_OBJECT_TYPE_RENDER_PASS: return "RENDER PASS";
+			case VkObjectType::VK_OBJECT_TYPE_PIPELINE: return "PIPELINE";
+			case VkObjectType::VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT: return "DESCRIPTOR SET LAYOUT";
+			case VkObjectType::VK_OBJECT_TYPE_SAMPLER: return "SAMPLER";
+			case VkObjectType::VK_OBJECT_TYPE_DESCRIPTOR_POOL: return "DESCRIPTOR POOL";
+			case VkObjectType::VK_OBJECT_TYPE_DESCRIPTOR_SET: return "DESCRIPTOR SET";
+			case VkObjectType::VK_OBJECT_TYPE_FRAMEBUFFER: return "FRAMEBUFFER";
+			case VkObjectType::VK_OBJECT_TYPE_COMMAND_POOL: return "COMMAND POOL";
+			default: return "UNKNOWN";
+		}
+	}
+
+	void wm_vulkan_rendering_context::set_object_label(const VkObjectType object_type, const uint64_t id, const std::string& name) const {
+		std::string label = "[" + get_object_type(object_type) + "] " + name;
+		VkDebugUtilsObjectNameInfoEXT debug_utils_object_name_info{};
+		debug_utils_object_name_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		debug_utils_object_name_info.objectHandle = id;
+		debug_utils_object_name_info.objectType = object_type;
+		debug_utils_object_name_info.pObjectName = label.c_str();
+		auto vkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
+		vkSetDebugUtilsObjectNameEXT(device, &debug_utils_object_name_info);
+	}
+
+	void wm_vulkan_rendering_context::start_group(const std::string& name, const VkCommandBuffer command_buffer) const {
+		VkDebugUtilsLabelEXT debug_utils_label{};
+		debug_utils_label.sType = VkStructureType::VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+		debug_utils_label.pLabelName = name.c_str();
+		auto vkCmdBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT"));
+		WM_ASSERT(vkCmdBeginDebugUtilsLabelEXT);
+		vkCmdBeginDebugUtilsLabelEXT(command_buffer, &debug_utils_label);
+	}
+
+	void wm_vulkan_rendering_context::stop_group(const VkCommandBuffer command_buffer) const {
+		auto vkCmdEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT"));
+		WM_ASSERT(vkCmdEndDebugUtilsLabelEXT);
+		vkCmdEndDebugUtilsLabelEXT(command_buffer);
+	}
+
+	void wm_vulkan_rendering_context::set_marker(const std::string& name, const VkCommandBuffer command_buffer) const {
+		VkDebugUtilsLabelEXT debug_utils_label{};
+		debug_utils_label.sType = VkStructureType::VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+		debug_utils_label.pLabelName = name.c_str();
+		auto vkCmdInsertDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdInsertDebugUtilsLabelEXT>(vkGetInstanceProcAddr(instance, "vkCmdInsertDebugUtilsLabelEXT"));
+		WM_ASSERT(vkCmdInsertDebugUtilsLabelEXT);
+		vkCmdInsertDebugUtilsLabelEXT(command_buffer, &debug_utils_label);
 	}
 
 
@@ -300,17 +378,9 @@ namespace wm {
 		device_create_info.pEnabledFeatures = &physical_device_features;
 
 		WM_ASSERT_VULKAN(vkCreateDevice(physical_device, &device_create_info, nullptr, &device));
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_PHYSICAL_DEVICE, physical_device, "RTX 3060");
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_DEVICE, device, "logical device");
 		WM_LOG_INFO_2("Vulkan device created");
-
-	#ifdef WM_BUILD_DEBUG
-		VkDebugUtilsObjectNameInfoEXT debug_utils_object_name_info{};
-		debug_utils_object_name_info.sType = VkStructureType::VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
-		debug_utils_object_name_info.objectHandle = reinterpret_cast<uint64_t>(device);
-		debug_utils_object_name_info.objectType = VkObjectType::VK_OBJECT_TYPE_DEVICE;
-		debug_utils_object_name_info.pObjectName = "Logical device";
-		auto vkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
-		vkSetDebugUtilsObjectNameEXT(device, &debug_utils_object_name_info);
-	#endif
 
 		vkGetDeviceQueue(device, graphics_queue_family_index, 0, &graphics_queue);
 		vkGetDeviceQueue(device, presentation_queue_family_index, 0, &presentation_queue);
@@ -394,9 +464,9 @@ namespace wm {
 	//device extensions
 	std::vector<const char*> wm_vulkan_rendering_context::get_required_device_extensions() const {
 		std::vector<const char*> required_extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-	//#ifdef WM_BUILD_DEBUG
-	//	required_extensions.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
-	//#endif
+		//#ifdef WM_BUILD_DEBUG
+		//	required_extensions.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
+		//#endif
 		return required_extensions;
 	}
 
@@ -618,15 +688,18 @@ namespace wm {
 		descriptor_set_layout_create_info.pBindings = descriptor_set_layout_bindings.data();
 
 		WM_ASSERT_VULKAN(vkCreateDescriptorSetLayout(device, &descriptor_set_layout_create_info, nullptr, &descriptor_set_layout));
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, descriptor_set_layout, "lambertian uniforms");
 	}
 
 	void wm_vulkan_rendering_context::create_pipeline() {
-		auto vertex_shader_code = read_file("res/shader/shader.vert.spv");
+		auto vertex_shader_code = read_file(GLSL_VERTEX("lambertian"));
 		WM_LOG_INFO_2("Lambertian vertex shader loaded");
-		auto fragment_shader_code = read_file("res/shader/shader.frag.spv");
+		auto fragment_shader_code = read_file(GLSL_FRAGMENT("lambertian"));
 		WM_LOG_INFO_2("Lambertian fragment shader loaded");
 		auto vertex_shader_module = create_shader_module(vertex_shader_code);
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_SHADER_MODULE, vertex_shader_module, "lambertian vertex shader");
 		auto fragment_shader_module = create_shader_module(fragment_shader_code);
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_SHADER_MODULE, fragment_shader_module, "lambertian fragment shader");
 
 		VkPipelineShaderStageCreateInfo pipeline_vertex_shader_stage_create_info{};
 		pipeline_vertex_shader_stage_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -756,6 +829,7 @@ namespace wm {
 		std::array<VkGraphicsPipelineCreateInfo, 1> graphics_pipeline_create_infos = {graphics_pipeline_create_info};
 
 		WM_ASSERT_VULKAN(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphics_pipeline_create_infos.size()), graphics_pipeline_create_infos.data(), nullptr, &pipeline));
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_PIPELINE, pipeline, "lambertian pipeline");
 
 		vkDestroyShaderModule(device, vertex_shader_module, nullptr);
 		vkDestroyShaderModule(device, fragment_shader_module, nullptr);
@@ -837,6 +911,7 @@ namespace wm {
 		render_pass_create_info.pDependencies = subpass_dependencies.data();
 
 		WM_ASSERT_VULKAN(vkCreateRenderPass(device, &render_pass_create_info, nullptr, &render_pass));
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_RENDER_PASS, render_pass, "main render pass");
 
 		WM_LOG_INFO_2("Vulkan renderpass created");
 	}
@@ -857,6 +932,7 @@ namespace wm {
 			framebuffer_create_info.layers = 1;
 
 			WM_ASSERT_VULKAN(vkCreateFramebuffer(device, &framebuffer_create_info, nullptr, &swap_chain_framebuffers.at(i)));
+			VK_LABEL(VkObjectType::VK_OBJECT_TYPE_FRAMEBUFFER, swap_chain_framebuffers.at(i), "main framebuffer[" + std::to_string(i) + "]");
 		}
 		WM_LOG_INFO_2("Vulkan framebuffers created");
 	}
@@ -904,6 +980,7 @@ namespace wm {
 		vkUnmapMemory(device, staging_buffer_device_memory);
 
 		create_image(image->get_size(), texture_mipmap_level_count, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, VkFormat::VK_FORMAT_R8G8B8A8_UNORM, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image, texture_image_device_memory);
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_IMAGE, texture_image, "res/mesh/helmet.jpg");
 
 		transition_image_layout(texture_image, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture_mipmap_level_count);
 		copy_buffer_to_image(staging_buffer, texture_image, static_cast<uint32_t>(image->get_size().x), static_cast<uint32_t>(image->get_size().y));
@@ -918,6 +995,7 @@ namespace wm {
 
 	void wm_vulkan_rendering_context::create_texture_image_view() {
 		texture_image_view = create_image_view(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_UNORM, VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT, texture_mipmap_level_count);
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_IMAGE_VIEW, texture_image_view, "res/mesh/helmet.jpg");
 	}
 
 	void wm_vulkan_rendering_context::create_image(const glm::ivec2& size, const uint32_t mipmap_level_count, const VkSampleCountFlagBits sample_count, const VkFormat format, const VkImageTiling image_tiling, const VkImageUsageFlags image_usage, const VkMemoryPropertyFlags properties, VkImage& texture_image, VkDeviceMemory& texture_image_device_memory) {
@@ -980,6 +1058,7 @@ namespace wm {
 
 	void wm_vulkan_rendering_context::create_texture_sampler() {
 		create_sampler(texture_mipmap_level_count, max_anisotropy, texture_sampler);
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_SAMPLER, texture_sampler, "diffuse sampler");
 	}
 
 	void wm_vulkan_rendering_context::create_sampler(const uint32_t mipmap_level_count, const float max_anisotropy, VkSampler& sampler) {
@@ -1294,6 +1373,7 @@ namespace wm {
 				uniform_buffers.at(i),
 				uniform_buffers_device_memories.at(i)
 			);
+			VK_LABEL(VkObjectType::VK_OBJECT_TYPE_BUFFER, uniform_buffers[i], "matrices[" + std::to_string(i) + "] uniform buffer");
 		}
 		WM_LOG_INFO_2("Vulkan uniform buffers created");
 	}
@@ -1348,6 +1428,7 @@ namespace wm {
 		descriptor_pool_create_info.maxSets = static_cast<uint32_t>(swap_chain_images.size());
 
 		WM_ASSERT_VULKAN(vkCreateDescriptorPool(device, &descriptor_pool_create_info, nullptr, &descriptor_pool));
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_DESCRIPTOR_POOL, descriptor_pool, "main descriptor pool");
 	}
 
 	void wm_vulkan_rendering_context::create_descriptor_sets() {
@@ -1407,6 +1488,7 @@ namespace wm {
 		command_pool_create_info.flags = VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 		WM_ASSERT_VULKAN(vkCreateCommandPool(device, &command_pool_create_info, nullptr, &command_pool));
+		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_COMMAND_POOL, command_pool, "main command pool");
 	}
 
 	void wm_vulkan_rendering_context::create_command_buffers() {
@@ -1500,6 +1582,8 @@ namespace wm {
 
 		vkCmdSetScissor(command_buffers.at(image_index), 0, 1, &scissor_rectangle);
 
+		VK_GROUP_START("lambertian", command_buffers.at(image_index));
+
 		std::array<VkBuffer, 1> vertex_buffers = {vertex_buffer};
 		std::array<VkDeviceSize, 1> offsets = {0};
 		vkCmdBindVertexBuffers(command_buffers.at(image_index), 0, 1, vertex_buffers.data(), offsets.data());
@@ -1508,6 +1592,10 @@ namespace wm {
 		vkCmdBindDescriptorSets(command_buffers.at(image_index), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_sets.at(image_index), 0, nullptr);
 
 		vkCmdDrawIndexed(command_buffers.at(image_index), static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+
+		VK_GROUP_STOP(command_buffers.at(image_index));
+
+		VK_MARKER("TEST MARKER", command_buffers.at(image_index));
 
 		draw_imgui(image_index);
 
@@ -1747,9 +1835,9 @@ namespace wm {
 		pipeline_multisample_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		pipeline_multisample_state_create_info.rasterizationSamples = msaa_sample_count;
 
-		auto verteex_shader_code = read_file("res/shader/imgui.vert.spv");
+		auto verteex_shader_code = read_file(GLSL_VERTEX("imgui"));
 		WM_LOG_INFO_2("ImGui vertex shader loaded");
-		auto fragment_shader_code = read_file("res/shader/imgui.frag.spv");
+		auto fragment_shader_code = read_file(GLSL_FRAGMENT("imgui"));
 		WM_LOG_INFO_2("ImGui fragment shader loaded");
 		auto vertex_shader_module = create_shader_module(verteex_shader_code);
 		auto fragment_shader_module = create_shader_module(fragment_shader_code);
@@ -1952,6 +2040,8 @@ namespace wm {
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(command_buffers.at(image_index), 0, 1, &viewport);
 
+		VK_GROUP_START("imgui", command_buffers.at(image_index));
+
 		imgui_push_constants.scale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
 		imgui_push_constants.translate = glm::vec2(-1.0f);
 		vkCmdPushConstants(command_buffers.at(image_index), imgui_pipeline_layout, VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(push_constatnt_block), &imgui_push_constants);
@@ -1970,10 +2060,10 @@ namespace wm {
 				for(int32_t j = 0; j < cmd_list->CmdBuffer.Size; j++) {
 					auto pcmd = &cmd_list->CmdBuffer[j];
 					VkRect2D scissor_rectangle;
-					scissor_rectangle.offset.x = std::max((int32_t) (pcmd->ClipRect.x), 0);
-					scissor_rectangle.offset.y = std::max((int32_t) (pcmd->ClipRect.y), 0);
-					scissor_rectangle.extent.width = (uint32_t) (pcmd->ClipRect.z - pcmd->ClipRect.x);
-					scissor_rectangle.extent.height = (uint32_t) (pcmd->ClipRect.w - pcmd->ClipRect.y);
+					scissor_rectangle.offset.x = std::max(static_cast<int32_t>(pcmd->ClipRect.x), 0);
+					scissor_rectangle.offset.y = std::max(static_cast<int32_t>(pcmd->ClipRect.y), 0);
+					scissor_rectangle.extent.width = static_cast<uint32_t>(pcmd->ClipRect.z - pcmd->ClipRect.x);
+					scissor_rectangle.extent.height = static_cast<uint32_t>(pcmd->ClipRect.w - pcmd->ClipRect.y);
 					vkCmdSetScissor(command_buffers.at(image_index), 0, 1, &scissor_rectangle);
 					vkCmdDrawIndexed(command_buffers.at(image_index), pcmd->ElemCount, 1, index_offset, vertex_offset, 0);
 					index_offset += pcmd->ElemCount;
@@ -1981,6 +2071,8 @@ namespace wm {
 				vertex_offset += cmd_list->VtxBuffer.Size;
 			}
 		}
+
+		VK_GROUP_STOP(command_buffers.at(image_index));
 	}
 
 	void wm_vulkan_rendering_context::destroy_imgui() {
@@ -2068,8 +2160,6 @@ namespace wm {
 			}
 			WM_ASSERT_VULKAN(result);
 		}
-
-		WM_LOG_INFO_3("vulkan rendering system updated");
 	}
 
 	void wm_vulkan_rendering_context::destroy() {
@@ -2121,8 +2211,6 @@ namespace wm {
 		vkDestroyInstance(instance, nullptr);
 		instance = VK_NULL_HANDLE;
 		WM_LOG_INFO_2("Vulkan instance destroyed");
-
-		WM_LOG_INFO_1("Vulkan rendering system destroyed");
 	}
 
 }

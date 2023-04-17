@@ -1,14 +1,15 @@
 # Build instructions
 
-To build the source code, you have to clone the repository (with submodules), install the Vulkan SDK and compile the code with a compiler which supports C++17. On Linux you have to install X11. If you have trouble building the code, take a look at the following step-by-step build instructions.
+To build the source code, you have to clone the repository (with submodules), install the Vulkan SDK and compile the code with a compiler which supports C++17. On Linux you have to install X11 and on Windows you have to use Direct3D 11.1. If you have trouble building the code, take a look at the following step-by-step build instructions.
 
 Required versions:
 
-- CMake 3.21+ (tested with 3.22.1)
+- CMake 3.19+ (tested with 3.22.1)
 - Vulkan SDK 1.2+ (tested with 1.3.224.1)
 - Visual Studio 2017+ (tested with 2022)
 - GCC 8+ (tested with 11.2.0)
 - Python (tested with 3.11.0)
+- Direct3D 11.1 on Windows
 
 ## Windows
 

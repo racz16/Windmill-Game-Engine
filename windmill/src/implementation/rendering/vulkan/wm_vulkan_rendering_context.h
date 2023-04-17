@@ -114,6 +114,12 @@ namespace wm {
 		VkDebugUtilsMessengerCreateInfoEXT create_debug_utils_messenger_create_info() const;
 		void create_debug_utils_messenger();
 		void destroy_debug_utils_messenger();
+		//debug
+		std::string get_object_type(const VkObjectType object_type) const;
+		void set_object_label(const VkObjectType object_type, const uint64_t id, const std::string& name) const;
+		void start_group(const std::string& name, const VkCommandBuffer command_buffer) const;
+		void stop_group(const VkCommandBuffer command_buffer) const;
+		void set_marker(const std::string& name, const VkCommandBuffer command_buffer) const;
 		//device
 		void create_device();
 		void get_physical_device();

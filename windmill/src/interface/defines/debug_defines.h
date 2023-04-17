@@ -33,7 +33,7 @@
 			WM_THROW_ERROR(std::string(std::string("ASSERT FAILED!\r\ncondition: ") + #expression));\
 		}
 
-#	define WM_ASSERT_VULKAN(expression) WM_ASSERT(expression == VkResult::VK_SUCCESS);
+#	define WM_ASSERT_VULKAN(expression) WM_ASSERT(expression == VkResult::VK_SUCCESS)
 #	define WM_ASSERT_OPENAL() wm_openal_audio_context::handle_openal_error(__FUNCTION__, __LINE__)
 #	define WM_ASSERT_OPENAL_ALC(device) wm_openal_audio_context::handle_openal_error(device, __FUNCTION__, __LINE__)
 #else

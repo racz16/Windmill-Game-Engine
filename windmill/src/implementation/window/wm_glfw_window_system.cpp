@@ -80,7 +80,10 @@ namespace wm {
 		if(selected_api == rendering_api::vulkan) {
 			WM_ASSERT(glfwVulkanSupported());
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		} else if(selected_api == rendering_api::direct3d11) {
+			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		} else if(selected_api == rendering_api::opengl) {
+			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 			glfwWindowHint(GLFW_SAMPLES, 8);
@@ -92,60 +95,60 @@ namespace wm {
 
 	void wm_glfw_window_system::create_window(const glm::ivec2& size) {
 		const auto monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
-		window_handler = glfwCreateWindow(size.x, size.y, title.c_str(), monitor, nullptr);
-		WM_ASSERT(window_handler != nullptr);
+		window_handle = glfwCreateWindow(size.x, size.y, title.c_str(), monitor, nullptr);
+		WM_ASSERT(window_handle);
 		WM_LOG_INFO_2("GLFW window created");
 	}
 
 	void wm_glfw_window_system::initialize_input() {
-		glfwSetInputMode(window_handler, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
+		glfwSetInputMode(window_handle, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
 		if(glfwRawMouseMotionSupported()) {
-			glfwSetInputMode(window_handler, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+			glfwSetInputMode(window_handle, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 		}
-		input_handler = ptr<wm_glfw_window_input_handler>(new wm_glfw_window_input_handler(window_handler));
+		input_handler = ptr<wm_glfw_window_input_handler>(new wm_glfw_window_input_handler(window_handle));
 	}
 
 	void wm_glfw_window_system::add_window_event_handlers() {
-		glfwSetWindowCloseCallback(window_handler, [](GLFWwindow* window) {
+		glfwSetWindowCloseCallback(window_handle, [](GLFWwindow* window) {
 			const auto event = window_closed_event();
 			engine::get_event_system()->emit_event<window_closed_event>(window_closed_event::get_key(), event);
 		});
-		glfwSetWindowSizeCallback(window_handler, [](GLFWwindow* window, int width, int height) {
+		glfwSetWindowSizeCallback(window_handle, [](GLFWwindow* window, int width, int height) {
 			const auto event = window_size_event(glm::ivec2(width, height));
 			engine::get_event_system()->emit_event<window_size_event>(window_size_event::get_key(), event);
 		});
-		glfwSetFramebufferSizeCallback(window_handler, [](GLFWwindow* window, int width, int height) {
+		glfwSetFramebufferSizeCallback(window_handle, [](GLFWwindow* window, int width, int height) {
 			const auto event = window_framebuffer_size_event(glm::ivec2(width, height));
 			engine::get_event_system()->emit_event<window_framebuffer_size_event>(window_framebuffer_size_event::get_key(), event);
 		});
-		glfwSetWindowContentScaleCallback(window_handler, [](GLFWwindow* window, float x_scale, float y_scale) {
+		glfwSetWindowContentScaleCallback(window_handle, [](GLFWwindow* window, float x_scale, float y_scale) {
 			const auto event = window_content_scale_event(glm::vec2(x_scale, y_scale));
 			engine::get_event_system()->emit_event<window_content_scale_event>(window_content_scale_event::get_key(), event);
 		});
-		glfwSetWindowPosCallback(window_handler, [](GLFWwindow* window, int x_pos, int y_pos) {
+		glfwSetWindowPosCallback(window_handle, [](GLFWwindow* window, int x_pos, int y_pos) {
 			const auto event = window_position_event(glm::ivec2(x_pos, y_pos));
 			engine::get_event_system()->emit_event<window_position_event>(window_position_event::get_key(), event);
 		});
-		glfwSetWindowIconifyCallback(window_handler, [](GLFWwindow* window, int iconified) {
+		glfwSetWindowIconifyCallback(window_handle, [](GLFWwindow* window, int iconified) {
 			const auto event = window_minimization_event(iconified == GLFW_TRUE);
 			engine::get_event_system()->emit_event<window_minimization_event>(window_minimization_event::get_key(), event);
 		});
-		glfwSetWindowMaximizeCallback(window_handler, [](GLFWwindow* window, int maximized) {
+		glfwSetWindowMaximizeCallback(window_handle, [](GLFWwindow* window, int maximized) {
 			const auto event = window_maximization_event(maximized == GLFW_TRUE);
 			engine::get_event_system()->emit_event<window_maximization_event>(window_maximization_event::get_key(), event);
 		});
-		glfwSetWindowFocusCallback(window_handler, [](GLFWwindow* window, int focused) {
+		glfwSetWindowFocusCallback(window_handle, [](GLFWwindow* window, int focused) {
 			const auto event = window_focus_event(focused == GLFW_TRUE);
 			engine::get_event_system()->emit_event<window_focus_event>(window_focus_event::get_key(), event);
 		});
-		glfwSetWindowRefreshCallback(window_handler, [](GLFWwindow* window) {
+		glfwSetWindowRefreshCallback(window_handle, [](GLFWwindow* window) {
 			const auto event = window_refresh_required_event();
 			engine::get_event_system()->emit_event<window_refresh_required_event>(window_refresh_required_event::get_key(), event);
 		});
 	}
 
 	void wm_glfw_window_system::add_input_event_handlers() {
-		glfwSetKeyCallback(window_handler, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+		glfwSetKeyCallback(window_handle, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 			const auto keyboard_button = static_cast<wm::keyboard_button>(key);
 			const auto state = button_state(static_cast<button_action>(action));
 			const bool shift = mods & GLFW_MOD_SHIFT;
@@ -157,19 +160,19 @@ namespace wm {
 			const auto event = keyboard_button_event(keyboard_button, state, scancode, shift, ctrl, alt, super, caps_lock, num_lock);
 			engine::get_event_system()->emit_event<keyboard_button_event>(keyboard_button_event::get_key(), event);
 		});
-		glfwSetCharCallback(window_handler, [](GLFWwindow* window, unsigned int code_point) {
+		glfwSetCharCallback(window_handle, [](GLFWwindow* window, unsigned int code_point) {
 			const auto event = keyboard_character_event(code_point);
 			engine::get_event_system()->emit_event<keyboard_character_event>(keyboard_character_event::get_key(), event);
 		});
-		glfwSetCursorPosCallback(window_handler, [](GLFWwindow* window, double x_pos, double y_pos) {
+		glfwSetCursorPosCallback(window_handle, [](GLFWwindow* window, double x_pos, double y_pos) {
 			const auto event = mouse_position_event(glm::dvec2(x_pos, y_pos));
 			engine::get_event_system()->emit_event<mouse_position_event>(mouse_position_event::get_key(), event);
 		});
-		glfwSetCursorEnterCallback(window_handler, [](GLFWwindow* window, int entered) {
+		glfwSetCursorEnterCallback(window_handle, [](GLFWwindow* window, int entered) {
 			const auto event = mouse_hover_event(entered);
 			engine::get_event_system()->emit_event<mouse_hover_event>(mouse_hover_event::get_key(), event);
 		});
-		glfwSetMouseButtonCallback(window_handler, [](GLFWwindow* window, int button, int action, int mods) {
+		glfwSetMouseButtonCallback(window_handle, [](GLFWwindow* window, int button, int action, int mods) {
 			const auto keyboard_button = static_cast<wm::mouse_button>(button);
 			const auto press = action == GLFW_PRESS;
 			const bool shift = mods & GLFW_MOD_SHIFT;
@@ -181,11 +184,11 @@ namespace wm {
 			const auto event = mouse_button_event(keyboard_button, press, shift, ctrl, alt, super, caps_lock, num_lock);
 			engine::get_event_system()->emit_event<mouse_button_event>(mouse_button_event::get_key(), event);
 		});
-		glfwSetScrollCallback(window_handler, [](GLFWwindow* window, double x_offset, double y_offset) {
+		glfwSetScrollCallback(window_handle, [](GLFWwindow* window, double x_offset, double y_offset) {
 			const auto event = mouse_scroll_event(glm::dvec2(x_offset, y_offset));
 			engine::get_event_system()->emit_event<mouse_scroll_event>(mouse_scroll_event::get_key(), event);
 		});
-		glfwSetDropCallback(window_handler, [](GLFWwindow* window, int count, const char** paths) {
+		glfwSetDropCallback(window_handle, [](GLFWwindow* window, int count, const char** paths) {
 			std::vector<std::string> file_paths;
 			for(int32_t i = 0; i < count; i++) {
 				file_paths.push_back(paths[i]);
@@ -202,39 +205,39 @@ namespace wm {
 	}
 
 	std::any wm_glfw_window_system::get_native_id() const {
-		return window_handler;
+		return window_handle;
 	}
 
 	bool wm_glfw_window_system::is_closing() const {
-		return glfwWindowShouldClose(window_handler);
+		return glfwWindowShouldClose(window_handle);
 	}
 
 	void wm_glfw_window_system::set_closing(const bool closing) {
-		glfwSetWindowShouldClose(window_handler, closing);
+		glfwSetWindowShouldClose(window_handle, closing);
 		WM_LOG_INFO_2("GLFW window set to closing");
 	}
 
 	bool wm_glfw_window_system::is_visible() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_VISIBLE);
+		return glfwGetWindowAttrib(window_handle, GLFW_VISIBLE);
 	}
 
 	void wm_glfw_window_system::set_visibility(const bool visibility) {
 		if(visibility) {
-			glfwShowWindow(window_handler);
+			glfwShowWindow(window_handle);
 		} else {
-			glfwHideWindow(window_handler);
+			glfwHideWindow(window_handle);
 		}
 		WM_LOG_INFO_2("GLFW window visibility state changed to " + std::to_string(visibility));
 	}
 
 	glm::ivec2 wm_glfw_window_system::get_position() const {
 		int32_t x_pos, y_pos;
-		glfwGetWindowPos(window_handler, &x_pos, &y_pos);
+		glfwGetWindowPos(window_handle, &x_pos, &y_pos);
 		return glm::ivec2(x_pos, y_pos);
 	}
 
 	void wm_glfw_window_system::set_position(const glm::ivec2& position) {
-		glfwSetWindowPos(window_handler, position.x, position.y);
+		glfwSetWindowPos(window_handle, position.x, position.y);
 		WM_LOG_INFO_2("GLFW window position changed to " + utility::to_string(position));
 	}
 
@@ -244,32 +247,32 @@ namespace wm {
 
 	void wm_glfw_window_system::set_title(const std::string& title) {
 		this->title = title;
-		glfwSetWindowTitle(window_handler, title.c_str());
+		glfwSetWindowTitle(window_handle, title.c_str());
 		WM_LOG_INFO_2("GLFW window title changed to " + title);
 	}
 
 	bool wm_glfw_window_system::is_minimized() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_ICONIFIED);
+		return glfwGetWindowAttrib(window_handle, GLFW_ICONIFIED);
 	}
 
 	void wm_glfw_window_system::set_minimization(const bool minimization) {
 		if(minimization) {
-			glfwIconifyWindow(window_handler);
+			glfwIconifyWindow(window_handle);
 		} else {
-			glfwRestoreWindow(window_handler);
+			glfwRestoreWindow(window_handle);
 		}
 		WM_LOG_INFO_2("GLFW window minimization state changed to " + std::to_string(minimization));
 	}
 
 	bool wm_glfw_window_system::is_maximized() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_MAXIMIZED);
+		return glfwGetWindowAttrib(window_handle, GLFW_MAXIMIZED);
 	}
 
 	void wm_glfw_window_system::set_maximization(const bool maximization) {
 		if(maximization) {
-			glfwMaximizeWindow(window_handler);
+			glfwMaximizeWindow(window_handle);
 		} else {
-			glfwRestoreWindow(window_handler);
+			glfwRestoreWindow(window_handle);
 		}
 		WM_LOG_INFO_2("GLFW window maximization state changed to " + std::to_string(maximization));
 	}
@@ -280,7 +283,7 @@ namespace wm {
 
 	void wm_glfw_window_system::set_aspect_ratio(const glm::ivec2& aspect_ratio) {
 		this->aspect_ratio = aspect_ratio;
-		glfwSetWindowAspectRatio(window_handler, aspect_ratio.x, aspect_ratio.y);
+		glfwSetWindowAspectRatio(window_handle, aspect_ratio.x, aspect_ratio.y);
 		WM_LOG_INFO_2("GLFW window aspect ratio changed to " + std::to_string(aspect_ratio.x) + ":" + std::to_string(aspect_ratio.y));
 	}
 
@@ -290,7 +293,7 @@ namespace wm {
 
 	void wm_glfw_window_system::set_minimum_size(const glm::ivec2& minimum_size) {
 		this->minimum_size = minimum_size;
-		glfwSetWindowSizeLimits(window_handler, minimum_size.x, minimum_size.y, maximum_size.x, maximum_size.y);
+		glfwSetWindowSizeLimits(window_handle, minimum_size.x, minimum_size.y, maximum_size.x, maximum_size.y);
 		WM_LOG_INFO_2("GLFW window min size changed to " + utility::to_string(minimum_size));
 	}
 
@@ -300,36 +303,36 @@ namespace wm {
 
 	void wm_glfw_window_system::set_maximum_size(const glm::ivec2& maximum_size) {
 		this->maximum_size = maximum_size;
-		glfwSetWindowSizeLimits(window_handler, minimum_size.x, minimum_size.y, maximum_size.x, maximum_size.y);
+		glfwSetWindowSizeLimits(window_handle, minimum_size.x, minimum_size.y, maximum_size.x, maximum_size.y);
 		WM_LOG_INFO_2("GLFW window max size changed to " + utility::to_string(maximum_size));
 	}
 
 	glm::ivec2 wm_glfw_window_system::get_size() const {
 		int32_t width, height;
-		glfwGetWindowSize(window_handler, &width, &height);
+		glfwGetWindowSize(window_handle, &width, &height);
 		return glm::ivec2(width, height);
 	}
 
 	void wm_glfw_window_system::set_size(const glm::ivec2& size) {
-		glfwSetWindowSize(window_handler, size.x, size.y);
+		glfwSetWindowSize(window_handle, size.x, size.y);
 		WM_LOG_INFO_2("GLFW window size changed to " + utility::to_string(size));
 	}
 
 	glm::ivec2 wm_glfw_window_system::get_framebuffer_size() const {
 		int32_t width, height;
-		glfwGetFramebufferSize(window_handler, &width, &height);
+		glfwGetFramebufferSize(window_handle, &width, &height);
 		return glm::ivec2(width, height);
 	}
 
 	glm::ivec4 wm_glfw_window_system::get_frame_size() const {
 		int32_t left, top, right, bottom;
-		glfwGetWindowFrameSize(window_handler, &left, &top, &right, &bottom);
+		glfwGetWindowFrameSize(window_handle, &left, &top, &right, &bottom);
 		return glm::ivec4(left, top, right, bottom);
 	}
 
 	glm::vec2 wm_glfw_window_system::get_content_scale() const {
 		float x_scale, y_scale;
-		glfwGetWindowContentScale(window_handler, &x_scale, &y_scale);
+		glfwGetWindowContentScale(window_handle, &x_scale, &y_scale);
 		return glm::vec2(x_scale, y_scale);
 	}
 
@@ -357,61 +360,61 @@ namespace wm {
 		const auto size = get_size();
 		const auto position = get_position();
 		const auto monitor = fullscreen ? glfwGetPrimaryMonitor() : nullptr;
-		glfwSetWindowMonitor(window_handler, monitor, position.x, position.y, size.x, size.y, refresh_rate);
+		glfwSetWindowMonitor(window_handle, monitor, position.x, position.y, size.x, size.y, refresh_rate);
 	}
 
 	bool wm_glfw_window_system::is_resizable() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_RESIZABLE);
+		return glfwGetWindowAttrib(window_handle, GLFW_RESIZABLE);
 	}
 
 	void wm_glfw_window_system::set_resizable(const bool resizable) {
-		glfwSetWindowAttrib(window_handler, GLFW_RESIZABLE, resizable);
+		glfwSetWindowAttrib(window_handle, GLFW_RESIZABLE, resizable);
 		WM_LOG_INFO_2("GLFW window resizable state changed to " + std::to_string(resizable));
 	}
 
 	bool wm_glfw_window_system::is_decorated() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_DECORATED);
+		return glfwGetWindowAttrib(window_handle, GLFW_DECORATED);
 	}
 
 	void wm_glfw_window_system::set_decorated(const bool decorated) {
-		glfwSetWindowAttrib(window_handler, GLFW_DECORATED, decorated);
+		glfwSetWindowAttrib(window_handle, GLFW_DECORATED, decorated);
 		WM_LOG_INFO_2("GLFW window decorated state changed to " + std::to_string(decorated));
 	}
 
 	bool wm_glfw_window_system::is_always_on_top() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_FLOATING);
+		return glfwGetWindowAttrib(window_handle, GLFW_FLOATING);
 	}
 
 	void wm_glfw_window_system::set_always_on_top(const bool always_on_top) {
-		glfwSetWindowAttrib(window_handler, GLFW_FLOATING, always_on_top);
+		glfwSetWindowAttrib(window_handle, GLFW_FLOATING, always_on_top);
 		WM_LOG_INFO_2("GLFW window always on top state changed to " + std::to_string(always_on_top));
 	}
 
 	bool wm_glfw_window_system::is_focus_on_show() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_FOCUS_ON_SHOW);
+		return glfwGetWindowAttrib(window_handle, GLFW_FOCUS_ON_SHOW);
 	}
 
 	void wm_glfw_window_system::set_focus_on_show(const bool focus_on_show) {
-		glfwSetWindowAttrib(window_handler, GLFW_FOCUS_ON_SHOW, focus_on_show);
+		glfwSetWindowAttrib(window_handle, GLFW_FOCUS_ON_SHOW, focus_on_show);
 		WM_LOG_INFO_2("GLFW window focus on show state changed to " + std::to_string(focus_on_show));
 	}
 
 	bool wm_glfw_window_system::is_focused() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_FOCUSED);
+		return glfwGetWindowAttrib(window_handle, GLFW_FOCUSED);
 	}
 
 	void wm_glfw_window_system::focus() {
-		glfwFocusWindow(window_handler);
+		glfwFocusWindow(window_handle);
 		WM_LOG_INFO_2("GLFW window requested focus");
 	}
 
 	void wm_glfw_window_system::request_attention() {
-		glfwRequestWindowAttention(window_handler);
+		glfwRequestWindowAttention(window_handle);
 		WM_LOG_INFO_2("GLFW window requested attention");
 	}
 
 	cursor_mode wm_glfw_window_system::get_cursor_mode() const {
-		const auto mode = glfwGetInputMode(window_handler, GLFW_CURSOR);
+		const auto mode = glfwGetInputMode(window_handle, GLFW_CURSOR);
 		switch(mode) {
 			case GLFW_CURSOR_NORMAL: return cursor_mode::normal;
 			case GLFW_CURSOR_HIDDEN: return cursor_mode::hidden;
@@ -423,13 +426,13 @@ namespace wm {
 	void wm_glfw_window_system::set_cursor_mode(const cursor_mode mode) {
 		switch(mode) {
 			case cursor_mode::normal:
-				glfwSetInputMode(window_handler, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+				glfwSetInputMode(window_handle, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 				break;
 			case cursor_mode::hidden:
-				glfwSetInputMode(window_handler, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+				glfwSetInputMode(window_handle, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 				break;
 			case cursor_mode::disabled:
-				glfwSetInputMode(window_handler, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+				glfwSetInputMode(window_handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 				break;
 			default: WM_THROW_ERROR("invalid cursor mode");
 		}
@@ -465,7 +468,7 @@ namespace wm {
 			default:
 				WM_THROW_ERROR("invalid cursor shape");
 		}
-		glfwSetCursor(window_handler, cursor);
+		glfwSetCursor(window_handle, cursor);
 		WM_LOG_INFO_2("GLFW window cursor shape changed");
 	}
 
@@ -475,7 +478,7 @@ namespace wm {
 		destroy_cursor();
 		cursor_shape = cursor_shape::custom;
 		cursor = glfwCreateCursor(&glfw_image, 0, 0);
-		glfwSetCursor(window_handler, cursor);
+		glfwSetCursor(window_handle, cursor);
 		image.destroy();
 		WM_LOG_INFO_2("GLFW window cursor shape changed");
 	}
@@ -491,7 +494,7 @@ namespace wm {
 		auto image = engine::get_resource_system()->get_image(file_path);
 		GLFWimage glfw_image{image->get_size().x, image->get_size().y, image->get_pixels()};
 
-		glfwSetWindowIcon(window_handler, 1, &glfw_image);
+		glfwSetWindowIcon(window_handle, 1, &glfw_image);
 
 		image.destroy();
 	}
@@ -507,12 +510,12 @@ namespace wm {
 	}
 
 	void wm_glfw_window_system::create_surface(const void* context, void* surface) {
-		WM_ASSERT_VULKAN(glfwCreateWindowSurface(*reinterpret_cast<const VkInstance*>(context), window_handler, nullptr, reinterpret_cast<VkSurfaceKHR*>(surface)));
+		WM_ASSERT_VULKAN(glfwCreateWindowSurface(*reinterpret_cast<const VkInstance*>(context), window_handle, nullptr, reinterpret_cast<VkSurfaceKHR*>(surface)));
 		WM_LOG_INFO_2("GLFW window Vulkan surface created");
 	}
 
 	void wm_glfw_window_system::swap_buffers() {
-		glfwSwapBuffers(window_handler);
+		glfwSwapBuffers(window_handle);
 	}
 
 	vsync_mode wm_glfw_window_system::get_vsync_mode() const {
@@ -525,11 +528,11 @@ namespace wm {
 	}
 
 	void wm_glfw_window_system::make_context_current() {
-		glfwMakeContextCurrent(window_handler);
+		glfwMakeContextCurrent(window_handle);
 	}
 
 	window_system::get_function_address_t wm_glfw_window_system::get_function_address() const {
-		return (window_system::get_function_address_t) glfwGetProcAddress;
+		return reinterpret_cast<window_system::get_function_address_t>(glfwGetProcAddress);
 	}
 
 	video_mode wm_glfw_window_system::get_current_video_mode() const {
@@ -559,8 +562,8 @@ namespace wm {
 	void wm_glfw_window_system::destroy_window() {
 		input_handler.destroy();
 		destroy_cursor();
-		glfwDestroyWindow(window_handler);
-		window_handler = nullptr;
+		glfwDestroyWindow(window_handle);
+		window_handle = nullptr;
 		WM_LOG_INFO_1("GLFW window destroyed");
 	}
 
@@ -569,5 +572,11 @@ namespace wm {
 		glfwTerminate();
 		WM_LOG_INFO_1("GLFW window system destroyed");
 	}
+
+#ifdef WM_PLATFORM_WINDOWS
+	std::any wm_glfw_window_system::get_win32_handle() const {
+		return glfwGetWin32Window(window_handle);
+	}
+#endif
 
 }

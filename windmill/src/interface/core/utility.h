@@ -59,7 +59,7 @@ namespace wm {
 				for(int32_t y = 0; y < H; y++) {
 					const std::string number = std::to_string(matrix[x][y]);
 					numbers.at(x).push_back(number);
-					max_column_widths.at(x) = std::max(max_column_widths.at(x), (int32_t) number.length());
+					max_column_widths.at(x) = std::max(max_column_widths.at(x), static_cast<int32_t>(number.length()));
 				}
 				max_character_width += max_column_widths.at(x);
 			}

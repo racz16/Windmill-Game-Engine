@@ -72,7 +72,7 @@ class example_1_application: public wm::application {
 	}
 
 	void initialize() override {
-		wm::rendering_system::set_rendering_api(wm::rendering_api::opengl);
+		wm::rendering_system::set_rendering_api(wm::rendering_api::direct3d11);
 		wm::application::initialize();
 
 		wm::key<player_control_system> key("WM_PLAYER_CONTROL_SYSTEM");
@@ -109,7 +109,9 @@ class example_1_application: public wm::application {
 		auto framebuffer_size = wm::engine::get_window_system()->get_framebuffer_size();
 		camera_component->set_scale(glm::vec2(framebuffer_size.x, framebuffer_size.y));
 		wm::engine::get_event_system()->add_event_listener<wm::window_framebuffer_size_event>(wm::window_framebuffer_size_event::get_key(), [camera_component](const wm::window_framebuffer_size_event event) {
-			camera_component->set_scale(glm::vec2(event.get_new_size().x, event.get_new_size().y));
+			if(event.get_new_size().x > 0 && event.get_new_size().y > 0) {
+				camera_component->set_scale(glm::vec2(event.get_new_size().x, event.get_new_size().y));
+			}
 		});
 	}
 

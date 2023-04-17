@@ -4,7 +4,7 @@
 
 namespace wm {
 
-	wm_glfw_window_input_handler::wm_glfw_window_input_handler(GLFWwindow* window_handler): window_handler(window_handler), mouse_position(glm::dvec2(), glm::dvec2()) {
+	wm_glfw_window_input_handler::wm_glfw_window_input_handler(GLFWwindow* window_handle): window_handle(window_handle), mouse_position(glm::dvec2(), glm::dvec2()) {
 		initialize_keyboard();
 		initialize_mouse();
 		initialize_gamepad();
@@ -25,7 +25,7 @@ namespace wm {
 
 		double x_pos;
 		double y_pos;
-		glfwGetCursorPos(window_handler, &x_pos, &y_pos);
+		glfwGetCursorPos(window_handle, &x_pos, &y_pos);
 		mouse_position = position_state(glm::dvec2(x_pos, y_pos), glm::dvec2(x_pos, y_pos));
 	}
 
@@ -51,7 +51,7 @@ namespace wm {
 	void wm_glfw_window_input_handler::update_keyboard() {
 		for(const auto button : utility::get_keyboard_buttons()) {
 			const bool previous_down = keyboard_button_down.at(button);
-			const bool down = glfwGetKey(window_handler, static_cast<int>(button));
+			const bool down = glfwGetKey(window_handle, static_cast<int>(button));
 			const button_action action = create_button_action(previous_down, down);
 			keyboard_button_down.insert_or_assign(button, down);
 			keyboard_button_state.insert_or_assign(button, button_state(action));
@@ -61,7 +61,7 @@ namespace wm {
 	void wm_glfw_window_input_handler::update_mouse() {
 		for(const auto button : utility::get_mouse_buttons()) {
 			const bool previous_down = mouse_button_down.at(button);
-			const bool down = glfwGetMouseButton(window_handler, static_cast<int>(button));
+			const bool down = glfwGetMouseButton(window_handle, static_cast<int>(button));
 			const button_action action = create_button_action(previous_down, down);
 			mouse_button_down.insert_or_assign(button, down);
 			mouse_button_state.insert_or_assign(button, button_state(action));
@@ -69,7 +69,7 @@ namespace wm {
 
 		double x_pos;
 		double y_pos;
-		glfwGetCursorPos(window_handler, &x_pos, &y_pos);
+		glfwGetCursorPos(window_handle, &x_pos, &y_pos);
 		mouse_position = position_state(mouse_position.get_position(), glm::dvec2(x_pos, y_pos));
 	}
 
@@ -99,7 +99,7 @@ namespace wm {
 	}
 
 	bool wm_glfw_window_input_handler::is_mouse_over_window() const {
-		return glfwGetWindowAttrib(window_handler, GLFW_HOVERED);
+		return glfwGetWindowAttrib(window_handle, GLFW_HOVERED);
 	}
 
 	button_state wm_glfw_window_input_handler::get_mouse_button_state(const mouse_button button) const {

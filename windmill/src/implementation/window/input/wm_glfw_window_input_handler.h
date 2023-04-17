@@ -8,7 +8,7 @@ namespace wm {
 	private:
 		static const int32_t GAMEPAD_COUNT = GLFW_JOYSTICK_LAST + 1;
 
-		GLFWwindow* window_handler;
+		GLFWwindow* window_handle;
 		//keyboard
 		std::unordered_map<keyboard_button, bool> keyboard_button_down;
 		std::unordered_map<keyboard_button, button_state> keyboard_button_state;
@@ -30,7 +30,7 @@ namespace wm {
 		void update_gamepads();
 		button_action create_button_action(const bool previous_down, const bool down) const;
 	public:
-		wm_glfw_window_input_handler(GLFWwindow* window_handler);
+		wm_glfw_window_input_handler(GLFWwindow* window_handle);
 		void update() override;
 		button_state get_keyboard_button_state(const keyboard_button button) const override;
 		bool is_mouse_over_window() const override;

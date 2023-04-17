@@ -21,11 +21,13 @@ namespace wm {
 		GLuint texture;
 		GLuint sampler;
 
+		static std::string get_object_type(const GLenum type);
 		static std::string get_message_source(const GLenum source);
 		static std::string get_message_type(const GLenum type);
 		static std::string get_message_severity(const GLenum severity);
 
 		static void create_debug_message_callback();
+		static void set_object_label(const GLenum type, const GLuint id, const std::string& name);
 
 		void initialize_opengl();
 		void initialize_imgui();

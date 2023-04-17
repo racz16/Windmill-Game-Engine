@@ -45,3 +45,19 @@
 		static const wm::key<interface> key(key_name); \
 		return key; \
 	}
+
+
+
+#ifdef WM_BUILD_DEBUG
+	#define HLSL_VERTEX(name) L"res/shader/hlsl/" name L"/bin/debug_vertex.hlsl.cso"
+	#define HLSL_PIXEL(name) L"res/shader/hlsl/" name L"/bin/debug_pixel.hlsl.cso"
+
+	#define GLSL_VERTEX(name) "res/shader/glsl/" name "/bin/debug_vertex.vert.spv"
+	#define GLSL_FRAGMENT(name) "res/shader/glsl/" name "/bin/debug_fragment.frag.spv"
+#else
+	#define HLSL_VERTEX(name) L"res/shader/hlsl/" name L"/bin/vertex.hlsl.cso"
+	#define HLSL_PIXEL(name) L"res/shader/hlsl/" name L"/bin/pixel.hlsl.cso"
+
+	#define GLSL_VERTEX(name) "res/shader/glsl/" name "/bin/vertex.vert.spv"
+	#define GLSL_FRAGMENT(name) "res/shader/glsl/" name "/bin/fragment.frag.spv"
+#endif

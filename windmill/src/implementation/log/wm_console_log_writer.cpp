@@ -2,10 +2,6 @@
 
 #include "wm_console_log_writer.h"
 
-#ifdef WM_PLATFORM_WINDOWS
-	#include "windows.h"
-#endif
-
 namespace wm {
 
 	wm_console_log_writer::wm_console_log_writer(const log_level max_log_level): wm_base_log_writer(max_log_level) {

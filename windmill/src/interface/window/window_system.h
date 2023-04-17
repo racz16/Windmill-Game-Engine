@@ -14,7 +14,6 @@ namespace wm {
 
 	class WM_PUBLIC window_system: public system {
 	protected:
-		friend class rendering_system;
 		friend class rendering_context;
 
 		typedef void* (*get_function_address_t)(const char*);
@@ -25,6 +24,9 @@ namespace wm {
 		virtual void set_vsync_mode(const vsync_mode mode) = 0;
 		virtual void make_context_current() = 0;
 		virtual get_function_address_t get_function_address() const = 0;
+	#ifdef WM_PLATFORM_WINDOWS
+		virtual std::any get_win32_handle() const = 0;
+	#endif
 	public:
 		static ptr<window_system> create(const glm::ivec2& size, const std::string& title, const bool fullscreen = false, const bool visible = true);
 		static key<window_system> get_key();

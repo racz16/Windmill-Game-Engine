@@ -2,7 +2,7 @@
 
 namespace wm {
 
-	image::image(const glm::ivec2& size, const int32_t channel_count, unsigned char* pixels): size(size), channel_count(channel_count), pixels(pixels) { }
+	image::image(const glm::ivec2& size, const int32_t channel_count, uint8_t* pixels): size(size), channel_count(channel_count), pixels(pixels) { }
 
 	glm::ivec2 image::get_size() const {
 		return size;
@@ -12,7 +12,7 @@ namespace wm {
 		return channel_count;
 	}
 
-	unsigned char* image::get_pixels() const {
+	uint8_t* image::get_pixels() const {
 		return pixels;
 	}
 

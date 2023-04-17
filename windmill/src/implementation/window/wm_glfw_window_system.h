@@ -10,7 +10,7 @@ namespace wm {
 	private:
 		static const int32_t DONT_CARE = -1;
 
-		GLFWwindow* window_handler;
+		GLFWwindow* window_handle;
 		GLFWcursor* cursor = nullptr;
 		std::string title;
 		glm::vec2 aspect_ratio {DONT_CARE};
@@ -39,6 +39,9 @@ namespace wm {
 		void set_vsync_mode(const vsync_mode mode) override;
 		void make_context_current() override;
 		get_function_address_t get_function_address() const override;
+	#ifdef WM_PLATFORM_WINDOWS
+		std::any get_win32_handle() const;
+	#endif
 	public:
 		wm_glfw_window_system(const glm::ivec2& size, const std::string& title, const bool fullscreen, const bool visible);
 		void update() override;

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.19)
 
 project(
 	"Windmill-Game-Engine"
@@ -16,10 +16,6 @@ if(MSVC)
 	add_compile_options("/fp:fast" "/permissive-")
 elseif(GNU)
 	add_compile_options("-ffast-math")
-endif()
-
-if(WIN32)
-	# Direct3D
 endif()
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/library")

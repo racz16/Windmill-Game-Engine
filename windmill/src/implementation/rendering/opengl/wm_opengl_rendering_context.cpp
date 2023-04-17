@@ -6,11 +6,24 @@
 
 #include "defines/debug_defines.h"
 #include "defines/log_defines.h"
+#include "defines/code_generation_defines.h"
 #include "component/camera/camera_component.h"
 
 #include "../wm_gpu_matrices_ubo.h"
 
 namespace wm {
+
+#ifdef WM_BUILD_DEBUG
+	#define GL_LABEL(type, id, name) set_object_label(type, id, name)
+	#define GL_GROUP_START(name) glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name)
+	#define GL_GROUP_STOP() glPopDebugGroup()
+	#define GL_MARKER(name) GL_GROUP_START(name);GL_GROUP_STOP()
+#else
+	#define GL_LABEL(type, id, name)
+	#define GL_GROUP_START(name)
+	#define GL_GROUP_STOP()
+	#define GL_MARKER(name)
+#endif
 
 	void wm_opengl_rendering_context::initialize() {
 		initialize_opengl();
@@ -22,7 +35,7 @@ namespace wm {
 		create_texture("res/mesh/helmet.jpg");
 		create_sampler();
 		create_ubo();
-		create_shader_program("res/shader/shader.vert.spv", "res/shader/shader.frag.spv");
+		create_shader_program(GLSL_VERTEX("lambertian"), GLSL_FRAGMENT("lambertian"));
 	}
 
 	void wm_opengl_rendering_context::initialize_opengl() {
@@ -44,6 +57,28 @@ namespace wm {
 		ImGui_ImplOpenGL3_Init("#version 460");
 	}
 
+	void wm_opengl_rendering_context::set_object_label(const GLenum type, const GLuint id, const std::string& name) {
+		std::string label = "[" + get_object_type(type) + "] " + name;
+		glObjectLabel(type, id, -1, label.c_str());
+	}
+
+	std::string wm_opengl_rendering_context::get_object_type(const GLenum type) {
+		switch(type) {
+			case GL_BUFFER: return "BUFFER";
+			case GL_SHADER: return "SHADER";
+			case GL_PROGRAM: return "PROGRAM";
+			case GL_VERTEX_ARRAY: return "VERTEX ARRAY";
+			case GL_QUERY: return "QUERY";
+			case GL_PROGRAM_PIPELINE: return "PROGRAM PIPELINE";
+			case GL_TRANSFORM_FEEDBACK: return "TRANSFORM FEEDBACK";
+			case GL_SAMPLER: return "SAMPLER";
+			case GL_TEXTURE: return "TEXTURE";
+			case GL_RENDERBUFFER: return "RENDERBUFFER";
+			case GL_FRAMEBUFFER: return "FRAMEBUFFER";
+			default: return "UNKNOWN";
+		}
+	}
+
 	std::string wm_opengl_rendering_context::get_message_source(const GLenum source) {
 		switch(source) {
 			case GL_DEBUG_SOURCE_API: return "API";
@@ -59,8 +94,8 @@ namespace wm {
 	std::string wm_opengl_rendering_context::get_message_type(const GLenum type) {
 		switch(type) {
 			case GL_DEBUG_TYPE_ERROR: return "ERROR";
-			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
-			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED_BEHAVIOR";
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED BEHAVIOR";
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED BEHAVIOR";
 			case GL_DEBUG_TYPE_PORTABILITY: return "PORTABILITY";
 			case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
 			case GL_DEBUG_TYPE_MARKER: return "MARKER";
@@ -87,17 +122,17 @@ namespace wm {
 			glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 			glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param) {
 				auto src_str = get_message_source(source);
-			auto type_str = get_message_type(type);
-			auto severity_str = get_message_severity(severity);
-			if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
-				WM_LOG_INFO_3("OpenGL info 3: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
-			} else if(severity == GL_DEBUG_SEVERITY_LOW) {
-				WM_LOG_INFO_1("OpenGL info 1: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
-			} else if(severity == GL_DEBUG_SEVERITY_MEDIUM) {
-				WM_LOG_WARNING("OpenGL warning: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
-			} else {
-				WM_LOG_ERROR("OpenGL error: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message, __FUNCTION__, __LINE__);
-			}
+				auto type_str = get_message_type(type);
+				auto severity_str = get_message_severity(severity);
+				if(severity == GL_DEBUG_SEVERITY_NOTIFICATION) {
+					WM_LOG_INFO_3("OpenGL info 3: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
+				} else if(severity == GL_DEBUG_SEVERITY_LOW) {
+					WM_LOG_INFO_1("OpenGL info 1: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
+				} else if(severity == GL_DEBUG_SEVERITY_MEDIUM) {
+					WM_LOG_WARNING("OpenGL warning: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message);
+				} else {
+					WM_LOG_ERROR("OpenGL error: " + severity_str + ", " + type_str + ", " + src_str + ", " + std::to_string(id) + ", " + message, __FUNCTION__, __LINE__);
+				}
 			}, nullptr);
 		}
 
@@ -157,10 +192,12 @@ namespace wm {
 			glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 			auto log = new char[length];
 			glGetShaderInfoLog(shader, length, nullptr, log);
-			WM_LOG_ERROR(log, __FUNCTION__, __LINE__);
+			std::string error = log;
 			delete[] log;
+			WM_THROW_ERROR(error);
 		}
 
+		GL_LABEL(GL_SHADER, shader, path);
 		WM_LOG_INFO_2("OpenGL shader created");
 		return shader;
 	}
@@ -180,9 +217,11 @@ namespace wm {
 			glGetProgramiv(shader_program, GL_INFO_LOG_LENGTH, &length);
 			auto log = new char[length];
 			glGetProgramInfoLog(shader_program, length, nullptr, log);
-			WM_LOG_ERROR(log, __FUNCTION__, __LINE__);
+			std::string error = log;
 			delete[] log;
+			WM_THROW_ERROR(error);
 		}
+		GL_LABEL(GL_PROGRAM, shader_program, std::string("lambertian shader program"));
 		glDeleteShader(vertex_shader);
 		WM_LOG_INFO_2("OpenGL shader destroyed");
 		glDeleteShader(fragment_shader);
@@ -196,6 +235,7 @@ namespace wm {
 
 		glCreateBuffers(1, &vbo);
 		glNamedBufferStorage(vbo, sizeof(wm_gpu_vertex) * vertices.size(), &vertices[0], GL_NONE);
+		GL_LABEL(GL_BUFFER, vbo, file_name);
 		WM_LOG_INFO_2("OpenGL vertex buffer created");
 
 		glCreateVertexArrays(1, &vao);
@@ -220,13 +260,17 @@ namespace wm {
 		glNamedBufferStorage(ebo, sizeof(GLuint) * indices.size(), &indices[0], GL_NONE);
 		glVertexArrayElementBuffer(vao, ebo);
 
+		GL_LABEL(GL_BUFFER, ebo, file_name);
+		GL_LABEL(GL_VERTEX_ARRAY, vao, file_name);
+
 		WM_LOG_INFO_2("OpenGL element buffer created");
 		WM_LOG_INFO_2("OpenGL vertex array created");
 	}
 
 	void wm_opengl_rendering_context::create_ubo() {
 		glCreateBuffers(1, &ubo);
-		glNamedBufferStorage(ubo, sizeof(wm_gpu_matrices_ubo), nullptr, GL_DYNAMIC_STORAGE_BIT);
+		glNamedBufferStorage(ubo, sizeof(wm_gpu_matrices_ubo), nullptr, GL_MAP_WRITE_BIT);
+		GL_LABEL(GL_BUFFER, ubo, std::string("matrices ubo"));
 
 		WM_LOG_INFO_2("OpenGL uniform buffer created");
 	}
@@ -243,6 +287,11 @@ namespace wm {
 		glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+		GLfloat max_anisotropy = 0.0f;
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &max_anisotropy);
+		glTextureParameterf(texture, GL_TEXTURE_MAX_ANISOTROPY, max_anisotropy);
+		GL_LABEL(GL_TEXTURE, texture, file_name);
+
 		WM_LOG_INFO_2("OpenGL texture created");
 
 		glBindTextureUnit(1, texture);
@@ -250,6 +299,7 @@ namespace wm {
 
 	void wm_opengl_rendering_context::create_sampler() {
 		glCreateSamplers(1, &sampler);
+		GL_LABEL(GL_SAMPLER, sampler, std::string("diffuse texture sampler"));
 
 		WM_LOG_INFO_2("OpenGL sampler created");
 
@@ -282,7 +332,10 @@ namespace wm {
 		ubo.view = camera->get_view_matrix();
 		ubo.projection = camera->get_projection_matrix();
 
-		glNamedBufferSubData(wm_opengl_rendering_context::ubo, 0, sizeof(wm_gpu_matrices_ubo), &ubo);
+		auto mapped_memory = glMapNamedBuffer(wm_opengl_rendering_context::ubo, GL_WRITE_ONLY);
+		memcpy(mapped_memory, &ubo, sizeof(ubo));
+		glUnmapNamedBuffer(wm_opengl_rendering_context::ubo);
+
 		glBindBufferBase(GL_UNIFORM_BUFFER, 0, wm_opengl_rendering_context::ubo);
 	}
 
@@ -290,10 +343,17 @@ namespace wm {
 		auto viewport = engine::get_window_system()->get_framebuffer_size();
 		glViewport(0, 0, viewport.x, viewport.y);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		GL_GROUP_START("lambertian");
 		glUseProgram(shader_program);
 		load_uniforms();
 		glBindVertexArray(vao);
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		GL_GROUP_STOP();
+
+		GL_MARKER("TEST MARKER");
+
+		GL_GROUP_START("imgui");
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -312,6 +372,8 @@ namespace wm {
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		GL_GROUP_STOP();
 
 		swap_buffers();
 	}
