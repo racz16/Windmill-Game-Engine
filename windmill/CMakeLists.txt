@@ -269,23 +269,55 @@ find_package(Vulkan REQUIRED)
 if(Vulkan_FOUND)
 	target_link_libraries("${WM_WINDMILL}" PRIVATE Vulkan::Vulkan)
 	target_include_directories("${WM_WINDMILL}" PRIVATE "${Vulkan_INCLUDE_DIRS}")
-	find_program(GLSLC glslc REQUIRED)
-	message(STATUS "glslc found")
-	set(WM_GLSL_FILES "lambertian/vertex.vert" "lambertian/fragment.frag")
-	foreach(WM_GLSL_FILE IN LISTS WM_GLSL_FILES)
-		set(WM_GLSL_FILE_PATH "${WM_SOURCE_DIR}/windmill/res/shader/glsl/${WM_GLSL_FILE}")
-		get_filename_component(WM_GLSL_FILE_DIRECTORY "${WM_GLSL_FILE_PATH}" DIRECTORY)
-		get_filename_component(WM_GLSL_FILE_NAME "${WM_GLSL_FILE_PATH}" NAME)
-		set(WM_SPV_FILE_PATH "${WM_GLSL_FILE_DIRECTORY}/bin/$<$<CONFIG:DEBUG>:debug_>${WM_GLSL_FILE_NAME}.spv")
-		add_custom_command(
-			MAIN_DEPENDENCY "${WM_GLSL_FILE_PATH}"
-			OUTPUT "${WM_SPV_FILE_PATH}"
-			COMMAND "${GLSLC}" "$<$<CONFIG:DEBUG>:-g>" "$<IF:$<CONFIG:DEBUG>,-O0,-O>" "-o" "${WM_SPV_FILE_PATH}" "${WM_GLSL_FILE_PATH}"
+	
+	function(WM_COMPILE_GLSL_SHADERS WM_GLSL_COMPILER)
+		cmake_parse_arguments(PARSE_ARGV 1 WM_ARG "" "BINARY_GENERATION_FLAG;DEBUG_INFO_FLAG;OPTIMIZATION_FLAG;OUTPUT_FLAG" "")
+		set(WM_GLSL_FILES "lambertian/vertex.vert" "lambertian/fragment.frag")
+		foreach(WM_GLSL_FILE IN LISTS WM_GLSL_FILES)
+			set(WM_GLSL_FILE_PATH "${WM_SOURCE_DIR}/windmill/res/shader/glsl/${WM_GLSL_FILE}")
+			get_filename_component(WM_GLSL_FILE_DIRECTORY "${WM_GLSL_FILE_PATH}" DIRECTORY)
+			get_filename_component(WM_GLSL_FILE_NAME "${WM_GLSL_FILE_PATH}" NAME)
+			set(WM_SPV_FILE_PATH "${WM_GLSL_FILE_DIRECTORY}/bin/$<$<CONFIG:DEBUG>:debug_>${WM_GLSL_FILE_NAME}.spv")
+			add_custom_command(
+				MAIN_DEPENDENCY "${WM_GLSL_FILE_PATH}"
+				OUTPUT "${WM_SPV_FILE_PATH}"
+				COMMAND "${WM_GLSL_COMPILER}"
+					"${WM_ARG_BINARY_GENERATION_FLAG}"
+					"${WM_ARG_DEBUG_INFO_FLAG}"
+					"${WM_ARG_OPTIMIZATION_FLAG}"
+					"${WM_ARG_OUTPUT_FLAG}"
+					"${WM_SPV_FILE_PATH}"
+					"${WM_GLSL_FILE_PATH}"
+			)
+			list(APPEND WM_SPV_FILE_PATHS "${WM_SPV_FILE_PATH}")
+		endforeach()
+		add_custom_target(WM_GLSL_COMPILATION DEPENDS "${WM_SPV_FILE_PATHS}")
+		add_dependencies("${WM_WINDMILL}" WM_GLSL_COMPILATION)
+	endfunction()
+
+	find_program(GLSLC glslc)
+	if(GLSLC)
+		message(STATUS "glslc found")
+		wm_compile_glsl_shaders("${GLSLC}"
+			DEBUG_INFO_FLAG "$<$<CONFIG:DEBUG>:-g>"
+			OPTIMIZATION_FLAG "$<IF:$<CONFIG:DEBUG>,-O0,-O>"
+			OUTPUT_FLAG "-o"
 		)
-		list(APPEND WM_SPV_FILE_PATHS "${WM_SPV_FILE_PATH}")
-	endforeach()
-	add_custom_target(WM_GLSL_COMPILATION DEPENDS "${WM_SPV_FILE_PATHS}")
-	add_dependencies("${WM_WINDMILL}" WM_GLSL_COMPILATION)
+	else()
+		find_program(GLSLANG_VALIDATOR glslangValidator)
+		if(GLSLANG_VALIDATOR)
+			message(STATUS "glslangValidator found")
+			wm_compile_glsl_shaders("${GLSLANG_VALIDATOR}"
+				BINARY_GENERATION_FLAG "-V"
+				DEBUG_INFO_FLAG "$<$<CONFIG:DEBUG>:-g>"
+				OPTIMIZATION_FLAG "$<IF:$<CONFIG:DEBUG>,-Od,-Os>"
+				OUTPUT_FLAG "-o"
+			)
+		else()
+			message(FATAL_ERROR "Couldn't find glslc or glslangValidator")
+		endif()
+	endif()
+	
 else()
 	message(FATAL_ERROR "Couldn't find Vulkan")
 endif()
