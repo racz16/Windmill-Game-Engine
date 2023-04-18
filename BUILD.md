@@ -4,7 +4,7 @@ To build the source code, you have to clone the repository (with submodules), in
 
 Required versions:
 
-- CMake 3.19+ (tested with 3.22.1)
+- CMake 3.16+ (tested with 3.22.1)
 - Vulkan SDK 1.2+ (tested with 1.3.224.1)
 - Visual Studio 2017+ (tested with 2022)
 - GCC 8+ (tested with 11.2.0)

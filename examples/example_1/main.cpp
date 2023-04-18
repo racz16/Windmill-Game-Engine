@@ -18,27 +18,41 @@ public:
 		auto input_handler = wm::engine::get_window_system()->get_input_handler();
 		auto forward_movement = delta_time * movement_speed * camera_transform->get_forward();
 		auto right_movement = delta_time * movement_speed * camera_transform->get_right();
-		auto rotation = delta_time * rotation_speed;
 		auto up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-		if(input_handler->get_keyboard_button_state(wm::keyboard_button::button_w).is_down()) {
-			camera_transform->move(forward_movement);
-		}
-		if(input_handler->get_keyboard_button_state(wm::keyboard_button::button_a).is_down()) {
-			camera_transform->move(-right_movement);
-		}
-		if(input_handler->get_keyboard_button_state(wm::keyboard_button::button_s).is_down()) {
-			camera_transform->move(-forward_movement);
-		}
-		if(input_handler->get_keyboard_button_state(wm::keyboard_button::button_d).is_down()) {
-			camera_transform->move(right_movement);
-		}
-		if(input_handler->get_keyboard_button_state(wm::keyboard_button::button_q).is_down()) {
-			camera_transform->rotate(up, rotation);
-		}
-		if(input_handler->get_keyboard_button_state(wm::keyboard_button::button_e).is_down()) {
-			camera_transform->rotate(up, -rotation);
-		}
+		auto left_y = input_handler->get_gamepad_axis_state(0, wm::gamepad_axis::axis_left_y);
+		auto left_x = input_handler->get_gamepad_axis_state(0, wm::gamepad_axis::axis_left_x);
+		auto right_x = input_handler->get_gamepad_axis_state(0, wm::gamepad_axis::axis_right_x);
+
+		auto gamepad_forward = std::max(-left_y.get_value(), 0.0f);
+		auto keyboard_forward = static_cast<float>(input_handler->get_keyboard_button_state(wm::keyboard_button::button_w).is_down());
+		auto forward = std::max(gamepad_forward, keyboard_forward);
+
+		auto gamepad_backward = std::min(-left_y.get_value(), 0.0f);
+		auto keyboard_backward = -static_cast<float>(input_handler->get_keyboard_button_state(wm::keyboard_button::button_s).is_down());
+		auto backward = std::min(gamepad_backward, keyboard_backward);
+
+		auto gamepad_right = std::max(left_x.get_value(), 0.0f);
+		auto keyboard_right = static_cast<float>(input_handler->get_keyboard_button_state(wm::keyboard_button::button_d).is_down());
+		auto right = std::max(gamepad_right, keyboard_right);
+
+		auto gamepad_left = std::min(left_x.get_value(), 0.0f);
+		auto keyboard_left = -static_cast<float>(input_handler->get_keyboard_button_state(wm::keyboard_button::button_a).is_down());
+		auto left = std::min(gamepad_left, keyboard_left);
+
+		auto movement = (forward + backward) * forward_movement + (right + left) * right_movement;
+		camera_transform->move(movement);
+
+		auto gamepad_left_rotation = std::max(-right_x.get_value(), 0.0f);
+		auto keyboard_left_rotation = static_cast<float>(input_handler->get_keyboard_button_state(wm::keyboard_button::button_q).is_down());
+		auto left_rotation = std::max(gamepad_left_rotation, keyboard_left_rotation);
+
+		auto gamepad_right_rotation = std::min(-right_x.get_value(), 0.0f);
+		auto keyboard_right_rotation = -static_cast<float>(input_handler->get_keyboard_button_state(wm::keyboard_button::button_e).is_down());
+		auto right_rotation = std::min(gamepad_right_rotation, keyboard_right_rotation);
+
+		auto rotation = (left_rotation + right_rotation) * delta_time * rotation_speed;
+		camera_transform->rotate(up, rotation);
 	}
 
 };

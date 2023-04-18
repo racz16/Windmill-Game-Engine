@@ -78,23 +78,7 @@ namespace wm {
 		std::vector<VkFence> images_in_flight;
 		int32_t frame_index;
 		//imgui
-		VkImage font_image = VK_NULL_HANDLE;
-		VkImageView font_image_view = VK_NULL_HANDLE;
-		VkSampler font_sampler = VK_NULL_HANDLE;
-		VkDeviceMemory font_image_device_memory = VK_NULL_HANDLE;
 		VkDescriptorPool imgui_descriptor_pool = VK_NULL_HANDLE;
-		std::vector<VkDescriptorSet> imgui_descriptor_sets;
-		VkDescriptorSetLayout imgui_descriptor_set_layout = VK_NULL_HANDLE;
-		VkPipelineLayout imgui_pipeline_layout = VK_NULL_HANDLE;
-		VkPipeline imgui_pipeline = VK_NULL_HANDLE;
-		std::vector<VkBuffer> imgui_vertex_buffers;
-		std::vector<VkDeviceMemory> imgui_vertex_buffer_device_memories;
-		std::vector<uint32_t> imgui_vertex_count;
-		std::vector<VkBuffer> imgui_index_buffers;
-		std::vector<VkDeviceMemory> imgui_index_buffer_device_memories;
-		std::vector<uint32_t> imgui_index_count;
-		push_constatnt_block imgui_push_constants;
-		glm::dvec2 mouse_scroll = glm::dvec2(0.0);
 
 		//instance
 		void create_instance();
@@ -184,14 +168,9 @@ namespace wm {
 		void create_semaphores();
 		//imgui
 		void initialize_imgui();
-		void create_imgui();
-		void create_imgui_font_image();
-		void create_imgui_descriptor_sets();
-		void create_imgui_pipeline();
-		void prepare_imgui();
-		void before_draw_imgui(const uint32_t image_index);
-		void draw_imgui(const uint32_t uimage_index);
-		void destroy_imgui();
+		void create_imgui_descriptor_pool();
+		void create_imgui_font_texture() const;
+		void destroy_imgui() const;
 	public:
 		void initialize() override;
 		void update() override;

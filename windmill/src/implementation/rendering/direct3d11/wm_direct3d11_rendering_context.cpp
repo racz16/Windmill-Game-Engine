@@ -444,7 +444,7 @@ namespace wm {
 		ImGui::NewFrame();
 
 		//ImGui::ShowDemoWindow();
-		ImVec2 position{20.0f, 20.0f};
+		glm::vec2 position{20.0f, 20.0f};
 		ImGui::SetNextWindowPos(position);
 		ImGui::Begin("Statistics", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_::ImGuiWindowFlags_NoNav);
 		ImGui::Text((std::to_string(engine::get_time_system()->get_fps()) + " FPS").c_str());

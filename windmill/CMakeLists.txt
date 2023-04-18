@@ -223,6 +223,7 @@ add_library("${WM_WINDMILL}" SHARED
 	"../lib/imgui/imgui_tables.cpp"
 	"../lib/imgui/imgui_widgets.cpp"
 	"../lib/imgui/backends/imgui_impl_glfw.cpp"
+	"../lib/imgui/backends/imgui_impl_vulkan.cpp"
 	"../lib/imgui/backends/imgui_impl_opengl3.cpp"
 	"../lib/imgui/backends/imgui_impl_dx11.cpp"
 )
@@ -259,6 +260,8 @@ target_include_directories("${WM_WINDMILL}" PUBLIC "${WM_LIB_PATH_GLM}")
 target_include_directories("${WM_WINDMILL}" PUBLIC "${WM_LIB_PATH_STB}")
 
 #IMGUI
+target_compile_definitions("${WM_WINDMILL}" PUBLIC "IM_VEC2_CLASS_EXTRA=constexpr ImVec2(const glm::vec2& f) : x(f.x), y(f.y) {} operator glm::vec2() const { return glm::vec2(x,y)\; }")
+target_compile_definitions("${WM_WINDMILL}" PUBLIC "IM_VEC4_CLASS_EXTRA=constexpr ImVec4(const glm::vec4& f) : x(f.x), y(f.y), z(f.z), w(f.w) {} operator glm::vec4() const { return glm::vec4(x,y,z,w)\; }")
 target_include_directories("${WM_WINDMILL}" PUBLIC "${WM_LIB_PATH_IMGUI}")
 
 #VULKAN
@@ -266,26 +269,23 @@ find_package(Vulkan REQUIRED)
 if(Vulkan_FOUND)
 	target_link_libraries("${WM_WINDMILL}" PRIVATE Vulkan::Vulkan)
 	target_include_directories("${WM_WINDMILL}" PRIVATE "${Vulkan_INCLUDE_DIRS}")
-	if(Vulkan_glslc_FOUND)
-		message(STATUS "glslc found")
-		set(WM_GLSL_FILES "imgui/vertex.vert" "imgui/fragment.frag" "lambertian/vertex.vert" "lambertian/fragment.frag")
-		foreach(WM_GLSL_FILE IN LISTS WM_GLSL_FILES)
-			set(WM_GLSL_FILE_PATH "${WM_SOURCE_DIR}/windmill/res/shader/glsl/${WM_GLSL_FILE}")
-			get_filename_component(WM_GLSL_FILE_DIRECTORY "${WM_GLSL_FILE_PATH}" DIRECTORY)
-			get_filename_component(WM_GLSL_FILE_NAME "${WM_GLSL_FILE_PATH}" NAME)
-			set(WM_SPV_FILE_PATH "${WM_GLSL_FILE_DIRECTORY}/bin/$<$<CONFIG:DEBUG>:debug_>${WM_GLSL_FILE_NAME}.spv")
-			add_custom_command(
-				MAIN_DEPENDENCY "${WM_GLSL_FILE_PATH}"
-				OUTPUT "${WM_SPV_FILE_PATH}"
-				COMMAND Vulkan::glslc "$<$<CONFIG:DEBUG>:-g>" "$<IF:$<CONFIG:DEBUG>,-O0,-O>" "-o" "${WM_SPV_FILE_PATH}" "${WM_GLSL_FILE_PATH}"
-			)
-			list(APPEND WM_SPV_FILE_PATHS "${WM_SPV_FILE_PATH}")
-		endforeach()
-		add_custom_target(WM_GLSL_COMPILATION DEPENDS "${WM_SPV_FILE_PATHS}")
-		add_dependencies("${WM_WINDMILL}" WM_GLSL_COMPILATION)
-	else()
-		message(FATAL_ERROR "Couldn't find glslc")
-	endif()
+	find_program(GLSLC glslc REQUIRED)
+	message(STATUS "glslc found")
+	set(WM_GLSL_FILES "lambertian/vertex.vert" "lambertian/fragment.frag")
+	foreach(WM_GLSL_FILE IN LISTS WM_GLSL_FILES)
+		set(WM_GLSL_FILE_PATH "${WM_SOURCE_DIR}/windmill/res/shader/glsl/${WM_GLSL_FILE}")
+		get_filename_component(WM_GLSL_FILE_DIRECTORY "${WM_GLSL_FILE_PATH}" DIRECTORY)
+		get_filename_component(WM_GLSL_FILE_NAME "${WM_GLSL_FILE_PATH}" NAME)
+		set(WM_SPV_FILE_PATH "${WM_GLSL_FILE_DIRECTORY}/bin/$<$<CONFIG:DEBUG>:debug_>${WM_GLSL_FILE_NAME}.spv")
+		add_custom_command(
+			MAIN_DEPENDENCY "${WM_GLSL_FILE_PATH}"
+			OUTPUT "${WM_SPV_FILE_PATH}"
+			COMMAND "${GLSLC}" "$<$<CONFIG:DEBUG>:-g>" "$<IF:$<CONFIG:DEBUG>,-O0,-O>" "-o" "${WM_SPV_FILE_PATH}" "${WM_GLSL_FILE_PATH}"
+		)
+		list(APPEND WM_SPV_FILE_PATHS "${WM_SPV_FILE_PATH}")
+	endforeach()
+	add_custom_target(WM_GLSL_COMPILATION DEPENDS "${WM_SPV_FILE_PATHS}")
+	add_dependencies("${WM_WINDMILL}" WM_GLSL_COMPILATION)
 else()
 	message(FATAL_ERROR "Couldn't find Vulkan")
 endif()
@@ -369,7 +369,6 @@ target_precompile_headers(
 		"<assimp/Importer.hpp>"
 		"<assimp/scene.h>"
 		"<assimp/postprocess.h>"
-		"<imgui.h>"
 		"<AL/al.h>"
 		"<AL/alc.h>"
 		"<sndfile.h>"
