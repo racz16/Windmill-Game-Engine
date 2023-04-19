@@ -225,7 +225,6 @@ add_library("${WM_WINDMILL}" SHARED
 	"../lib/imgui/backends/imgui_impl_glfw.cpp"
 	"../lib/imgui/backends/imgui_impl_vulkan.cpp"
 	"../lib/imgui/backends/imgui_impl_opengl3.cpp"
-	"../lib/imgui/backends/imgui_impl_dx11.cpp"
 )
 target_include_directories("${WM_WINDMILL}" PRIVATE "${WM_SOURCE_DIR}/windmill/src/interface")
 target_compile_definitions("${WM_WINDMILL}" PRIVATE "WM_EXPORT")
@@ -277,7 +276,7 @@ if(Vulkan_FOUND)
 			set(WM_GLSL_FILE_PATH "${WM_SOURCE_DIR}/windmill/res/shader/glsl/${WM_GLSL_FILE}")
 			get_filename_component(WM_GLSL_FILE_DIRECTORY "${WM_GLSL_FILE_PATH}" DIRECTORY)
 			get_filename_component(WM_GLSL_FILE_NAME "${WM_GLSL_FILE_PATH}" NAME)
-			set(WM_SPV_FILE_PATH "${WM_GLSL_FILE_DIRECTORY}/bin/$<$<CONFIG:DEBUG>:debug_>${WM_GLSL_FILE_NAME}.spv")
+			set(WM_SPV_FILE_PATH "${WM_GLSL_FILE_DIRECTORY}/$<IF:$<CONFIG:DEBUG>,_debug_,_release_>${WM_GLSL_FILE_NAME}.spv")
 			add_custom_command(
 				MAIN_DEPENDENCY "${WM_GLSL_FILE_PATH}"
 				OUTPUT "${WM_SPV_FILE_PATH}"
@@ -329,33 +328,37 @@ if(WIN32)
 		"src/implementation/rendering/direct3d11/wm_direct3d11_rendering_system.cpp"
 		"src/implementation/rendering/direct3d11/wm_direct3d11_rendering_context.h"
 		"src/implementation/rendering/direct3d11/wm_direct3d11_rendering_context.cpp"
+
+		"../lib/imgui/backends/imgui_impl_dx11.cpp"
 	)
 	target_link_libraries("${WM_WINDMILL}" PRIVATE d3d11 dxgi d3dcompiler)
 	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 		target_link_libraries("${WM_WINDMILL}" PRIVATE dxguid)
 	endif()
-	find_program(FXC fxc REQUIRED)
-	message(STATUS "fxc found")
-	set(WM_HLSL_FILES "lambertian/vertex.hlsl" "lambertian/pixel.hlsl")
-	foreach(WM_HLSL_FILE IN LISTS WM_HLSL_FILES)
-		set(WM_HLSL_FILE_PATH "${WM_SOURCE_DIR}/windmill/res/shader/hlsl/${WM_HLSL_FILE}")
-		get_filename_component(WM_HLSL_FILE_DIRECTORY "${WM_HLSL_FILE_PATH}" DIRECTORY)
-		get_filename_component(WM_HLSL_FILE_NAME "${WM_HLSL_FILE_PATH}" NAME)
-		set(WM_CSO_FILE_PATH "${WM_HLSL_FILE_DIRECTORY}/bin/$<$<CONFIG:DEBUG>:debug_>${WM_HLSL_FILE_NAME}.cso")
-		if("${WM_HLSL_FILE}" MATCHES ".*vertex.*")
-			set(WM_HLSL_SHADER_MODEL "vs_5_0")
-		else()
-			set(WM_HLSL_SHADER_MODEL "ps_5_0")
-		endif()
-		add_custom_command(
-			MAIN_DEPENDENCY "${WM_HLSL_FILE_PATH}"
-			OUTPUT "${WM_CSO_FILE_PATH}"
-			COMMAND "${FXC}" "/T" "${WM_HLSL_SHADER_MODEL}" "$<$<CONFIG:DEBUG>:/Zi>" "$<IF:$<CONFIG:DEBUG>,/Od,/O1>" "/Fo" "${WM_CSO_FILE_PATH}" "${WM_HLSL_FILE_PATH}"
-		)
-		list(APPEND WM_CSO_FILE_PATHS "${WM_CSO_FILE_PATH}")
-	endforeach()
-	add_custom_target(WM_HLSL_COMPILATION DEPENDS "${WM_CSO_FILE_PATHS}")
-	add_dependencies("${WM_WINDMILL}" WM_HLSL_COMPILATION)
+	if(NOT WM_CI)
+		find_program(FXC fxc REQUIRED)
+		message(STATUS "fxc found")
+		set(WM_HLSL_FILES "lambertian/vertex.hlsl" "lambertian/pixel.hlsl")
+		foreach(WM_HLSL_FILE IN LISTS WM_HLSL_FILES)
+			set(WM_HLSL_FILE_PATH "${WM_SOURCE_DIR}/windmill/res/shader/hlsl/${WM_HLSL_FILE}")
+			get_filename_component(WM_HLSL_FILE_DIRECTORY "${WM_HLSL_FILE_PATH}" DIRECTORY)
+			get_filename_component(WM_HLSL_FILE_NAME "${WM_HLSL_FILE_PATH}" NAME)
+			set(WM_CSO_FILE_PATH "${WM_HLSL_FILE_DIRECTORY}/$<IF:$<CONFIG:DEBUG>,_debug_,_release_>${WM_HLSL_FILE_NAME}.cso")
+			if("${WM_HLSL_FILE}" MATCHES ".*vertex.*")
+				set(WM_HLSL_SHADER_MODEL "vs_5_0")
+			else()
+				set(WM_HLSL_SHADER_MODEL "ps_5_0")
+			endif()
+			add_custom_command(
+				MAIN_DEPENDENCY "${WM_HLSL_FILE_PATH}"
+				OUTPUT "${WM_CSO_FILE_PATH}"
+				COMMAND "${FXC}" "/T" "${WM_HLSL_SHADER_MODEL}" "$<$<CONFIG:DEBUG>:/Zi>" "$<IF:$<CONFIG:DEBUG>,/Od,/O1>" "/Fo" "${WM_CSO_FILE_PATH}" "${WM_HLSL_FILE_PATH}"
+			)
+			list(APPEND WM_CSO_FILE_PATHS "${WM_CSO_FILE_PATH}")
+		endforeach()
+		add_custom_target(WM_HLSL_COMPILATION DEPENDS "${WM_CSO_FILE_PATHS}")
+		add_dependencies("${WM_WINDMILL}" WM_HLSL_COMPILATION)
+	endif()
 endif()
 
 #OPENAL
@@ -371,41 +374,39 @@ target_link_libraries("${WM_WINDMILL}" PRIVATE glad)
 target_include_directories("${WM_WINDMILL}" PRIVATE "${WM_LIB_PATH_GLAD}/include")
 
 #precompile headers
+set(PRECOMPILED_HEADERS
+	"<string>"
+	"<vector>"
+	"<array>"
+	"<unordered_map>"
+	"<unordered_set>"
+	"<iostream>"
+	"<memory>"
+	"<chrono>"
+	"<any>"
+	"<utility>"
+	"<fstream>"
+	"<functional>"
+	"<glm/glm.hpp>"
+	"<glm/ext.hpp>"
+	"<vulkan/vulkan.h>"
+	"<GLFW/glfw3.h>"
+	"<stb_image.h>"
+	"<assimp/Importer.hpp>"
+	"<assimp/scene.h>"
+	"<assimp/postprocess.h>"
+	"<AL/al.h>"
+	"<AL/alc.h>"
+	"<sndfile.h>"
+)
 if(WIN32)
 	target_compile_definitions("${WM_WINDMILL}" PRIVATE "NOMINMAX" "GLFW_EXPOSE_NATIVE_WIN32")
-	set(PLATFORM_SPECIFIC_HEADERS "<Windows.h>" "<dxgi.h>" "<d3d11_1.h>" "<d3dcompiler.h>" "<GLFW/glfw3native.h>")
+	list(APPEND PRECOMPILED_HEADERS "<Windows.h>" "<dxgi.h>" "<d3d11_1.h>" "<d3dcompiler.h>" "<GLFW/glfw3native.h>")
 	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-		list(APPEND PLATFORM_SPECIFIC_HEADERS "<dxgidebug.h>")
+		list(APPEND PRECOMPILED_HEADERS "<dxgidebug.h>")
 	endif()
 endif()
-target_precompile_headers(
-	"${WM_WINDMILL}"
-	PRIVATE
-		"<string>"
-		"<vector>"
-		"<array>"
-		"<unordered_map>"
-		"<unordered_set>"
-		"<iostream>"
-		"<memory>"
-		"<chrono>"
-		"<any>"
-		"<utility>"
-		"<fstream>"
-		"<functional>"
-		"<glm/glm.hpp>"
-		"<glm/ext.hpp>"
-		"<vulkan/vulkan.h>"
-		"<GLFW/glfw3.h>"
-		"<stb_image.h>"
-		"<assimp/Importer.hpp>"
-		"<assimp/scene.h>"
-		"<assimp/postprocess.h>"
-		"<AL/al.h>"
-		"<AL/alc.h>"
-		"<sndfile.h>"
-		"${PLATFORM_SPECIFIC_HEADERS}"
-)
+target_precompile_headers("${WM_WINDMILL}" PRIVATE "${PRECOMPILED_HEADERS}")
 #resources
 add_custom_command(
 	OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/res"

@@ -49,15 +49,15 @@
 
 
 #ifdef WM_BUILD_DEBUG
-	#define HLSL_VERTEX(name) L"res/shader/hlsl/" name L"/bin/debug_vertex.hlsl.cso"
-	#define HLSL_PIXEL(name) L"res/shader/hlsl/" name L"/bin/debug_pixel.hlsl.cso"
+	#define HLSL_VERTEX(name) L"res/shader/hlsl/" name L"/_debug_vertex.hlsl.cso"
+	#define HLSL_PIXEL(name) L"res/shader/hlsl/" name L"/_debug_pixel.hlsl.cso"
 
-	#define GLSL_VERTEX(name) "res/shader/glsl/" name "/bin/debug_vertex.vert.spv"
-	#define GLSL_FRAGMENT(name) "res/shader/glsl/" name "/bin/debug_fragment.frag.spv"
+	#define GLSL_VERTEX(name) "res/shader/glsl/" name "/_debug_vertex.vert.spv"
+	#define GLSL_FRAGMENT(name) "res/shader/glsl/" name "/_debug_fragment.frag.spv"
 #else
-	#define HLSL_VERTEX(name) L"res/shader/hlsl/" name L"/bin/vertex.hlsl.cso"
-	#define HLSL_PIXEL(name) L"res/shader/hlsl/" name L"/bin/pixel.hlsl.cso"
+	#define HLSL_VERTEX(name) L"res/shader/hlsl/" name L"/_release_vertex.hlsl.cso"
+	#define HLSL_PIXEL(name) L"res/shader/hlsl/" name L"/_release_pixel.hlsl.cso"
 
-	#define GLSL_VERTEX(name) "res/shader/glsl/" name "/bin/vertex.vert.spv"
-	#define GLSL_FRAGMENT(name) "res/shader/glsl/" name "/bin/fragment.frag.spv"
+	#define GLSL_VERTEX(name) "res/shader/glsl/" name "/_release_vertex.vert.spv"
+	#define GLSL_FRAGMENT(name) "res/shader/glsl/" name "/_release_fragment.frag.spv"
 #endif

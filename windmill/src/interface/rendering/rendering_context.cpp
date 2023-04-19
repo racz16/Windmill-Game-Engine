@@ -2,8 +2,9 @@
 
 #include "../../implementation/rendering/opengl/wm_opengl_rendering_context.h"
 #include "../../implementation/rendering/vulkan/wm_vulkan_rendering_context.h"
-#include "../../implementation/rendering/direct3d11/wm_direct3d11_rendering_context.h"
-
+#ifdef WM_PLATFORM_WINDOWS
+	#include "../../implementation/rendering/direct3d11/wm_direct3d11_rendering_context.h"
+#endif
 #include "core/engine.h"
 #include "defines/code_generation_defines.h"
 
@@ -53,8 +54,10 @@ namespace wm {
 		return engine::get_window_system()->get_function_address();
 	}
 
+#ifdef WM_PLATFORM_WINDOWS
 	std::any rendering_context::get_win32_handle() const {
 		return engine::get_window_system()->get_win32_handle();
 	}
+#endif
 
 }

@@ -12,7 +12,9 @@ namespace wm {
 		void set_vsync_mode(const vsync_mode mode);
 		void make_context_current();
 		window_system::get_function_address_t get_function_address() const;
+	#ifdef WM_PLATFORM_WINDOWS
 		std::any get_win32_handle() const;
+	#endif
 	public:
 		static ptr<rendering_context> create();
 		static key<rendering_context> get_key();

@@ -6,10 +6,16 @@ Required versions:
 
 - CMake 3.16+ (tested with 3.22.1)
 - Vulkan SDK 1.2+ (tested with 1.3.224.1)
-- Visual Studio 2017+ (tested with 2022)
-- GCC 8+ (tested with 11.2.0)
 - Python (tested with 3.11.0)
-- Direct3D 11.1 on Windows
+
+On Windows:
+
+- Visual Studio 2017+ (tested with 2022)
+- Direct3D 11.1
+
+On Linux:
+
+- GCC 8+ (tested with 11.2.0)
 
 ## Windows
 
@@ -82,28 +88,70 @@ Required versions:
 8. Go inside the repository's root folder
 
     ```bash
-    cd Windmill-Game-Engine
+    cd ./Windmill-Game-Engine
     ```
 
-9. Run CMake
+9. Create a build folder
 
     ```bash
-    cmake .
+    mkdir build
     ```
 
-10. Build the code
+10. Go inside the build folder
 
     ```bash
-    cmake --build .
+    cd ./build
+    ```
+
+11. Create a config-specific folder
+
+    ```bash
+    mkdir linux-debug
     ```
 
     or
 
     ```bash
-    cmake --build . --config Release
+    mkdir linux-release
     ```
 
-11. Run one of the examples
+12. Go inside the config-specific folder
+
+    ```bash
+    cd ./linux-debug
+    ```
+
+    or
+
+    ```bash
+    cd ./linux-release
+    ```
+
+13. Run CMake
+
+    ```bash
+    cmake -DCMAKE_BUILD_TYPE=Debug ../..
+    ```
+
+    or
+
+    ```bash
+    cmake -DCMAKE_BUILD_TYPE=Release ../..
+    ```
+
+14. Build the code
+
+    ```bash
+    cmake --build .
+    ```
+
+15. Go inside the runtime folder
+
+    ```bash
+    cd ./runtime
+    ```
+
+16. Run one of the examples
 
     ```bash
     ./example_1

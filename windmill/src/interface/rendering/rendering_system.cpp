@@ -4,7 +4,9 @@
 
 #include "../../implementation/rendering/vulkan/wm_vulkan_rendering_system.h"
 #include "../../implementation/rendering/opengl/wm_opengl_rendering_system.h"
-#include "../../implementation/rendering/direct3d11/wm_direct3d11_rendering_system.h"
+#ifdef WM_PLATFORM_WINDOWS
+	#include "../../implementation/rendering/direct3d11/wm_direct3d11_rendering_system.h"
+#endif
 
 namespace wm {
 
