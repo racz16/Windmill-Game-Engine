@@ -310,7 +310,7 @@ if(Vulkan_FOUND)
 			wm_compile_glsl_shaders("${GLSLANG_VALIDATOR}"
 				BINARY_GENERATION_FLAG "-V"
 				DEBUG_INFO_FLAG "$<$<CONFIG:DEBUG>:-g>"
-				OPTIMIZATION_FLAG "$<IF:$<CONFIG:DEBUG>,-Od,-Os>"
+				OPTIMIZATION_FLAG "$<$<CONFIG:DEBUG>:-Od>"
 				OUTPUT_FLAG "-o"
 			)
 		else()
