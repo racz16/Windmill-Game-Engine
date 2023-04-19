@@ -4,7 +4,7 @@ jobs:
   build-windows-debug:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: recursive
       - uses: humbletim/setup-vulkan-sdk@v1.2.0
@@ -12,12 +12,12 @@ jobs:
           vulkan-query-version: 1.3.224.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
-      - run: cmake .
+      - run: cmake -DCMAKE_BUILD_TYPE=Debug -DWM_CI=ON .
       - run: cmake --build .
   build-windows-release:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: recursive
       - uses: humbletim/setup-vulkan-sdk@v1.2.0
@@ -25,12 +25,12 @@ jobs:
           vulkan-query-version: 1.3.224.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
-      - run: cmake .
-      - run: cmake --build . --config Release
+      - run: cmake -DCMAKE_BUILD_TYPE=Release -DWM_CI=ON .
+      - run: cmake --build .
   build-linux-debug:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: recursive
       - run: sudo apt-get update
@@ -40,12 +40,12 @@ jobs:
           vulkan-query-version: 1.3.224.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
-      - run: cmake .
+      - run: cmake -DCMAKE_BUILD_TYPE=Debug -DWM_CI=ON .
       - run: cmake --build .
   build-linux-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
             submodules: recursive
       - run: sudo apt-get update
@@ -55,5 +55,5 @@ jobs:
           vulkan-query-version: 1.3.224.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader, Glslang
           vulkan-use-cache: true
-      - run: cmake .
-      - run: cmake --build . --config Release
+      - run: cmake -DCMAKE_BUILD_TYPE=Release -DWM_CI=ON .
+      - run: cmake --build .
