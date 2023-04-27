@@ -3,7 +3,9 @@
 #include "rendering_system.h"
 
 #include "../../implementation/rendering/opengl/wm_gl_buffer.h"
-#include "../../implementation/rendering/direct3d11/wm_dx11_buffer.h"
+#ifdef WM_PLATFORM_WINDOWS
+	#include "../../implementation/rendering/direct3d11/wm_dx11_buffer.h"
+#endif
 
 namespace wm {
 
