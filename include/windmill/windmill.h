@@ -78,6 +78,9 @@
 //
 //RENDERING
 //
+#include "../windmill/src/interface/rendering/gpu_buffer.h"
+#include "../windmill/src/interface/rendering/gpu_mesh.h"
+#include "../windmill/src/interface/rendering/gpu_resource.h"
 #include "../windmill/src/interface/rendering/rendering_api.h"
 #include "../windmill/src/interface/rendering/rendering_context.h"
 #include "../windmill/src/interface/rendering/rendering_system.h"

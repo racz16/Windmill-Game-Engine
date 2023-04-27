@@ -63,7 +63,7 @@ namespace wm {
 
 		child_parent.insert_or_assign(child, parent);
 
-		node_parent_changed_event parent_event(child, ptr<node> {nullptr}, parent);
+		node_parent_changed_event parent_event(child, nullptr, parent);
 		engine::get_event_system()->emit_event(node_parent_changed_event::get_key(), parent_event, child);
 		node_child_changed_event child_event(parent, true, child);
 		engine::get_event_system()->emit_event(node_child_changed_event::get_key(), child_event, parent);
@@ -82,7 +82,7 @@ namespace wm {
 
 		child_parent.erase(child);
 
-		node_parent_changed_event parent_event(child, parent, ptr<node> {nullptr});
+		node_parent_changed_event parent_event(child, parent, nullptr);
 		engine::get_event_system()->emit_event(node_parent_changed_event::get_key(), parent_event, child);
 		node_child_changed_event child_event(parent, false, child);
 		engine::get_event_system()->emit_event(node_child_changed_event::get_key(), child_event, parent);

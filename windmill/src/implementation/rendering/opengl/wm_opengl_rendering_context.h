@@ -4,6 +4,8 @@
 
 #include <glad/glad.h>
 
+#include "rendering/gpu_mesh.h"
+
 #include "../wm_gpu_vertex.h"
 
 namespace wm {
@@ -14,10 +16,8 @@ namespace wm {
 		std::vector<uint32_t> indices;
 
 		GLuint shader_program;
-		GLuint vao;
-		GLuint vbo;
-		GLuint ebo;
-		GLuint ubo;
+		ptr<gpu_mesh> vao = nullptr;
+		ptr<gpu_buffer> ubo = nullptr;
 		GLuint texture;
 		GLuint sampler;
 
@@ -27,7 +27,7 @@ namespace wm {
 		static std::string get_message_severity(const GLenum severity);
 
 		static void create_debug_message_callback();
-		static void set_object_label(const GLenum type, const GLuint id, const std::string& name);
+		static void set_debug_label(const GLenum type, const GLuint id, const std::string& label);
 
 		void initialize_opengl();
 		void initialize_imgui();

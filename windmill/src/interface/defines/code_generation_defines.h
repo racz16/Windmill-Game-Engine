@@ -48,6 +48,26 @@
 
 
 
+#define WM_ENUM_FLAG_FUNCTION_DECLARATIONS(type) \
+	type operator|(type, type); \
+	type operator&(type, type);
+
+#define WM_ENUM_FLAG_FUNCTION_DEFINITIONS(type) \
+	WM_ENUM_FLAG_FUNCTION_DEFINITION(type, |) \
+	WM_ENUM_FLAG_FUNCTION_DEFINITION(type, &)
+
+#define WM_ENUM_FLAG_FUNCTION_DEFINITION(type, operator_character) \
+	type operator operator_character(type left, type right) { \
+		return static_cast<type>( \
+			static_cast<std::underlying_type_t<type>>(left) operator_character \
+			static_cast<std::underlying_type_t<type>>(right) \
+		); \
+	}
+
+#define WM_CONTAINS_FLAG(variable, flag) (variable & flag) == flag
+
+
+
 #ifdef WM_BUILD_DEBUG
 	#define HLSL_VERTEX(name) L"res/shader/hlsl/" name L"/_debug_vertex.hlsl.cso"
 	#define HLSL_PIXEL(name) L"res/shader/hlsl/" name L"/_debug_pixel.hlsl.cso"

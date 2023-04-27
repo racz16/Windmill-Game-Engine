@@ -4,26 +4,14 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <sstream>
 
-#include "defines/debug_defines.h"
 #include "defines/log_defines.h"
 #include "defines/code_generation_defines.h"
 #include "component/camera/camera_component.h"
 
 #include "../wm_gpu_matrices_ubo.h"
+#include "wm_gl_defines.h"
 
 namespace wm {
-
-#ifdef WM_BUILD_DEBUG
-	#define GL_LABEL(type, id, name) set_object_label(type, id, name)
-	#define GL_GROUP_START(name) glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name)
-	#define GL_GROUP_STOP() glPopDebugGroup()
-	#define GL_MARKER(name) GL_GROUP_START(name);GL_GROUP_STOP()
-#else
-	#define GL_LABEL(type, id, name)
-	#define GL_GROUP_START(name)
-	#define GL_GROUP_STOP()
-	#define GL_MARKER(name)
-#endif
 
 	void wm_opengl_rendering_context::initialize() {
 		initialize_opengl();
@@ -57,9 +45,9 @@ namespace wm {
 		ImGui_ImplOpenGL3_Init("#version 460");
 	}
 
-	void wm_opengl_rendering_context::set_object_label(const GLenum type, const GLuint id, const std::string& name) {
-		std::string label = "[" + get_object_type(type) + "] " + name;
-		glObjectLabel(type, id, -1, label.c_str());
+	void wm_opengl_rendering_context::set_debug_label(const GLenum type, const GLuint id, const std::string& label) {
+		std::string label_2 = "[" + get_object_type(type) + "] " + label;
+		glObjectLabel(type, id, -1, label_2.c_str());
 	}
 
 	std::string wm_opengl_rendering_context::get_object_type(const GLenum type) {
@@ -233,46 +221,37 @@ namespace wm {
 	void wm_opengl_rendering_context::create_vao(const std::string& file_name) {
 		load_mesh(file_name);
 
-		glCreateBuffers(1, &vbo);
-		glNamedBufferStorage(vbo, sizeof(wm_gpu_vertex) * vertices.size(), &vertices[0], GL_NONE);
-		GL_LABEL(GL_BUFFER, vbo, file_name);
-		WM_LOG_INFO_2("OpenGL vertex buffer created");
+		gpu_buffer_descriptor vbo_descriptor{};
+		vbo_descriptor.type_flags = gpu_buffer_type::VERTEX_BUFFER;
+		vbo_descriptor.data_size = sizeof(wm_gpu_vertex) * vertices.size();
+		vbo_descriptor.data = &vertices[0];
+		vbo_descriptor.stride = sizeof(wm_gpu_vertex);
+		auto vbo = gpu_buffer::create(vbo_descriptor);
+		GL_LABEL_2(vbo, "[VERTEX BUFFER] " + file_name);
 
-		glCreateVertexArrays(1, &vao);
-		glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(wm_gpu_vertex));
-		//position
-		GLuint position_attrib_index = 0;
-		glEnableVertexArrayAttrib(vao, position_attrib_index);
-		glVertexArrayAttribFormat(vao, position_attrib_index, 3, GL_FLOAT, GL_FALSE, offsetof(wm_gpu_vertex, position));
-		glVertexArrayAttribBinding(vao, position_attrib_index, 0);
-		//normal
-		GLuint normal_attrib_index = 1;
-		glEnableVertexArrayAttrib(vao, normal_attrib_index);
-		glVertexArrayAttribFormat(vao, normal_attrib_index, 3, GL_FLOAT, GL_FALSE, offsetof(wm_gpu_vertex, normal));
-		glVertexArrayAttribBinding(vao, normal_attrib_index, 0);
-		//texture
-		GLuint texture_attrib_index = 2;
-		glEnableVertexArrayAttrib(vao, texture_attrib_index);
-		glVertexArrayAttribFormat(vao, texture_attrib_index, 2, GL_FLOAT, GL_FALSE, offsetof(wm_gpu_vertex, texture_coordinates));
-		glVertexArrayAttribBinding(vao, texture_attrib_index, 0);
+		gpu_buffer_descriptor ebo_descriptor{};
+		ebo_descriptor.type_flags = gpu_buffer_type::INDEX_BUFFER;
+		ebo_descriptor.data_size = sizeof(GLuint) * indices.size();
+		ebo_descriptor.data = &indices[0];
+		ebo_descriptor.stride = sizeof(GLuint);
+		auto ebo = gpu_buffer::create(ebo_descriptor);
+		GL_LABEL_2(ebo, "[ELEMENT BUFFER] " + file_name);
 
-		glCreateBuffers(1, &ebo);
-		glNamedBufferStorage(ebo, sizeof(GLuint) * indices.size(), &indices[0], GL_NONE);
-		glVertexArrayElementBuffer(vao, ebo);
-
-		GL_LABEL(GL_BUFFER, ebo, file_name);
-		GL_LABEL(GL_VERTEX_ARRAY, vao, file_name);
-
-		WM_LOG_INFO_2("OpenGL element buffer created");
-		WM_LOG_INFO_2("OpenGL vertex array created");
+		gpu_mesh_descriptor vao_descriptor{};
+		vao_descriptor.vertex_buffer = vbo;
+		vao_descriptor.index_buffer = ebo;
+		vao = gpu_mesh::create(vao_descriptor);
+		GL_LABEL_2(vao, "[VERTEX ARRAY] " + file_name);
 	}
 
 	void wm_opengl_rendering_context::create_ubo() {
-		glCreateBuffers(1, &ubo);
-		glNamedBufferStorage(ubo, sizeof(wm_gpu_matrices_ubo), nullptr, GL_MAP_WRITE_BIT);
-		GL_LABEL(GL_BUFFER, ubo, std::string("matrices ubo"));
-
-		WM_LOG_INFO_2("OpenGL uniform buffer created");
+		gpu_buffer_descriptor descriptor{};
+		descriptor.type_flags = gpu_buffer_type::UNIFORM_BUFFER;
+		descriptor.data_size = sizeof(wm_gpu_matrices_ubo);
+		descriptor.stride = sizeof(wm_gpu_matrices_ubo);
+		descriptor.cpu_write_frequency = usage_frequency::FREQUENTLY;
+		ubo = gpu_buffer::create(descriptor);
+		GL_LABEL_2(ubo, "[UNIFORM BUFFER] matrices");
 	}
 
 	void wm_opengl_rendering_context::create_texture(const std::string& file_name) {
@@ -324,19 +303,16 @@ namespace wm {
 			model_matrix = child->get_transform()->get_model_matrix();
 			inverse_model_matrix = child->get_transform()->get_inverse_model_matrix();
 		}
-		wm_gpu_matrices_ubo ubo{};
-		ubo.model = model_matrix;
-		ubo.inverse_model = inverse_model_matrix;
+		wm_gpu_matrices_ubo ubo_data{};
+		ubo_data.model = model_matrix;
+		ubo_data.inverse_model = inverse_model_matrix;
 
 		auto camera = engine::get_scene_system()->get_node_by_tag("camera")->get_component(camera_component::get_key());
-		ubo.view = camera->get_view_matrix();
-		ubo.projection = camera->get_projection_matrix();
+		ubo_data.view = camera->get_view_matrix();
+		ubo_data.projection = camera->get_projection_matrix();
 
-		auto mapped_memory = glMapNamedBuffer(wm_opengl_rendering_context::ubo, GL_WRITE_ONLY);
-		memcpy(mapped_memory, &ubo, sizeof(ubo));
-		glUnmapNamedBuffer(wm_opengl_rendering_context::ubo);
-
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, wm_opengl_rendering_context::ubo);
+		ubo->set_data(&ubo_data, sizeof(ubo_data));
+		glBindBufferBase(GL_UNIFORM_BUFFER, 0, GL_ID_OF(ubo));
 	}
 
 	void wm_opengl_rendering_context::update() {
@@ -347,7 +323,7 @@ namespace wm {
 		GL_GROUP_START("lambertian");
 		glUseProgram(shader_program);
 		load_uniforms();
-		glBindVertexArray(vao);
+		glBindVertexArray(GL_ID_OF(vao));
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 		GL_GROUP_STOP();
 
@@ -385,14 +361,8 @@ namespace wm {
 
 		glDeleteProgram(shader_program);
 		WM_LOG_INFO_2("OpenGL shader program destroyed");
-		glDeleteVertexArrays(1, &vbo);
-		WM_LOG_INFO_2("OpenGL vertex array destroyed");
-		glDeleteBuffers(1, &ebo);
-		WM_LOG_INFO_2("OpenGL element buffer destroyed");
-		glDeleteBuffers(1, &vbo);
-		WM_LOG_INFO_2("OpenGL vertex buffer destroyed");
-		glDeleteBuffers(1, &ubo);
-		WM_LOG_INFO_2("OpenGL uniform buffer destroyed");
+		vao.destroy();
+		ubo.destroy();
 		glDeleteSamplers(1, &sampler);
 		WM_LOG_INFO_2("OpenGL sampler destroyed");
 		glDeleteTextures(1, &texture);
