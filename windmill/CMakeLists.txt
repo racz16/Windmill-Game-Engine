@@ -56,6 +56,13 @@ add_library("${WM_WINDMILL}" SHARED
 			"src/implementation/rendering/opengl/wm_opengl_rendering_system.cpp"
 			"src/implementation/rendering/opengl/wm_opengl_rendering_system.h"
 		# vulkan
+			"src/implementation/rendering/vulkan/wm_vk_buffer.cpp"
+			"src/implementation/rendering/vulkan/wm_vk_buffer.h"
+			"src/implementation/rendering/vulkan/wm_vk_defines.h"
+			"src/implementation/rendering/vulkan/wm_vk_memory_type.cpp"
+			"src/implementation/rendering/vulkan/wm_vk_memory_type.h"
+			"src/implementation/rendering/vulkan/wm_vk_mesh.cpp"
+			"src/implementation/rendering/vulkan/wm_vk_mesh.h"
 			"src/implementation/rendering/vulkan/wm_vulkan_rendering_context.cpp"
 			"src/implementation/rendering/vulkan/wm_vulkan_rendering_context.h"
 			"src/implementation/rendering/vulkan/wm_vulkan_rendering_system.cpp"
@@ -462,6 +469,7 @@ set(PRECOMPILED_HEADERS
 	"<AL/al.h>"
 	"<AL/alc.h>"
 	"<sndfile.h>"
+	"<glad/glad.h>"
 )
 if(WIN32)
 	target_compile_definitions("${WM_WINDMILL}" PRIVATE "NOMINMAX" "GLFW_EXPOSE_NATIVE_WIN32")

@@ -1,9 +1,6 @@
 #pragma once
 
 #include "rendering/rendering_context.h"
-
-#include <glad/glad.h>
-
 #include "rendering/gpu_mesh.h"
 
 #include "../wm_gpu_vertex.h"

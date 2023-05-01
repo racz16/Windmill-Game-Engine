@@ -20,6 +20,7 @@
 #include "window/event/mouse_hover_event.h"
 
 #include "wm_glfw_window_system.h"
+#include "../rendering/vulkan/wm_vk_defines.h"
 
 namespace wm {
 
@@ -510,7 +511,7 @@ namespace wm {
 	}
 
 	void wm_glfw_window_system::create_surface(const void* context, void* surface) {
-		WM_ASSERT_VULKAN(glfwCreateWindowSurface(*reinterpret_cast<const VkInstance*>(context), window_handle, nullptr, reinterpret_cast<VkSurfaceKHR*>(surface)));
+		VK_CALL(glfwCreateWindowSurface(*reinterpret_cast<const VkInstance*>(context), window_handle, nullptr, reinterpret_cast<VkSurfaceKHR*>(surface)));
 		WM_LOG_INFO_2("GLFW window Vulkan surface created");
 	}
 

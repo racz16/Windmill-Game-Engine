@@ -1,32 +1,42 @@
 #pragma once
 
 #include "rendering/rendering_context.h"
+#include "rendering/gpu_mesh.h"
+
 #include "../wm_gpu_vertex.h"
+#include "wm_vk_memory_type.h"
 
 namespace wm {
 
-	struct push_constatnt_block {
-		glm::vec2 scale;
-		glm::vec2 translate;
-	};
-
 	class wm_vulkan_rendering_context: public rendering_context {
+	public:
+		static VkInstance instance;
+		static VkDevice device;
+		static VkPhysicalDeviceMemoryProperties physical_device_memory_properties;
+		static PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
+
 	private:
+
+		struct wm_vk_memory_profile {
+			VkMemoryPropertyFlags positive;
+			VkMemoryPropertyFlags negative;
+		};
+
 		static const int32_t MAX_FRAMES_IN_FLIGHT = 2;
+
+		static wm_vk_memory_type never_changing_memory;
+		static wm_vk_memory_type frequently_changing_memory;
 
 		static std::vector<wm_gpu_vertex> vertices;
 		static std::vector<uint32_t> indices;
-		VkInstance instance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT debug_utils_messenger = VK_NULL_HANDLE;
 		//device
 		VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 		bool anisotropy = false;
 		float max_anisotropy = -1.0;
-		VkPhysicalDeviceMemoryProperties physical_device_memory_properties;
-		int32_t graphics_queue_family_index = -1;
+		static int32_t graphics_queue_family_index;
 		int32_t presentation_queue_family_index = -1;
-		VkDevice device = VK_NULL_HANDLE;
-		VkQueue graphics_queue = VK_NULL_HANDLE;
+		static VkQueue graphics_queue;
 		VkQueue presentation_queue = VK_NULL_HANDLE;
 		//swap chain
 		VkSurfaceKHR surface = VK_NULL_HANDLE;
@@ -44,12 +54,8 @@ namespace wm {
 		VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
 		VkPipeline pipeline = VK_NULL_HANDLE;
 		//buffers
-		VkBuffer vertex_buffer = VK_NULL_HANDLE;
-		VkDeviceMemory vertex_buffer_device_memory = VK_NULL_HANDLE;
-		VkBuffer index_buffer = VK_NULL_HANDLE;
-		VkDeviceMemory index_buffer_device_memory = VK_NULL_HANDLE;
-		std::vector<VkBuffer> uniform_buffers;
-		std::vector<VkDeviceMemory> uniform_buffers_device_memories;
+		ptr<gpu_mesh> mesh = nullptr;
+		std::vector<ptr<gpu_buffer>> uniform_buffers;
 		VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSet> descriptor_sets;
 		VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
@@ -69,7 +75,7 @@ namespace wm {
 		VkImageView depth_image_view = VK_NULL_HANDLE;
 		VkDeviceMemory depth_image_device_memory = VK_NULL_HANDLE;
 		//command buffers
-		VkCommandPool command_pool = VK_NULL_HANDLE;
+		static VkCommandPool command_pool;
 		std::vector<VkCommandBuffer> command_buffers;
 		//sync
 		std::vector<VkSemaphore> image_is_available;
@@ -107,6 +113,8 @@ namespace wm {
 		//device
 		void create_device();
 		void get_physical_device();
+		void update_memory_infos();
+		void update_memory_info(wm_vk_memory_type& memory_info, int32_t& selected, const uint32_t memory_index, const std::vector<wm_vk_memory_profile>& profiles);
 		//device extensions
 		std::vector<const char*> get_required_device_extensions() const;
 		std::vector<VkExtensionProperties> get_available_device_extensions(const VkPhysicalDevice physical_device) const;
@@ -130,11 +138,8 @@ namespace wm {
 		std::vector<char> read_file(const std::string& file_name) const;
 		VkShaderModule create_shader_module(const std::vector<char>& code) const;
 		//vertex buffer
-		void load_mesh();
-		void create_vertex_buffer();
-		void create_index_buffer();
-		void create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& buffer_memory) const;
-		void copy_buffer(const VkBuffer source_buffer, const VkBuffer destination_buffer, const size_t size);
+		void create_mesh(const std::string& path);
+		void load_mesh(const std::string& path);
 		//texture
 		void create_texture_image();
 		void create_texture_image_view();
@@ -159,10 +164,8 @@ namespace wm {
 		void create_descriptor_pool();
 		void create_descriptor_sets();
 		//command buffers
-		void create_command_pool();
+		static void create_command_pool();
 		void create_command_buffers();
-		VkCommandBuffer begin_single_time_commands();
-		void end_single_time_commands(const VkCommandBuffer command_buffer);
 		void update_command_buffer(const uint32_t image_index);
 		//sync
 		void create_semaphores();
@@ -172,6 +175,10 @@ namespace wm {
 		void create_imgui_font_texture() const;
 		void destroy_imgui() const;
 	public:
+		static VkCommandBuffer begin_single_time_commands();
+		static void end_single_time_commands(const VkCommandBuffer command_buffer);
+		static wm_vk_memory_type get_memory_type(const usage_frequency usage, const bool is_staging);
+
 		void initialize() override;
 		void update() override;
 		void destroy() override;

@@ -7,10 +7,10 @@
 namespace wm {
 
 	wm_gl_buffer::wm_gl_buffer(const gpu_buffer_descriptor descriptor)
-		: type_flags(descriptor.type_flags), cpu_write_frequency(descriptor.cpu_write_frequency), stride(descriptor.stride) {
+		: type_flags(descriptor.type_flags), cpu_write_frequency(descriptor.cpu_write_frequency), data_size(descriptor.data_size), stride(descriptor.stride) {
 
 		glCreateBuffers(1, &native_handle);
-		glNamedBufferStorage(native_handle, descriptor.data_size, descriptor.data, get_flags());
+		glNamedBufferStorage(native_handle, data_size, descriptor.data, get_flags());
 		if(cpu_write_frequency != usage_frequency::NEVER) {
 			mapped_memory = glMapNamedBuffer(native_handle, GL_WRITE_ONLY);
 		}
@@ -41,8 +41,8 @@ namespace wm {
 		return cpu_write_frequency;
 	}
 
-	void wm_gl_buffer::set_data(const void* data, const int32_t data_size, const int32_t offset) {
-		memcpy(static_cast<char*>(mapped_memory) + offset, data, data_size);
+	void wm_gl_buffer::set_data(void* data, const int32_t data_size, const int32_t offset) {
+		std::memcpy(static_cast<char*>(mapped_memory) + offset, data, data_size);
 	}
 
 	int32_t wm_gl_buffer::get_data_size() const {
@@ -68,4 +68,5 @@ namespace wm {
 		glDeleteBuffers(1, &native_handle);
 		WM_LOG_INFO_2("OpenGL buffer destroyed");
 	}
+
 }

@@ -1,6 +1,7 @@
 #include "wm_dx11_mesh.h"
 
 namespace wm {
+
 	wm_dx11_mesh::wm_dx11_mesh(const gpu_mesh_descriptor descriptor): vertex_buffer(descriptor.vertex_buffer), index_buffer(descriptor.index_buffer) {}
 
 	std::any wm_dx11_mesh::get_native_handle() const {
@@ -28,11 +29,10 @@ namespace wm {
 	wm_dx11_mesh::~wm_dx11_mesh() {
 		if(index_buffer.is_valid()) {
 			index_buffer.destroy();
-			index_buffer = nullptr;
 		}
 		if(vertex_buffer.is_valid()) {
 			vertex_buffer.destroy();
-			vertex_buffer = nullptr;
 		}
 	}
+
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glad/glad.h>
-
 #include "rendering/gpu_buffer.h"
 
 namespace wm {
@@ -25,7 +23,7 @@ namespace wm {
 	#ifdef WM_BUILD_DEBUG
 		void set_debug_label(const std::string& label) override;
 	#endif
-		void set_data(const void* data, const int32_t data_size, const int32_t offset = 0) override;
+		void set_data(void* data, const int32_t data_size, const int32_t offset = 0) override;
 		int32_t get_stride() const override;
 		~wm_gl_buffer();
 	};

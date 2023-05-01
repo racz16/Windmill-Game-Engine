@@ -80,10 +80,10 @@ namespace wm {
 
 #endif
 
-	void wm_dx11_buffer::set_data(const void* data, const int32_t data_size, const int32_t offset) {
+	void wm_dx11_buffer::set_data(void* data, const int32_t data_size, const int32_t offset) {
 		D3D11_MAPPED_SUBRESOURCE mapped_subresourcce{};
 		DX_CALL(wm_direct3d11_rendering_context::device_context->Map(native_handle, 0, D3D11_MAP::D3D11_MAP_WRITE_DISCARD, 0, &mapped_subresourcce));
-		memcpy(mapped_subresourcce.pData, data, data_size);
+		std::memcpy(mapped_subresourcce.pData, data, data_size);
 		DX_CALL(wm_direct3d11_rendering_context::device_context->Unmap(native_handle, 0));
 	}
 
@@ -94,7 +94,6 @@ namespace wm {
 	wm_dx11_buffer::~wm_dx11_buffer() {
 		if(native_handle != nullptr) {
 			native_handle->Release();
-			native_handle = nullptr;
 			WM_LOG_INFO_2("Direct3D 11 buffer destroyed");
 		}
 	}

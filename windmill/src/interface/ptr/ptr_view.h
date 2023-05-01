@@ -41,7 +41,7 @@ namespace wm {
 
 	public:
 
-		ptr_view<T>(T* const raw_pointer) {
+		ptr_view<T>(T* const raw_pointer = nullptr) {
 			id = ptr_meta::add(raw_pointer);
 		}
 

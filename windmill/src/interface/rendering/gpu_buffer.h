@@ -9,6 +9,7 @@
 namespace wm {
 
 	enum class WM_PUBLIC gpu_buffer_type: uint8_t {
+		UNDEFINED = 0,
 		VERTEX_BUFFER = 1,
 		INDEX_BUFFER = 2,
 		UNIFORM_BUFFER = 4,
@@ -32,7 +33,7 @@ namespace wm {
 
 		virtual gpu_buffer_type get_type_flags() const = 0;
 		virtual usage_frequency get_cpu_write_frequency() const = 0;
-		virtual void set_data(const void* data, const int32_t data_size, const int32_t offset = 0) = 0;
+		virtual void set_data(void* data, const int32_t data_size, const int32_t offset = 0) = 0;
 		virtual int32_t get_stride() const = 0;
 	};
 

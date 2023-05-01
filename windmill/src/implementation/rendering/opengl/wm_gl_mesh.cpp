@@ -63,11 +63,9 @@ namespace wm {
 	wm_gl_mesh::~wm_gl_mesh() {
 		if(index_buffer.is_valid()) {
 			index_buffer.destroy();
-			index_buffer = nullptr;
 		}
 		if(vertex_buffer.is_valid()) {
 			vertex_buffer.destroy();
-			vertex_buffer = nullptr;
 		}
 		glDeleteVertexArrays(1, &native_handle);
 		WM_LOG_INFO_2("OpenGL vertex array destroyed");

@@ -4,6 +4,7 @@
 #include "rendering_system.h"
 
 #include "../../implementation/rendering/opengl/wm_gl_mesh.h"
+#include "../../implementation/rendering/vulkan/wm_vk_mesh.h"
 #ifdef WM_PLATFORM_WINDOWS
 	#include "../../implementation/rendering/direct3d11/wm_dx11_mesh.h"
 #endif
@@ -14,7 +15,7 @@ namespace wm {
 		auto selected_api = rendering_system::get_rendering_api();
 		switch(selected_api) {
 			case wm::rendering_api::vulkan:
-				//return ptr<gpu_mesh>(new wm_vk_mesh(descriptor));
+				return ptr<gpu_mesh>(new wm_vk_mesh(descriptor));
 			case wm::rendering_api::opengl:
 				return ptr<gpu_mesh>(new wm_gl_mesh(descriptor));
 			case wm::rendering_api::direct3d11:

@@ -7,11 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "component/camera/camera_component.h"
-#include "core/engine.h"
-#include "core/utility.h"
 #include "defines/log_defines.h"
-#include "defines/general_defines.h"
-#include "defines/code_generation_defines.h"
 #include "window/event/window_framebuffer_size_event.h"
 #include "window/event/mouse_scroll_event.h"
 #include "window/event/keyboard_character_event.h"
@@ -19,20 +15,20 @@
 #include "wm_vulkan_rendering_system.h"
 #include "../../resource/wm_resource_system.h"
 #include "../wm_gpu_matrices_ubo.h"
+#include "wm_vk_defines.h"
+#include "wm_vk_buffer.h"
 
 namespace wm {
 
-#ifdef WM_BUILD_DEBUG
-	#define VK_LABEL(type, object, name) set_object_label(type, reinterpret_cast<uint64_t>(object), name)
-	#define VK_GROUP_START(name, command_buffer) start_group(name, command_buffer)
-	#define VK_GROUP_STOP(command_buffer) stop_group(command_buffer)
-	#define VK_MARKER(name, command_buffer) set_marker(name, command_buffer)
-#else
-	#define VK_LABEL(type, object, name)
-	#define VK_GROUP_START(name, command_buffer)
-	#define VK_GROUP_STOP(command_buffer)
-	#define VK_MARKER(name, command_buffer)
-#endif
+	VkInstance wm_vulkan_rendering_context::instance = VK_NULL_HANDLE;
+	VkDevice wm_vulkan_rendering_context::device = VK_NULL_HANDLE;
+	VkPhysicalDeviceMemoryProperties wm_vulkan_rendering_context::physical_device_memory_properties;
+	int32_t wm_vulkan_rendering_context::graphics_queue_family_index = -1;
+	VkQueue wm_vulkan_rendering_context::graphics_queue = VK_NULL_HANDLE;
+	VkCommandPool wm_vulkan_rendering_context::command_pool = VK_NULL_HANDLE;
+	PFN_vkSetDebugUtilsObjectNameEXT wm_vulkan_rendering_context::vkSetDebugUtilsObjectNameEXT;
+	wm_vk_memory_type wm_vulkan_rendering_context::never_changing_memory;
+	wm_vk_memory_type wm_vulkan_rendering_context::frequently_changing_memory;
 
 	std::vector<wm_gpu_vertex> wm_vulkan_rendering_context::vertices;
 	std::vector<uint32_t> wm_vulkan_rendering_context::indices;
@@ -41,6 +37,7 @@ namespace wm {
 		create_instance();
 	#ifdef WM_BUILD_DEBUG
 		create_debug_utils_messenger();
+		vkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
 	#endif
 		create_surface(&instance, &surface);
 		create_device();
@@ -57,9 +54,7 @@ namespace wm {
 		create_texture_image();
 		create_texture_image_view();
 		create_texture_sampler();
-		load_mesh();
-		create_vertex_buffer();
-		create_index_buffer();
+		create_mesh("res/mesh/helmet.obj");
 		create_uniform_buffers();
 		create_descriptor_pool();
 		create_descriptor_sets();
@@ -99,7 +94,7 @@ namespace wm {
 		//	instance_create_info.pNext = &validation_features;
 		//#endif
 
-		WM_ASSERT_VULKAN(vkCreateInstance(&instance_create_info, nullptr, &instance));
+		VK_CALL(vkCreateInstance(&instance_create_info, nullptr, &instance));
 		WM_LOG_INFO_2("Vulkan instance created");
 	}
 
@@ -125,9 +120,9 @@ namespace wm {
 
 	std::vector<VkLayerProperties> wm_vulkan_rendering_context::get_available_layers() const {
 		uint32_t layer_count;
-		WM_ASSERT_VULKAN(vkEnumerateInstanceLayerProperties(&layer_count, nullptr));
+		VK_CALL(vkEnumerateInstanceLayerProperties(&layer_count, nullptr));
 		std::vector<VkLayerProperties> available_layers(layer_count);
-		WM_ASSERT_VULKAN(vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data()));
+		VK_CALL(vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data()));
 		return available_layers;
 	}
 
@@ -179,9 +174,9 @@ namespace wm {
 
 	std::vector<VkExtensionProperties> wm_vulkan_rendering_context::get_available_extensions() const {
 		uint32_t extension_count;
-		WM_ASSERT_VULKAN(vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr));
+		VK_CALL(vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr));
 		std::vector<VkExtensionProperties> available_extensions(extension_count);
-		WM_ASSERT_VULKAN(vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, available_extensions.data()));
+		VK_CALL(vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, available_extensions.data()));
 		return available_extensions;
 	}
 
@@ -267,7 +262,7 @@ namespace wm {
 		const auto debug_utils_messenger_create_info = create_debug_utils_messenger_create_info();
 		auto vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
 		WM_ASSERT(vkCreateDebugUtilsMessengerEXT);
-		WM_ASSERT_VULKAN(vkCreateDebugUtilsMessengerEXT(instance, &debug_utils_messenger_create_info, nullptr, &debug_utils_messenger));
+		VK_CALL(vkCreateDebugUtilsMessengerEXT(instance, &debug_utils_messenger_create_info, nullptr, &debug_utils_messenger));
 		WM_LOG_INFO_2("Vulkan debug messenger created");
 	}
 
@@ -318,7 +313,6 @@ namespace wm {
 		debug_utils_object_name_info.objectHandle = id;
 		debug_utils_object_name_info.objectType = object_type;
 		debug_utils_object_name_info.pObjectName = label.c_str();
-		auto vkSetDebugUtilsObjectNameEXT = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT"));
 		vkSetDebugUtilsObjectNameEXT(device, &debug_utils_object_name_info);
 	}
 
@@ -382,7 +376,7 @@ namespace wm {
 		device_create_info.ppEnabledExtensionNames = device_extensions.data();
 		device_create_info.pEnabledFeatures = &physical_device_features;
 
-		WM_ASSERT_VULKAN(vkCreateDevice(physical_device, &device_create_info, nullptr, &device));
+		VK_CALL(vkCreateDevice(physical_device, &device_create_info, nullptr, &device));
 		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_PHYSICAL_DEVICE, physical_device, "RTX 3060");
 		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_DEVICE, device, "logical device");
 		WM_LOG_INFO_2("Vulkan device created");
@@ -394,10 +388,10 @@ namespace wm {
 	void wm_vulkan_rendering_context::get_physical_device() {
 		const auto required_device_extensions = get_required_device_extensions();
 		uint32_t physical_device_count;
-		WM_ASSERT_VULKAN(vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr));
+		VK_CALL(vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr));
 		WM_ASSERT(physical_device_count > 0);
 		std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
-		WM_ASSERT_VULKAN(vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data()));
+		VK_CALL(vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices.data()));
 		std::string physical_device_name = "";
 		for(const auto& pd : physical_devices) {
 			VkPhysicalDeviceProperties physical_device_properties;
@@ -408,10 +402,10 @@ namespace wm {
 			vkGetPhysicalDeviceMemoryProperties(pd, &physical_device_memory_properties);
 
 			uint32_t surface_format_count;
-			WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceFormatsKHR(pd, surface, &surface_format_count, nullptr));
+			VK_CALL(vkGetPhysicalDeviceSurfaceFormatsKHR(pd, surface, &surface_format_count, nullptr));
 
 			uint32_t surface_presentation_mode_count;
-			WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfacePresentModesKHR(pd, surface, &surface_presentation_mode_count, nullptr));
+			VK_CALL(vkGetPhysicalDeviceSurfacePresentModesKHR(pd, surface, &surface_presentation_mode_count, nullptr));
 
 			const auto available_device_extensions = get_available_device_extensions(pd);
 			if(!are_device_extensions_supported(required_device_extensions, available_device_extensions)) {
@@ -431,7 +425,7 @@ namespace wm {
 			vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, queue_family_properties.data());
 			for(const auto& qfp : queue_family_properties) {
 				if(qfp.queueCount > 0) {
-					WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceSupportKHR(pd, i, surface, &presentation_supported));
+					VK_CALL(vkGetPhysicalDeviceSurfaceSupportKHR(pd, i, surface, &presentation_supported));
 					if(qfp.queueFlags & VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT && presentation_supported) {
 						graphics_queue_family_index = i;
 						presentation_queue_family_index = i;
@@ -461,8 +455,72 @@ namespace wm {
 				}
 			}
 		}
+		update_memory_infos();
+
 		WM_ASSERT(physical_device != VK_NULL_HANDLE);
 		WM_LOG_INFO_2("Vulkan physical device selected: " + physical_device_name);
+	}
+
+	void wm_vulkan_rendering_context::update_memory_infos() {
+		std::vector<wm_vk_memory_profile> never_profiles = {
+			wm_vk_memory_profile{
+				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+			},
+			wm_vk_memory_profile{
+				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+				0
+			},
+			wm_vk_memory_profile{
+				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				0
+			},
+		};
+		std::vector<wm_vk_memory_profile> quickly_profiles = {
+			wm_vk_memory_profile{
+				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_CACHED_BIT
+			},
+			wm_vk_memory_profile{
+				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+				0
+			},
+		};
+
+		int32_t never_changing_memory_type = -1;
+		int32_t frequently_changing_memory_type = -1;
+
+		for(uint32_t i = 0; i < physical_device_memory_properties.memoryTypeCount; i++) {
+			update_memory_info(never_changing_memory, never_changing_memory_type, i, never_profiles);
+			update_memory_info(frequently_changing_memory, frequently_changing_memory_type, i, quickly_profiles);
+		}
+		WM_ASSERT(never_changing_memory_type != -1);
+		WM_ASSERT(frequently_changing_memory_type != -1);
+	}
+
+	void wm_vulkan_rendering_context::update_memory_info(wm_vk_memory_type& memory_info, int32_t& selected, const uint32_t memory_index, const std::vector<wm_vk_memory_profile>& profiles) {
+		VkMemoryType memory_type = physical_device_memory_properties.memoryTypes[memory_index];
+		VkMemoryHeap memory_heap = physical_device_memory_properties.memoryHeaps[memory_type.heapIndex];
+		if(memory_heap.size >= 1024 * 1024 * 1024) {
+			VkMemoryPropertyFlags memory_property_flags = memory_type.propertyFlags;
+			int32_t profile_count = selected == -1 ? profiles.size() : selected;
+			for(int32_t i = 0; i < profile_count; i++) {
+				wm_vk_memory_profile profile = profiles[i];
+				if((memory_property_flags & profile.positive) == profile.positive && (memory_property_flags & profile.negative) == 0) {
+					memory_info.memory_type_index = memory_index;
+					memory_info.memory_property_flags = memory_property_flags;
+					selected = i;
+				}
+			}
+		}
+	}
+
+	wm_vk_memory_type wm_vulkan_rendering_context::get_memory_type(const usage_frequency usage, const bool is_staging) {
+		if(usage == usage_frequency::FREQUENTLY || is_staging) {
+			return frequently_changing_memory;
+		} else {
+			return never_changing_memory;
+		}
 	}
 
 
@@ -477,9 +535,9 @@ namespace wm {
 
 	std::vector<VkExtensionProperties> wm_vulkan_rendering_context::get_available_device_extensions(const VkPhysicalDevice physical_device) const {
 		uint32_t device_extension_count;
-		WM_ASSERT_VULKAN(vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, nullptr));
+		VK_CALL(vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, nullptr));
 		std::vector<VkExtensionProperties> available_device_extensions(device_extension_count);
-		WM_ASSERT_VULKAN(vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, available_device_extensions.data()));
+		VK_CALL(vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &device_extension_count, available_device_extensions.data()));
 		return available_device_extensions;
 	}
 
@@ -543,18 +601,18 @@ namespace wm {
 			swap_chain_create_info.imageSharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 		}
 
-		WM_ASSERT_VULKAN(vkCreateSwapchainKHR(device, &swap_chain_create_info, nullptr, &swap_chain));
+		VK_CALL(vkCreateSwapchainKHR(device, &swap_chain_create_info, nullptr, &swap_chain));
 
-		WM_ASSERT_VULKAN(vkGetSwapchainImagesKHR(device, swap_chain, &image_count, nullptr));
+		VK_CALL(vkGetSwapchainImagesKHR(device, swap_chain, &image_count, nullptr));
 		swap_chain_images.resize(image_count);
-		WM_ASSERT_VULKAN(vkGetSwapchainImagesKHR(device, swap_chain, &image_count, swap_chain_images.data()));
+		VK_CALL(vkGetSwapchainImagesKHR(device, swap_chain, &image_count, swap_chain_images.data()));
 
 		WM_LOG_INFO_2("Vulkan swap chain created");
 	}
 
 	void wm_vulkan_rendering_context::recreate_swap_chain() {
 		framebuffer_resized = false;
-		WM_ASSERT_VULKAN(vkDeviceWaitIdle(device));
+		VK_CALL(vkDeviceWaitIdle(device));
 
 		cleanup_swap_chain();
 
@@ -572,9 +630,9 @@ namespace wm {
 
 	VkSurfaceFormatKHR wm_vulkan_rendering_context::get_surface_format() const {
 		uint32_t surface_format_count;
-		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr));
+		VK_CALL(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, nullptr));
 		std::vector<VkSurfaceFormatKHR> surface_formats(surface_format_count);
-		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, surface_formats.data()));
+		VK_CALL(vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &surface_format_count, surface_formats.data()));
 
 		if(surface_formats.size() == 1 && surface_formats.at(0).format == VkFormat::VK_FORMAT_UNDEFINED) {
 			return {VkFormat::VK_FORMAT_B8G8R8A8_UNORM, VkColorSpaceKHR::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
@@ -590,9 +648,9 @@ namespace wm {
 
 	VkPresentModeKHR wm_vulkan_rendering_context::get_surface_presentation_mode() const {
 		uint32_t surface_presentation_mode_count;
-		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &surface_presentation_mode_count, nullptr));
+		VK_CALL(vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &surface_presentation_mode_count, nullptr));
 		std::vector<VkPresentModeKHR> surface_presentation_modes(surface_presentation_mode_count);
-		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &surface_presentation_mode_count, surface_presentation_modes.data()));
+		VK_CALL(vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &surface_presentation_mode_count, surface_presentation_modes.data()));
 
 		for(const auto& spm : surface_presentation_modes) {
 			if(spm == VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -604,7 +662,7 @@ namespace wm {
 
 	VkSurfaceCapabilitiesKHR wm_vulkan_rendering_context::get_surface_capabilities() const {
 		VkSurfaceCapabilitiesKHR surface_capabilities;
-		WM_ASSERT_VULKAN(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_capabilities));
+		VK_CALL(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_capabilities));
 		return surface_capabilities;
 	}
 
@@ -652,8 +710,7 @@ namespace wm {
 		swap_chain = VK_NULL_HANDLE;
 
 		for(size_t i = 0; i < swap_chain_images.size(); i++) {
-			vkDestroyBuffer(device, uniform_buffers.at(i), nullptr);
-			vkFreeMemory(device, uniform_buffers_device_memories.at(i), nullptr);
+			uniform_buffers[i].destroy();
 		}
 		WM_LOG_INFO_2("Vulkan uniform buffers destroyed");
 
@@ -685,7 +742,7 @@ namespace wm {
 		descriptor_set_layout_create_info.bindingCount = static_cast<uint32_t>(descriptor_set_layout_bindings.size());
 		descriptor_set_layout_create_info.pBindings = descriptor_set_layout_bindings.data();
 
-		WM_ASSERT_VULKAN(vkCreateDescriptorSetLayout(device, &descriptor_set_layout_create_info, nullptr, &descriptor_set_layout));
+		VK_CALL(vkCreateDescriptorSetLayout(device, &descriptor_set_layout_create_info, nullptr, &descriptor_set_layout));
 		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, descriptor_set_layout, "lambertian uniforms");
 	}
 
@@ -798,7 +855,7 @@ namespace wm {
 		pipeline_layout_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_create_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
 		pipeline_layout_create_info.pSetLayouts = descriptor_set_layouts.data();
-		WM_ASSERT_VULKAN(vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &pipeline_layout));
+		VK_CALL(vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &pipeline_layout));
 
 		VkPipelineDepthStencilStateCreateInfo pipeline_depth_stencil_state_create_info{};
 		pipeline_depth_stencil_state_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -826,7 +883,7 @@ namespace wm {
 
 		std::array<VkGraphicsPipelineCreateInfo, 1> graphics_pipeline_create_infos = {graphics_pipeline_create_info};
 
-		WM_ASSERT_VULKAN(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphics_pipeline_create_infos.size()), graphics_pipeline_create_infos.data(), nullptr, &pipeline));
+		VK_CALL(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, static_cast<uint32_t>(graphics_pipeline_create_infos.size()), graphics_pipeline_create_infos.data(), nullptr, &pipeline));
 		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_PIPELINE, pipeline, "lambertian pipeline");
 
 		vkDestroyShaderModule(device, vertex_shader_module, nullptr);
@@ -908,7 +965,7 @@ namespace wm {
 		render_pass_create_info.dependencyCount = static_cast<uint32_t>(subpass_dependencies.size());
 		render_pass_create_info.pDependencies = subpass_dependencies.data();
 
-		WM_ASSERT_VULKAN(vkCreateRenderPass(device, &render_pass_create_info, nullptr, &render_pass));
+		VK_CALL(vkCreateRenderPass(device, &render_pass_create_info, nullptr, &render_pass));
 		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_RENDER_PASS, render_pass, "main render pass");
 
 		WM_LOG_INFO_2("Vulkan renderpass created");
@@ -929,7 +986,7 @@ namespace wm {
 			framebuffer_create_info.height = swap_chain_extent.height;
 			framebuffer_create_info.layers = 1;
 
-			WM_ASSERT_VULKAN(vkCreateFramebuffer(device, &framebuffer_create_info, nullptr, &swap_chain_framebuffers.at(i)));
+			VK_CALL(vkCreateFramebuffer(device, &framebuffer_create_info, nullptr, &swap_chain_framebuffers.at(i)));
 			VK_LABEL(VkObjectType::VK_OBJECT_TYPE_FRAMEBUFFER, swap_chain_framebuffers.at(i), "main framebuffer[" + std::to_string(i) + "]");
 		}
 		WM_LOG_INFO_2("Vulkan framebuffers created");
@@ -957,7 +1014,7 @@ namespace wm {
 		shader_module_create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
 		VkShaderModule shader_module;
-		WM_ASSERT_VULKAN(vkCreateShaderModule(device, &shader_module_create_info, nullptr, &shader_module));
+		VK_CALL(vkCreateShaderModule(device, &shader_module_create_info, nullptr, &shader_module));
 		return shader_module;
 	}
 
@@ -968,24 +1025,21 @@ namespace wm {
 		texture_mipmap_level_count = static_cast<uint32_t>(std::floor(std::log2(std::max(image->get_size().x, image->get_size().y)))) + 1;
 		VkDeviceSize size = image->get_size().x * image->get_size().y * 4;
 
-		VkBuffer staging_buffer;
-		VkDeviceMemory staging_buffer_device_memory;
-		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_device_memory);
-
-		void* data;
-		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
-		std::memcpy(data, image->get_pixels(), static_cast<size_t>(size));
-		vkUnmapMemory(device, staging_buffer_device_memory);
+		gpu_buffer_descriptor descriptor;
+		descriptor.cpu_write_frequency = usage_frequency::FREQUENTLY;
+		descriptor.data = image->get_pixels();
+		descriptor.data_size = size;
+		descriptor.stride = 0; // ??
+		descriptor.type_flags = gpu_buffer_type::UNDEFINED;
+		wm_vk_buffer staging_buffer(descriptor, true);
 
 		create_image(image->get_size(), texture_mipmap_level_count, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, VkFormat::VK_FORMAT_R8G8B8A8_UNORM, VkImageTiling::VK_IMAGE_TILING_OPTIMAL, VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT | VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture_image, texture_image_device_memory);
 		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_IMAGE, texture_image, "res/mesh/helmet.jpg");
 
 		transition_image_layout(texture_image, VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture_mipmap_level_count);
-		copy_buffer_to_image(staging_buffer, texture_image, static_cast<uint32_t>(image->get_size().x), static_cast<uint32_t>(image->get_size().y));
+		copy_buffer_to_image(std::any_cast<VkBuffer>(staging_buffer.get_native_handle()), texture_image, static_cast<uint32_t>(image->get_size().x), static_cast<uint32_t>(image->get_size().y));
 		generate_mipmaps(texture_image, VkFormat::VK_FORMAT_R8G8B8A8_UNORM, image->get_size(), texture_mipmap_level_count);
 
-		vkDestroyBuffer(device, staging_buffer, nullptr);
-		vkFreeMemory(device, staging_buffer_device_memory, nullptr);
 		image.destroy();
 
 		WM_LOG_INFO_2("Vulkan texture created");
@@ -1012,7 +1066,7 @@ namespace wm {
 		image_create_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 		image_create_info.samples = sample_count;
 
-		WM_ASSERT_VULKAN(vkCreateImage(device, &image_create_info, nullptr, &texture_image));
+		VK_CALL(vkCreateImage(device, &image_create_info, nullptr, &texture_image));
 
 		VkMemoryRequirements memory_requirements;
 		vkGetImageMemoryRequirements(device, texture_image, &memory_requirements);
@@ -1031,9 +1085,9 @@ namespace wm {
 		memory_allocation_info.allocationSize = memory_requirements.size;
 		memory_allocation_info.memoryTypeIndex = memory_type_index;
 
-		WM_ASSERT_VULKAN(vkAllocateMemory(device, &memory_allocation_info, nullptr, &texture_image_device_memory));
+		VK_CALL(vkAllocateMemory(device, &memory_allocation_info, nullptr, &texture_image_device_memory));
 
-		WM_ASSERT_VULKAN(vkBindImageMemory(device, texture_image, texture_image_device_memory, 0));
+		VK_CALL(vkBindImageMemory(device, texture_image, texture_image_device_memory, 0));
 	}
 
 	VkImageView wm_vulkan_rendering_context::create_image_view(const VkImage image, const VkFormat format, const VkImageAspectFlags image_aspect_flags, const uint32_t mipmap_level_count) {
@@ -1049,7 +1103,7 @@ namespace wm {
 		image_view_create_info.subresourceRange.layerCount = 1;
 
 		VkImageView image_view;
-		WM_ASSERT_VULKAN(vkCreateImageView(device, &image_view_create_info, nullptr, &image_view));
+		VK_CALL(vkCreateImageView(device, &image_view_create_info, nullptr, &image_view));
 
 		return image_view;
 	}
@@ -1077,7 +1131,7 @@ namespace wm {
 		sampler_create_info.minLod = 0.0f;
 		sampler_create_info.maxLod = static_cast<float>(mipmap_level_count);
 
-		WM_ASSERT_VULKAN(vkCreateSampler(device, &sampler_create_info, nullptr, &sampler));
+		VK_CALL(vkCreateSampler(device, &sampler_create_info, nullptr, &sampler));
 	}
 
 	void wm_vulkan_rendering_context::transition_image_layout(VkImage image, VkImageLayout old_layout, VkImageLayout new_layout, const uint32_t mipmap_level_count) {
@@ -1264,116 +1318,53 @@ namespace wm {
 
 
 	//vertex buffer
-	void wm_vulkan_rendering_context::load_mesh() {
-		auto mesh = engine::get_resource_system()->get_mesh("res/mesh/helmet.obj");
+	void wm_vulkan_rendering_context::create_mesh(const std::string& path) {
+		load_mesh(path);
+
+		gpu_buffer_descriptor vertex_buffer_descriptor{};
+		vertex_buffer_descriptor.data = vertices.data();
+		vertex_buffer_descriptor.data_size = vertices.size() * sizeof(wm_gpu_vertex);
+		vertex_buffer_descriptor.stride = sizeof(wm_gpu_vertex);
+		vertex_buffer_descriptor.type_flags = gpu_buffer_type::VERTEX_BUFFER;
+		auto vertex_buffer = gpu_buffer::create(vertex_buffer_descriptor);
+		VK_LABEL_2(vertex_buffer, "[VERTEX BUFFER] " + path);
+
+		gpu_buffer_descriptor index_buffer_descriptor{};
+		index_buffer_descriptor.data = indices.data();
+		index_buffer_descriptor.data_size = indices.size() * sizeof(uint32_t);
+		index_buffer_descriptor.stride = sizeof(uint32_t);
+		index_buffer_descriptor.type_flags = gpu_buffer_type::INDEX_BUFFER;
+		auto index_buffer = gpu_buffer::create(index_buffer_descriptor);
+		VK_LABEL_2(index_buffer, "[INDEX BUFFER] " + path);
+
+		gpu_mesh_descriptor mesh_descriptor{};
+		mesh_descriptor.vertex_buffer = vertex_buffer;
+		mesh_descriptor.index_buffer = index_buffer;
+		mesh = gpu_mesh::create(mesh_descriptor);
+		VK_LABEL_2(mesh, "[MESH] " + path);
+	}
+
+	void wm_vulkan_rendering_context::load_mesh(const std::string& path) {
+		auto mesh = engine::get_resource_system()->get_mesh(path);
 		for(auto& v : mesh->get_vertices()) {
 			vertices.push_back({v.get_position(), v.get_normal(), v.get_texture_coordinate()});
 		}
 		indices = mesh->get_indices();
 	}
 
-	void wm_vulkan_rendering_context::create_vertex_buffer() {
-		const size_t size = sizeof(vertices.at(0)) * vertices.size();
-
-		VkBuffer staging_buffer;
-		VkDeviceMemory staging_buffer_device_memory;
-		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_device_memory);
-
-		void* data;
-		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
-		std::memcpy(data, vertices.data(), size);
-		vkUnmapMemory(device, staging_buffer_device_memory);
-
-		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertex_buffer, vertex_buffer_device_memory);
-		copy_buffer(staging_buffer, vertex_buffer, size);
-
-		vkDestroyBuffer(device, staging_buffer, nullptr);
-		vkFreeMemory(device, staging_buffer_device_memory, nullptr);
-
-		WM_LOG_INFO_2("Vulkan vertex buffer created");
-	}
-
-	void wm_vulkan_rendering_context::create_index_buffer() {
-		const size_t size = sizeof(indices.at(0)) * indices.size();
-
-		VkBuffer staging_buffer;
-		VkDeviceMemory staging_buffer_device_memory;
-		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_device_memory);
-
-		void* data;
-		WM_ASSERT_VULKAN(vkMapMemory(device, staging_buffer_device_memory, 0, size, 0, &data));
-		std::memcpy(data, indices.data(), size);
-		vkUnmapMemory(device, staging_buffer_device_memory);
-
-		create_buffer(size, VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT | VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index_buffer, index_buffer_device_memory);
-		copy_buffer(staging_buffer, index_buffer, size);
-
-		vkDestroyBuffer(device, staging_buffer, nullptr);
-		vkFreeMemory(device, staging_buffer_device_memory, nullptr);
-
-		WM_LOG_INFO_2("Vulkan index buffer created");
-	}
-
-	void wm_vulkan_rendering_context::create_buffer(const size_t size, const VkBufferUsageFlags usage, const VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& device_memory) const {
-		VkBufferCreateInfo buffer_create_info{};
-		buffer_create_info.sType = VkStructureType::VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		buffer_create_info.size = size;
-		buffer_create_info.usage = usage;
-		buffer_create_info.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
-
-		WM_ASSERT_VULKAN(vkCreateBuffer(device, &buffer_create_info, nullptr, &buffer));
-
-		VkMemoryRequirements memory_requirements;
-		vkGetBufferMemoryRequirements(device, buffer, &memory_requirements);
-
-		int32_t memory_type_index = -1;
-		for(uint32_t i = 0; i < physical_device_memory_properties.memoryTypeCount; i++) {
-			if(memory_requirements.memoryTypeBits & (1 << i) && (physical_device_memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
-				memory_type_index = i;
-				break;
-			}
-		}
-		WM_ASSERT(memory_type_index != -1);
-
-		VkMemoryAllocateInfo memory_allocation_info{};
-		memory_allocation_info.sType = VkStructureType::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		memory_allocation_info.allocationSize = memory_requirements.size;
-		memory_allocation_info.memoryTypeIndex = memory_type_index;
-
-		WM_ASSERT_VULKAN(vkAllocateMemory(device, &memory_allocation_info, nullptr, &device_memory));
-
-		WM_ASSERT_VULKAN(vkBindBufferMemory(device, buffer, device_memory, 0));
-	}
-
-	void wm_vulkan_rendering_context::copy_buffer(const VkBuffer source_buffer, const VkBuffer destination_buffer, const size_t size) {
-		VkCommandBuffer command_buffer = begin_single_time_commands();
-
-		VkBufferCopy buffer_copy{};
-		buffer_copy.size = size;
-		vkCmdCopyBuffer(command_buffer, source_buffer, destination_buffer, 1, &buffer_copy);
-
-		end_single_time_commands(command_buffer);
-	}
-
 
 	//uniform buffers
 	void wm_vulkan_rendering_context::create_uniform_buffers() {
-		size_t buffer_size = sizeof(wm_gpu_matrices_ubo);
-
 		uniform_buffers.resize(swap_chain_images.size());
-		uniform_buffers_device_memories.resize(swap_chain_images.size());
-
 		for(size_t i = 0; i < swap_chain_images.size(); i++) {
-			create_buffer(
-				buffer_size,
-				VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				uniform_buffers.at(i),
-				uniform_buffers_device_memories.at(i)
-			);
-			VK_LABEL(VkObjectType::VK_OBJECT_TYPE_BUFFER, uniform_buffers[i], "matrices[" + std::to_string(i) + "] uniform buffer");
+			gpu_buffer_descriptor descriptor{};
+			descriptor.type_flags = gpu_buffer_type::UNIFORM_BUFFER;
+			descriptor.data_size = sizeof(wm_gpu_matrices_ubo);
+			descriptor.stride = sizeof(wm_gpu_matrices_ubo);
+			descriptor.cpu_write_frequency = usage_frequency::FREQUENTLY;
+			uniform_buffers[i] = gpu_buffer::create(descriptor);
+			VK_LABEL_2(uniform_buffers[i], "[UNIFORM BUFFER] matrices " + std::to_string(i));
 		}
-		WM_LOG_INFO_2("Vulkan uniform buffers created");
 	}
 
 	void wm_vulkan_rendering_context::update_uniform_buffer(const uint32_t image_index) const {
@@ -1402,10 +1393,7 @@ namespace wm {
 		ubo.view = camera->get_view_matrix();
 		ubo.projection = camera->get_projection_matrix();
 
-		void* data;
-		WM_ASSERT_VULKAN(vkMapMemory(device, uniform_buffers_device_memories.at(image_index), 0, sizeof(ubo), 0, &data));
-		std::memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, uniform_buffers_device_memories.at(image_index));
+		uniform_buffers[image_index]->set_data(&ubo, sizeof(ubo));
 	}
 
 	void wm_vulkan_rendering_context::create_descriptor_pool() {
@@ -1425,7 +1413,7 @@ namespace wm {
 		descriptor_pool_create_info.pPoolSizes = descriptor_pool_sizes.data();
 		descriptor_pool_create_info.maxSets = static_cast<uint32_t>(swap_chain_images.size());
 
-		WM_ASSERT_VULKAN(vkCreateDescriptorPool(device, &descriptor_pool_create_info, nullptr, &descriptor_pool));
+		VK_CALL(vkCreateDescriptorPool(device, &descriptor_pool_create_info, nullptr, &descriptor_pool));
 		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_DESCRIPTOR_POOL, descriptor_pool, "main descriptor pool");
 	}
 
@@ -1438,11 +1426,11 @@ namespace wm {
 		descriptor_set_allocation_info.pSetLayouts = descriptor_set_layouts.data();
 
 		descriptor_sets.resize(swap_chain_images.size());
-		WM_ASSERT_VULKAN(vkAllocateDescriptorSets(device, &descriptor_set_allocation_info, descriptor_sets.data()));
+		VK_CALL(vkAllocateDescriptorSets(device, &descriptor_set_allocation_info, descriptor_sets.data()));
 
 		for(size_t i = 0; i < swap_chain_images.size(); i++) {
 			VkDescriptorBufferInfo descriptor_buffer_info{};
-			descriptor_buffer_info.buffer = uniform_buffers.at(i);
+			descriptor_buffer_info.buffer = VK_ID_OF(uniform_buffers[i], VkBuffer);
 			descriptor_buffer_info.offset = 0;
 			descriptor_buffer_info.range = sizeof(wm_gpu_matrices_ubo);
 			std::array<VkDescriptorBufferInfo, 1> descriptor_buffer_infos = {descriptor_buffer_info};
@@ -1485,8 +1473,8 @@ namespace wm {
 		command_pool_create_info.queueFamilyIndex = graphics_queue_family_index;
 		command_pool_create_info.flags = VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-		WM_ASSERT_VULKAN(vkCreateCommandPool(device, &command_pool_create_info, nullptr, &command_pool));
-		VK_LABEL(VkObjectType::VK_OBJECT_TYPE_COMMAND_POOL, command_pool, "main command pool");
+		VK_CALL(vkCreateCommandPool(device, &command_pool_create_info, nullptr, &command_pool));
+		//VK_LABEL(VkObjectType::VK_OBJECT_TYPE_COMMAND_POOL, command_pool, "main command pool");
 	}
 
 	void wm_vulkan_rendering_context::create_command_buffers() {
@@ -1497,7 +1485,7 @@ namespace wm {
 		command_buffer_allocation_info.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		command_buffer_allocation_info.commandBufferCount = static_cast<uint32_t>(command_buffers.size());
 
-		WM_ASSERT_VULKAN(vkAllocateCommandBuffers(device, &command_buffer_allocation_info, command_buffers.data()));
+		VK_CALL(vkAllocateCommandBuffers(device, &command_buffer_allocation_info, command_buffers.data()));
 
 		WM_LOG_INFO_2("Vulkan command buffers allocated");
 	}
@@ -1510,19 +1498,19 @@ namespace wm {
 		command_buffer_allocate_info.commandBufferCount = 1;
 
 		VkCommandBuffer command_buffer;
-		WM_ASSERT_VULKAN(vkAllocateCommandBuffers(device, &command_buffer_allocate_info, &command_buffer));
+		VK_CALL(vkAllocateCommandBuffers(device, &command_buffer_allocate_info, &command_buffer));
 
 		VkCommandBufferBeginInfo command_buffer_begin_info{};
 		command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		command_buffer_begin_info.flags = VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
+		VK_CALL(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
 
 		return command_buffer;
 	}
 
 	void wm_vulkan_rendering_context::end_single_time_commands(const VkCommandBuffer command_buffer) {
-		WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffer));
+		VK_CALL(vkEndCommandBuffer(command_buffer));
 
 		VkSubmitInfo submit_info{};
 		submit_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1531,8 +1519,12 @@ namespace wm {
 
 		std::array<VkCommandBuffer, 1> command_buffers = {command_buffer};
 
-		WM_ASSERT_VULKAN(vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE));
-		WM_ASSERT_VULKAN(vkQueueWaitIdle(graphics_queue));
+		// TODO: use transfer queue instead of the graphics queue, because in many cases they can work parallel
+		VK_CALL(vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE));
+		// TODO: don't stop the whole queue yet
+		// get a semaphore or fence, and wait when you actually need this resource
+		// and even if you need it, you might use for example a gray 1x1 texture while it's not loaded instead of waiting
+		VK_CALL(vkQueueWaitIdle(graphics_queue));
 
 		vkFreeCommandBuffers(device, command_pool, static_cast<uint32_t>(command_buffers.size()), command_buffers.data());
 	}
@@ -1543,7 +1535,7 @@ namespace wm {
 		VkCommandBufferBeginInfo command_buffer_begin_info{};
 		command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffers.at(image_index), &command_buffer_begin_info));
+		VK_CALL(vkBeginCommandBuffer(command_buffers.at(image_index), &command_buffer_begin_info));
 
 		VkClearValue color_clear_value = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
 		VkClearValue depth_clear_value = {{{1.0f, 0.0f}}};
@@ -1580,10 +1572,10 @@ namespace wm {
 
 		VK_GROUP_START("lambertian", command_buffers.at(image_index));
 
-		std::array<VkBuffer, 1> vertex_buffers = {vertex_buffer};
+		std::array<VkBuffer, 1> vertex_buffers = {VK_ID_OF(mesh->get_vertex_buffer(), VkBuffer)};
 		std::array<VkDeviceSize, 1> offsets = {0};
 		vkCmdBindVertexBuffers(command_buffers.at(image_index), 0, 1, vertex_buffers.data(), offsets.data());
-		vkCmdBindIndexBuffer(command_buffers.at(image_index), index_buffer, 0, VkIndexType::VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(command_buffers.at(image_index), VK_ID_OF(mesh->get_index_buffer(), VkBuffer), 0, VkIndexType::VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(command_buffers.at(image_index), VkPipelineBindPoint::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_sets.at(image_index), 0, nullptr);
 
@@ -1615,7 +1607,7 @@ namespace wm {
 
 		vkCmdEndRenderPass(command_buffers.at(image_index));
 
-		WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffers.at(image_index)));
+		VK_CALL(vkEndCommandBuffer(command_buffers.at(image_index)));
 	}
 
 
@@ -1634,9 +1626,9 @@ namespace wm {
 		fence_create_info.flags = VkFenceCreateFlagBits::VK_FENCE_CREATE_SIGNALED_BIT;
 
 		for(int32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			WM_ASSERT_VULKAN(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &image_is_available.at(i)));
-			WM_ASSERT_VULKAN(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &rendering_is_finished.at(i)));
-			WM_ASSERT_VULKAN(vkCreateFence(device, &fence_create_info, nullptr, &in_flight.at(i)));
+			VK_CALL(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &image_is_available.at(i)));
+			VK_CALL(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &rendering_is_finished.at(i)));
+			VK_CALL(vkCreateFence(device, &fence_create_info, nullptr, &in_flight.at(i)));
 		}
 	}
 
@@ -1685,7 +1677,7 @@ namespace wm {
 		imgui_descriptor_pool_info.maxSets = static_cast<uint32_t>(1000 * imgui_descriptor_pool_sizes.size());
 		imgui_descriptor_pool_info.poolSizeCount = static_cast<uint32_t>(imgui_descriptor_pool_sizes.size());
 		imgui_descriptor_pool_info.pPoolSizes = imgui_descriptor_pool_sizes.data();
-		WM_ASSERT_VULKAN(vkCreateDescriptorPool(device, &imgui_descriptor_pool_info, nullptr, &imgui_descriptor_pool));
+		VK_CALL(vkCreateDescriptorPool(device, &imgui_descriptor_pool_info, nullptr, &imgui_descriptor_pool));
 
 		WM_LOG_INFO_2("Vulkan imgui descriptor pool created");
 	}
@@ -1693,11 +1685,11 @@ namespace wm {
 	void wm_vulkan_rendering_context::create_imgui_font_texture() const {
 		VkCommandBuffer command_buffer = this->command_buffers.at(0);
 
-		WM_ASSERT_VULKAN(vkResetCommandPool(device, command_pool, 0));
+		VK_CALL(vkResetCommandPool(device, command_pool, 0));
 		VkCommandBufferBeginInfo command_buffer_begin_info{};
 		command_buffer_begin_info.sType = VkStructureType::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		command_buffer_begin_info.flags |= VkCommandBufferUsageFlagBits::VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		WM_ASSERT_VULKAN(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
+		VK_CALL(vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info));
 
 		ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
 
@@ -1705,10 +1697,10 @@ namespace wm {
 		submit_info.sType = VkStructureType::VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &command_buffer;
-		WM_ASSERT_VULKAN(vkEndCommandBuffer(command_buffer));
-		WM_ASSERT_VULKAN(vkQueueSubmit(graphics_queue, 1, &submit_info, nullptr));
+		VK_CALL(vkEndCommandBuffer(command_buffer));
+		VK_CALL(vkQueueSubmit(graphics_queue, 1, &submit_info, nullptr));
 
-		WM_ASSERT_VULKAN(vkDeviceWaitIdle(device));
+		VK_CALL(vkDeviceWaitIdle(device));
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
@@ -1722,17 +1714,17 @@ namespace wm {
 		frame_index = engine::get_time_system()->get_frame_index() % MAX_FRAMES_IN_FLIGHT;
 		uint32_t image_index;
 
-		WM_ASSERT_VULKAN(vkWaitForFences(device, 1, &in_flight.at(frame_index), VK_TRUE, UINT64_MAX));
+		VK_CALL(vkWaitForFences(device, 1, &in_flight.at(frame_index), VK_TRUE, UINT64_MAX));
 
 		auto result = vkAcquireNextImageKHR(device, swap_chain, UINT64_MAX, image_is_available.at(frame_index), VK_NULL_HANDLE, &image_index);
 		if(result == VkResult::VK_ERROR_OUT_OF_DATE_KHR) {
 			recreate_swap_chain();
 		} else if(result != VkResult::VK_SUBOPTIMAL_KHR) {
-			WM_ASSERT_VULKAN(result);
+			VK_CALL(result);
 		}
 
 		if(images_in_flight.at(image_index) != VK_NULL_HANDLE) {
-			WM_ASSERT_VULKAN(vkWaitForFences(device, 1, &images_in_flight.at(image_index), VK_TRUE, UINT64_MAX));
+			VK_CALL(vkWaitForFences(device, 1, &images_in_flight.at(image_index), VK_TRUE, UINT64_MAX));
 		}
 		images_in_flight.at(image_index) = images_in_flight.at(frame_index);
 
@@ -1753,9 +1745,9 @@ namespace wm {
 		submit_info.signalSemaphoreCount = static_cast<uint32_t>(rendering_is_finished_semaphores.size());
 		submit_info.pSignalSemaphores = rendering_is_finished_semaphores.data();
 
-		WM_ASSERT_VULKAN(vkResetFences(device, 1, &in_flight.at(frame_index)));
+		VK_CALL(vkResetFences(device, 1, &in_flight.at(frame_index)));
 
-		WM_ASSERT_VULKAN(vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight.at(frame_index)));
+		VK_CALL(vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight.at(frame_index)));
 
 		std::array<VkSwapchainKHR, 1> swap_chains = {swap_chain};
 
@@ -1774,7 +1766,7 @@ namespace wm {
 			if(framebuffer_resized) {
 				recreate_swap_chain();
 			}
-			WM_ASSERT_VULKAN(result);
+			VK_CALL(result);
 		}
 	}
 
@@ -1814,13 +1806,7 @@ namespace wm {
 
 		vkDestroyDescriptorSetLayout(device, descriptor_set_layout, nullptr);
 
-		vkDestroyBuffer(device, index_buffer, nullptr);
-		vkFreeMemory(device, index_buffer_device_memory, nullptr);
-		WM_LOG_INFO_2("Vulkan index buffer destroyed");
-
-		vkDestroyBuffer(device, vertex_buffer, nullptr);
-		vkFreeMemory(device, vertex_buffer_device_memory, nullptr);
-		WM_LOG_INFO_2("Vulkan vertex buffer destroyed");
+		mesh.destroy();
 
 		vkDestroyCommandPool(device, command_pool, nullptr);
 
